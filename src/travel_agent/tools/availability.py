@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+from collections.abc import Callable
 from datetime import date, timedelta
 from typing import Protocol
 
@@ -188,24 +189,47 @@ class SampleProvider:
         return offers
 
 
-_PROVIDERS: dict[str, type[AvailabilityProvider]] = {SAMPLE_SOURCE: SampleProvider}
+def _load_duffel() -> AvailabilityProvider:
+    """Imported lazily so httpx and the token check only load when selected."""
+    from travel_agent.tools.duffel import DuffelProvider
+
+    return DuffelProvider()
+
+
+_PROVIDERS: dict[str, Callable[[], AvailabilityProvider]] = {
+    SAMPLE_SOURCE: SampleProvider,
+    "duffel": _load_duffel,
+}
 
 
 def get_provider() -> AvailabilityProvider:
     """Return the configured provider, defaulting to sample data."""
     key = os.getenv("TRAVEL_AGENT_PROVIDER", SAMPLE_SOURCE)
     try:
-        return _PROVIDERS[key]()
+        factory = _PROVIDERS[key]
     except KeyError:
         known = ", ".join(sorted(_PROVIDERS))
         raise ValueError(
             f"Unknown TRAVEL_AGENT_PROVIDER={key!r}. Registered providers: {known}"
         ) from None
+    return factory()
 
 
 def _wrap(offers: list[dict], provider: AvailabilityProvider) -> dict:
-    payload: dict = {"provider": provider.name, "count": len(offers), "offers": offers}
-    if provider.name == SAMPLE_SOURCE:
+    """Package offers for the model, warning whenever any are synthetic.
+
+    The warning keys off each offer's own `source`, not the provider name: a
+    live provider can still fall back to sample data for part of its surface
+    (Duffel covers flights but not stays), and those offers must stay labelled.
+    """
+    sources = sorted({str(offer.get("source", "unknown")) for offer in offers})
+    payload: dict = {
+        "provider": provider.name,
+        "sources": sources,
+        "count": len(offers),
+        "offers": offers,
+    }
+    if SAMPLE_SOURCE in sources:
         payload["warning"] = _SAMPLE_DISCLAIMER
     return payload
 

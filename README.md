@@ -38,7 +38,7 @@ delegation (`task`) out of the box. This project adds:
 | System prompts | `prompts.py` | Workspace layout, memory contract, delegation rules |
 | Subagents | `subagents.py` | `destination-researcher`, `availability-scout`, `budget-analyst` |
 | Web search | `tools/search.py` | Tavily, optional |
-| Flights & lodging | `tools/availability.py` | Provider seam — see below |
+| Flights & lodging | `tools/availability.py`, `tools/duffel.py` | Provider seam — see below |
 | Budget math | `tools/budget.py` | Pure arithmetic, so the model never adds up a column itself |
 | Graph | `agent.py` | Wires the above together; exports `graph` for `langgraph.json` |
 
@@ -57,19 +57,49 @@ Both backends resolve state and store from the LangGraph execution context, so
 `agent.py` passes **no** checkpointer or store into the graph the server loads.
 `build_agent()` accepts them for standalone use.
 
-### ⚠️ Flights and lodging return sample data
+### Flight and lodging sources
 
-There is no booking API wired up. `tools/availability.py` defines an
-`AvailabilityProvider` protocol and ships `SampleProvider`, which returns
-deterministic synthetic offers labelled `source: "sample-data"`, alongside an
-explicit warning on every response. The system prompts require the agent to
-pass that caveat through to the traveler, so it will not present these numbers
-as real prices or bookable availability.
+`tools/availability.py` defines an `AvailabilityProvider` protocol. Pick one
+with `TRAVEL_AGENT_PROVIDER`:
 
-To go live, implement the protocol against Amadeus, Duffel, or similar,
-register it in `_PROVIDERS`, and point `TRAVEL_AGENT_PROVIDER` at it. Setting
-`source` to the real provider name makes the sample-data caveat drop out of the
-agent's replies automatically.
+| Value | Flights | Lodging |
+|---|---|---|
+| `sample-data` (default) | Synthetic | Synthetic |
+| `duffel` | **Live, via Duffel** | Synthetic |
+
+Synthetic offers are deterministic (seeded off the query, so prices don't
+drift mid-conversation) and carry `source: "sample-data"` plus an explicit
+warning. The prompts require the agent to pass that caveat to the traveler, so
+it will not present them as real prices. The warning keys off each offer's own
+`source`, not the provider name — so under `duffel`, flights come back clean
+and lodging stays correctly labelled.
+
+**Duffel is read-only.** It creates offer requests and reads offers back; it
+never calls `POST /air/orders`, so nothing is booked and no payment is taken,
+on a test token or a live one. Adding booking would mean putting order
+creation behind Deep Agents' `interrupt_on` human-approval gate — that is a
+deliberate decision, not a config change.
+
+To use it: create a test token in the Duffel dashboard under *Developer test
+mode* (`duffel_test_…`, synthetic inventory), set `DUFFEL_API_TOKEN` and
+`TRAVEL_AGENT_PROVIDER=duffel` in `.env`.
+
+Two things worth knowing:
+
+- **Offers expire, usually in minutes.** Each carries `expires_at` and
+  `expires_in_seconds`, and the prompts tell the agent to re-search rather than
+  quote a stale offer.
+- **Duffel Stays is not wired up**, so lodging still returns sample data. Cabin
+  selection is likewise out of scope — every search is economy.
+
+We call Duffel's REST API over `httpx` rather than the `duffel-api` PyPI
+package, which was last released in 2023, is classified Alpha, and would add a
+`requests` dependency. `tests/test_duffel.py` verifies the request shape
+against `httpx.MockTransport` — no network, no token needed.
+
+To add another provider (Amadeus, Skyscanner, Duffel Stays): implement the
+protocol, register a factory in `_PROVIDERS`, and set `source` to the provider
+name so the sample-data caveat drops out of the agent's replies automatically.
 
 ## Develop
 
@@ -82,4 +112,5 @@ uv run ruff format .
 ## Stack
 
 `deepagents` 0.6.12 · `langchain` 1.3+ · `langgraph` 1.2+ ·
-`claude-opus-5` via `langchain-anthropic`. Requires Python 3.11+.
+`claude-opus-5` via `langchain-anthropic` · Duffel API `v2` over `httpx`.
+Requires Python 3.11+.
