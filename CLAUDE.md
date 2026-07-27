@@ -14,16 +14,23 @@ uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
 uv run pytest                            # 47 tests, ~0.04s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
-uv run ruff check . && uv run ruff format .
+uv run ruff check . && uv run ruff format . && uv run ty check
 ```
+
+When working with Python, invoke the relevant `/astral:<skill>` (from the
+`astral-sh/astral` plugin) for `uv`, `ty`, and `ruff` to ensure best practices
+are followed.
 
 `langgraph dev` and the CLI differ in more than ergonomics: the server supplies
 the checkpointer and store, so `/memories/` persists across runs. The CLI wires
 `MemorySaver`/`InMemoryStore` in-process, so traveler memory dies with the
 process.
 
-Ruff targets `py311` and `langgraph.json` pins `python_version: "3.11"`, so
-avoid 3.12+ syntax even though the local `.venv` may be newer.
+Three places pin 3.11 and have to stay in agreement: `[tool.ruff]
+target-version`, `[tool.ty.environment] python-version`, and `langgraph.json`'s
+`python_version`. So avoid 3.12+ syntax even though the local `.venv` may be
+newer. The ty pin is explicit rather than inferred from `requires-python`,
+which is deliberately looser (`<4.0`) for packaging.
 
 ## The invariant everything else serves
 

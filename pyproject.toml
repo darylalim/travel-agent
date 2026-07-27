@@ -19,6 +19,7 @@ dev = [
     "langgraph-cli[inmem]>=0.4.31",
     "pytest>=8.0",
     "ruff>=0.9",
+    "ty>=0.0.64",
 ]
 
 [build-system]
@@ -31,3 +32,6 @@ packages = ["src/travel_agent"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.ty.environment]
+python-version = "3.11"
