@@ -102,6 +102,11 @@ Two things worth knowing:
 - **Offers expire, usually in minutes.** Each carries `expires_at` and
   `expires_in_seconds`, and the prompts tell the agent to re-search rather than
   quote a stale offer.
+- **Results are capped at 20 offers.** One real test-mode SFO→NRT search
+  returned **630** — handing them all to the model would cost a context window.
+  The trim keeps the cheapest, the fastest, and the fewest-stops options, so a
+  nonstop still survives when the cheapest fares are all multi-stop. Responses
+  carry `total_found`, `count`, and a `truncated` note.
 - **Duffel Stays is not wired up**, so lodging still returns sample data. Cabin
   selection is likewise out of scope — every search is economy.
 

@@ -88,8 +88,59 @@ def _seed(*parts: str) -> int:
 
 def _cost(offer: dict, field: str) -> float:
     """Sort key for offer dicts, whose values are a mixed-type union."""
-    value = offer[field]
+    value = offer.get(field)
     return float(value) if isinstance(value, (int, float)) else float("inf")
+
+
+# A live search can return hundreds of offers — one real Duffel test-mode
+# query returned 630. Handing them all to the model costs a context window
+# and a lot of money, so responses are bounded.
+MAX_FLIGHT_OFFERS = 20
+MAX_STAY_OFFERS = 20
+
+
+def _select_flights(offers: list[dict], limit: int = MAX_FLIGHT_OFFERS) -> list[dict]:
+    """Trim a large offer set to a bounded but still representative selection.
+
+    Cutting purely by price would hide every nonstop whenever the cheapest
+    fares are all long multi-stop itineraries — and the scout is asked for the
+    tradeoff between price and convenience. So keep the cheapest, the fastest,
+    and the fewest-stops options, then return them in price order.
+    """
+    if len(offers) <= limit:
+        return offers
+
+    indices = range(len(offers))
+    groups = (
+        sorted(indices, key=lambda i: _cost(offers[i], "total_fare"))[: limit // 2],
+        sorted(indices, key=lambda i: _cost(offers[i], "duration_minutes"))[: limit // 4],
+        sorted(
+            indices,
+            key=lambda i: (_cost(offers[i], "stops"), _cost(offers[i], "total_fare")),
+        )[: limit // 4],
+    )
+
+    chosen: list[int] = []
+    seen: set[int] = set()
+    for group in groups:
+        for index in group:
+            if index not in seen:
+                seen.add(index)
+                chosen.append(index)
+
+    # The groups overlap heavily when offers are similar — the cheapest can
+    # also be the fastest — so top the selection back up to the budget with
+    # the next cheapest rather than returning a needlessly thin list.
+    if len(chosen) < limit:
+        for index in sorted(indices, key=lambda i: _cost(offers[i], "total_fare")):
+            if index not in seen:
+                seen.add(index)
+                chosen.append(index)
+                if len(chosen) == limit:
+                    break
+
+    chosen = chosen[:limit]
+    return [offers[i] for i in sorted(chosen, key=lambda i: _cost(offers[i], "total_fare"))]
 
 
 def _parse_date(value: str, field: str) -> date:
@@ -249,7 +300,12 @@ def get_provider() -> AvailabilityProvider:
     return _build_provider(os.getenv("TRAVEL_AGENT_PROVIDER", SAMPLE_SOURCE))
 
 
-def _wrap(offers: list[dict], provider: AvailabilityProvider, kind: SearchKind) -> dict:
+def _wrap(
+    offers: list[dict],
+    provider: AvailabilityProvider,
+    kind: SearchKind,
+    total_found: int | None = None,
+) -> dict:
     """Package offers for the model, warning whenever any are synthetic.
 
     The provider's own note is authoritative and applies even to an empty
@@ -257,12 +313,20 @@ def _wrap(offers: list[dict], provider: AvailabilityProvider, kind: SearchKind) 
     that mix real and synthetic results in one response.
     """
     note = provider.synthetic_note(kind)
+    found = len(offers) if total_found is None else total_found
     payload: dict = {
         "provider": provider.name,
         "sources": sorted({str(offer.get("source", "unknown")) for offer in offers}),
+        "total_found": found,
         "count": len(offers),
         "offers": offers,
     }
+    if found > len(offers):
+        payload["truncated"] = (
+            f"Showing {len(offers)} of {found} offers — the cheapest, the fastest, "
+            "and those with the fewest stops. Narrow the search (different dates, "
+            "nearby airports, a price ceiling) to surface other options."
+        )
     if note:
         payload["warning"] = note
     elif any(offer.get("synthetic") for offer in offers):
@@ -292,6 +356,10 @@ def search_flights(
     Offers from real inventory carry `expires_at` and `expires_in_seconds`.
     Search again rather than quoting one that has expired.
 
+    A live search can match hundreds of flights. When `total_found` exceeds
+    `count`, a `truncated` note explains what was kept — narrow the search
+    rather than assuming the returned set is everything available.
+
     Args:
         origin: Origin airport IATA code, e.g. "SFO".
         destination: Destination airport IATA code, e.g. "NRT".
@@ -308,10 +376,10 @@ def search_flights(
         if return_date is not None and _parse_date(return_date, "return_date") < depart:
             return {"error": "return_date cannot fall before depart_date."}
         provider = get_provider()
-        offers = provider.search_flights(origin, destination, depart_date, return_date, travelers)
+        found = provider.search_flights(origin, destination, depart_date, return_date, travelers)
     except ValueError as exc:
         return {"error": str(exc)}
-    return _wrap(offers, provider, "flights")
+    return _wrap(_select_flights(found), provider, "flights", total_found=len(found))
 
 
 @tool
@@ -345,10 +413,11 @@ def search_stays(
         if _parse_date(check_out, "check_out") <= _parse_date(check_in, "check_in"):
             return {"error": "check_out must be at least one day after check_in."}
         provider = get_provider()
-        offers = provider.search_stays(location, check_in, check_out, guests, max_nightly_rate)
+        found = provider.search_stays(location, check_in, check_out, guests, max_nightly_rate)
     except ValueError as exc:
         return {"error": str(exc)}
-    return _wrap(offers, provider, "stays")
+    # Already sorted by total cost, so the cheapest N is a fair trim.
+    return _wrap(found[:MAX_STAY_OFFERS], provider, "stays", total_found=len(found))
 
 
 @tool

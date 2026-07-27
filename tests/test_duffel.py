@@ -335,6 +335,60 @@ def test_unpriced_offers_are_dropped_not_sorted_to_the_front():
     assert offers[0]["total_fare"] == pytest.approx(410.50)
 
 
+def test_created_201_is_accepted():
+    """Duffel answers a real offer request with 201, not 200."""
+    provider = DuffelProvider(
+        token=TEST_TOKEN,
+        transport=_responds({"data": {"offers": [_offer(_future())]}}, status=201),
+    )
+    assert len(provider.search_flights("SFO", "NRT", "2026-09-12", None, travelers=1)) == 1
+
+
+def test_large_result_sets_are_trimmed_but_stay_representative(monkeypatch):
+    """One real test-mode search returned 630 offers; all of them would not fit."""
+    monkeypatch.setenv("TRAVEL_AGENT_PROVIDER", "duffel")
+    monkeypatch.setenv("DUFFEL_API_TOKEN", TEST_TOKEN)
+
+    # Cheap fares are all slow multi-stop; the only nonstop is the priciest.
+    many = []
+    for n in range(60):
+        offer = _offer(_future(), total=f"{300 + n}.00")
+        offer["slices"][0]["duration"] = "PT30H00M"
+        offer["slices"][0]["segments"].append(
+            _segment("2026-09-12T20:00:00", "2026-09-13T06:00:00", "PT10H", "Partner Air")
+        )
+        many.append(offer)
+    nonstop = _offer(_future(), total="9999.00")
+    nonstop["slices"][0]["duration"] = "PT9H00M"
+    nonstop["slices"][0]["segments"] = [
+        _segment("2026-09-12T08:00:00", "2026-09-12T17:00:00", "PT9H", "Duffel Airways")
+    ]
+    many.append(nonstop)
+
+    from travel_agent.tools import availability
+
+    monkeypatch.setitem(
+        availability._PROVIDERS,
+        "duffel",
+        lambda: DuffelProvider(token=TEST_TOKEN, transport=_responds({"data": {"offers": many}})),
+    )
+
+    result = search_flights.invoke(
+        {"origin": "SFO", "destination": "NRT", "depart_date": "2026-09-12"}
+    )
+
+    assert result["total_found"] == 61
+    assert result["count"] == availability.MAX_FLIGHT_OFFERS
+    assert "truncated" in result
+    assert "61" in result["truncated"]
+
+    fares = [offer["total_fare"] for offer in result["offers"]]
+    assert fares == sorted(fares), "returned offers stay in price order"
+    assert min(fares) == pytest.approx(300.0), "the cheapest must survive the trim"
+    # Price-only truncation would have dropped the sole nonstop.
+    assert any(offer["stops"] == 0 for offer in result["offers"])
+
+
 def test_supplier_timeout_is_clamped_to_duffels_range():
     assert DuffelProvider(token=TEST_TOKEN, supplier_timeout_ms=1)._supplier_timeout_ms == 2_000
     assert (
