@@ -18,13 +18,14 @@ from langchain.chat_models import init_chat_model
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.store.base import BaseStore
 
+from travel_agent.config import DEFAULT_MAX_TOKENS, DEFAULT_MODEL
 from travel_agent.prompts import MAIN_AGENT_PROMPT, MEMORY_PATH
 from travel_agent.subagents import build_subagents
 from travel_agent.tools.availability import date_offset
 from travel_agent.tools.budget import summarize_budget
 from travel_agent.tools.search import build_search_tools
 
-DEFAULT_MODEL = "anthropic:claude-opus-5"
+__all__ = ["DEFAULT_MODEL", "build_agent", "build_backend", "graph"]
 
 # Files under /memories/ route to the store and survive across conversations;
 # everything else lands in graph state and is scoped to one thread. Longest
@@ -45,7 +46,7 @@ def build_agent(
     *,
     checkpointer: BaseCheckpointSaver | None = None,
     store: BaseStore | None = None,
-    max_tokens: int = 16_000,
+    max_tokens: int = DEFAULT_MAX_TOKENS,
 ):
     """Build the travel agent.
 

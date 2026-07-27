@@ -11,10 +11,8 @@ import argparse
 import sys
 
 from dotenv import load_dotenv
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.store.memory import InMemoryStore
 
-from travel_agent.agent import DEFAULT_MODEL, build_agent
+from travel_agent.config import DEFAULT_MODEL
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -29,6 +27,15 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     load_dotenv()
+
+    # Imported after load_dotenv(): travel_agent.agent builds the graph at
+    # import time for langgraph.json, and that reads TAVILY_API_KEY to decide
+    # whether search is available. Importing it at module scope would build
+    # the agent against an unloaded environment, then build it again below.
+    from langgraph.checkpoint.memory import MemorySaver
+    from langgraph.store.memory import InMemoryStore
+
+    from travel_agent.agent import build_agent
 
     agent = build_agent(args.model, checkpointer=MemorySaver(), store=InMemoryStore())
     config = {"configurable": {"thread_id": args.thread}}

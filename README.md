@@ -65,14 +65,26 @@ with `TRAVEL_AGENT_PROVIDER`:
 | Value | Flights | Lodging |
 |---|---|---|
 | `sample-data` (default) | Synthetic | Synthetic |
-| `duffel` | **Live, via Duffel** | Synthetic |
+| `duffel` + test token | **Synthetic** (Duffel test inventory) | Synthetic |
+| `duffel` + live token | **Real** | Synthetic |
 
-Synthetic offers are deterministic (seeded off the query, so prices don't
-drift mid-conversation) and carry `source: "sample-data"` plus an explicit
-warning. The prompts require the agent to pass that caveat to the traveler, so
-it will not present them as real prices. The warning keys off each offer's own
-`source`, not the provider name — so under `duffel`, flights come back clean
-and lodging stays correctly labelled.
+The safety property: **the traveler is never shown synthetic inventory
+described as real.** Every offer carries `synthetic: bool`, and a response
+carrying any synthetic offers gets a `warning`. The prompts tell the agent to
+key off those two fields.
+
+Note the middle row. A Duffel *test* token returns fictional airlines at
+invented fares — synthetic despite coming from a live API over the network, so
+it is labelled exactly like sample data. Judging by the provider name would
+get this wrong in two different ways at once: test-mode flights would look
+real, and lodging under `duffel` would too.
+
+An empty result set is warned about as well, since providers declare
+synthetic-ness up front. Otherwise "no offers" from a synthetic source would
+read as "we checked real inventory and found nothing available".
+
+Sample offers are deterministic — seeded off the query, so prices don't drift
+mid-conversation.
 
 **Duffel is read-only.** It creates offer requests and reads offers back; it
 never calls `POST /air/orders`, so nothing is booked and no payment is taken,
@@ -81,8 +93,9 @@ creation behind Deep Agents' `interrupt_on` human-approval gate — that is a
 deliberate decision, not a config change.
 
 To use it: create a test token in the Duffel dashboard under *Developer test
-mode* (`duffel_test_…`, synthetic inventory), set `DUFFEL_API_TOKEN` and
-`TRAVEL_AGENT_PROVIDER=duffel` in `.env`.
+mode* (`duffel_test_…`), set `DUFFEL_API_TOKEN` and
+`TRAVEL_AGENT_PROVIDER=duffel` in `.env`. Test-mode results are fictional and
+are labelled as such — see the table above.
 
 Two things worth knowing:
 
@@ -95,7 +108,9 @@ Two things worth knowing:
 We call Duffel's REST API over `httpx` rather than the `duffel-api` PyPI
 package, which was last released in 2023, is classified Alpha, and would add a
 `requests` dependency. `tests/test_duffel.py` verifies the request shape
-against `httpx.MockTransport` — no network, no token needed.
+against `httpx.MockTransport`, and `tests/conftest.py` clears the provider env
+vars for every test — so the suite needs no token and never reaches the
+network, whatever you have exported.
 
 To add another provider (Amadeus, Skyscanner, Duffel Stays): implement the
 protocol, register a factory in `_PROVIDERS`, and set `source` to the provider

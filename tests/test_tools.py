@@ -57,6 +57,7 @@ def test_flight_offers_are_labelled_sorted_and_deterministic():
     fares = [offer["total_fare"] for offer in result["offers"]]
     assert fares == sorted(fares)
     assert all(offer["source"] == SAMPLE_SOURCE for offer in result["offers"])
+    assert all(offer["synthetic"] is True for offer in result["offers"])
     assert all(offer["total_fare"] == offer["fare_per_traveler"] * 2 for offer in result["offers"])
 
     # Same query, same offers — prices must not drift mid-conversation.
@@ -82,6 +83,22 @@ def test_stay_offers_respect_nightly_ceiling():
     )
 
 
+def test_empty_result_still_carries_the_synthetic_warning():
+    """A zero-result sample search must not read as 'we checked, there is nothing'."""
+    result = search_stays.invoke(
+        {
+            "location": "Kyoto",
+            "check_in": "2026-09-14",
+            "check_out": "2026-09-18",
+            "max_nightly_rate": 1.0,  # filters everything out
+        }
+    )
+
+    assert result["count"] == 0
+    assert result["offers"] == []
+    assert "warning" in result, "an empty synthetic search still is not real availability"
+
+
 def test_invalid_dates_return_errors_not_exceptions():
     assert "error" in search_flights.invoke(
         {"origin": "SFO", "destination": "NRT", "depart_date": "12/09/2026"}
@@ -89,8 +106,43 @@ def test_invalid_dates_return_errors_not_exceptions():
     assert "error" in search_stays.invoke(
         {"location": "Kyoto", "check_in": "2026-09-18", "check_out": "2026-09-14"}
     )
+    assert "error" in search_flights.invoke(
+        {
+            "origin": "SFO",
+            "destination": "NRT",
+            "depart_date": "2026-09-20",
+            "return_date": "2026-09-12",
+        }
+    )
 
 
-def test_date_offset():
-    assert date_offset.invoke({"start_date": "2026-09-12", "days": 3}) == "2026-09-15"
-    assert date_offset.invoke({"start_date": "2026-09-12", "days": -1}) == "2026-09-11"
+def test_unknown_provider_is_reported_as_a_tool_error(monkeypatch):
+    """Provider construction failures must not escape the tool as exceptions."""
+    monkeypatch.setenv("TRAVEL_AGENT_PROVIDER", "typo-provider")
+
+    result = search_flights.invoke(
+        {"origin": "SFO", "destination": "NRT", "depart_date": "2026-09-12"}
+    )
+    assert "error" in result
+    assert "Registered providers" in result["error"]
+
+
+def test_missing_duffel_token_is_reported_as_a_tool_error(monkeypatch):
+    monkeypatch.setenv("TRAVEL_AGENT_PROVIDER", "duffel")
+
+    result = search_flights.invoke(
+        {"origin": "SFO", "destination": "NRT", "depart_date": "2026-09-12"}
+    )
+    assert "error" in result
+    assert "DUFFEL_API_TOKEN" in result["error"]
+
+
+def test_date_offset_separates_dates_from_errors():
+    assert date_offset.invoke({"start_date": "2026-09-12", "days": 3}) == {"date": "2026-09-15"}
+    assert date_offset.invoke({"start_date": "2026-09-12", "days": -1}) == {"date": "2026-09-11"}
+
+    # An error must not come back through the same channel as a date, or it
+    # ends up pasted into the itinerary as a day header.
+    bad = date_offset.invoke({"start_date": "12/09/2026", "days": 3})
+    assert "date" not in bad
+    assert "error" in bad

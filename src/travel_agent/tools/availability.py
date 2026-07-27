@@ -1,19 +1,21 @@
-"""Flight and lodging search.
+"""Flight and lodging search, across pluggable providers.
 
-There is no live booking API wired up. Rather than pretend otherwise, this
-module defines a provider seam and ships one implementation — `SampleProvider`
-— that returns deterministic, clearly-labelled synthetic offers.
+Two providers are registered: `sample-data` (synthetic offers, the default)
+and `duffel` (live flight search; lodging still falls through to sample data).
+Select one with `TRAVEL_AGENT_PROVIDER`.
 
-Every offer carries `source`. `SampleProvider` sets it to `"sample-data"`, and
-the system prompts instruct the agent to surface that label to the traveler.
-This keeps the agent's planning behaviour exercisable end-to-end without ever
-presenting a fabricated price as a real one.
+The safety property this module exists to hold: **the traveler must never be
+shown synthetic inventory described as real**. It is enforced in three places
+that have to stay in agreement:
 
-To go live, implement `AvailabilityProvider` against Amadeus, Duffel,
-Skyscanner, or similar, register it in `_PROVIDERS`, and set
-`TRAVEL_AGENT_PROVIDER` to its key. A real provider should set `source` to its
-own name so the "sample data" caveat drops out of the agent's replies
-automatically.
+1. Every offer carries `synthetic: bool` alongside its `source`.
+2. Providers declare `synthetic_note(kind)` so a search returning *no* offers
+   still says whether it was querying real inventory. Keying off the offers
+   alone would silently drop the caveat on an empty result set.
+3. `_wrap` attaches the resulting `warning`, and the tool docstrings tell the
+   model to key off `warning`/`synthetic` — never the provider name, which
+   says nothing about whether a given offer is real. Duffel in test mode and
+   Duffel lodging are both synthetic under a provider named `duffel`.
 """
 
 from __future__ import annotations
@@ -22,16 +24,22 @@ import hashlib
 import os
 from collections.abc import Callable
 from datetime import date, timedelta
-from typing import Protocol
+from functools import cache
+from typing import Literal, Protocol
 
 from langchain_core.tools import tool
 
 SAMPLE_SOURCE = "sample-data"
+SearchKind = Literal["flights", "stays"]
 
-_SAMPLE_DISCLAIMER = (
+SAMPLE_DISCLAIMER = (
     "These are synthetic sample offers, not live availability. Prices, times, "
     "and seat/room counts are illustrative only and nothing here is bookable. "
     "Tell the traveler this explicitly when you use these figures."
+)
+_GENERIC_SYNTHETIC_WARNING = (
+    "Some of these offers are synthetic and do not reflect real availability "
+    "or real prices. Say so explicitly when you use them."
 )
 
 
@@ -39,6 +47,14 @@ class AvailabilityProvider(Protocol):
     """Source of flight and lodging offers."""
 
     name: str
+
+    def synthetic_note(self, kind: SearchKind) -> str | None:
+        """Disclaimer for this kind of search, or None if it returns real inventory.
+
+        Consulted even when a search returns nothing, so an empty result set
+        is never mistaken for "we checked real inventory and found none".
+        """
+        ...
 
     def search_flights(
         self,
@@ -97,6 +113,9 @@ class SampleProvider:
         ("Budget hostel, private room", "hostel", 7.8),
     )
 
+    def synthetic_note(self, kind: SearchKind) -> str | None:
+        return SAMPLE_DISCLAIMER
+
     def search_flights(
         self,
         origin: str,
@@ -120,12 +139,15 @@ class SampleProvider:
             stops = index % 3 if index else 0
             # Nonstop carries a premium; each stop discounts the fare.
             fare = round((base_fare * (1.28 if stops == 0 else 1.0 - 0.09 * stops)) + index * 23, 2)
+            # Includes notional layover time, so it is comparable with the
+            # slice-level duration Duffel reports.
             duration_minutes = 240 + (seed % 300) + stops * 95 + index * 15
             depart_hour = 6 + ((seed // (index + 1)) % 15)
 
             offers.append(
                 {
                     "source": SAMPLE_SOURCE,
+                    "synthetic": True,
                     "carrier": carrier,
                     "origin": origin.upper(),
                     "destination": destination.upper(),
@@ -170,6 +192,7 @@ class SampleProvider:
             offers.append(
                 {
                     "source": SAMPLE_SOURCE,
+                    "synthetic": True,
                     "name": f"{label} ({location.title()})",
                     "kind": kind,
                     "location": location,
@@ -202,9 +225,15 @@ _PROVIDERS: dict[str, Callable[[], AvailabilityProvider]] = {
 }
 
 
-def get_provider() -> AvailabilityProvider:
-    """Return the configured provider, defaulting to sample data."""
-    key = os.getenv("TRAVEL_AGENT_PROVIDER", SAMPLE_SOURCE)
+@cache
+def _build_provider(key: str) -> AvailabilityProvider:
+    """Construct a provider once per process.
+
+    Cached so provider setup — and its side effects, like the live-token
+    warning — happens once rather than on every tool call. Failed
+    construction is not cached, so a fixed token takes effect immediately.
+    Tests clear this via the autouse fixture in conftest.py.
+    """
     try:
         factory = _PROVIDERS[key]
     except KeyError:
@@ -215,22 +244,29 @@ def get_provider() -> AvailabilityProvider:
     return factory()
 
 
-def _wrap(offers: list[dict], provider: AvailabilityProvider) -> dict:
+def get_provider() -> AvailabilityProvider:
+    """Return the configured provider, defaulting to sample data."""
+    return _build_provider(os.getenv("TRAVEL_AGENT_PROVIDER", SAMPLE_SOURCE))
+
+
+def _wrap(offers: list[dict], provider: AvailabilityProvider, kind: SearchKind) -> dict:
     """Package offers for the model, warning whenever any are synthetic.
 
-    The warning keys off each offer's own `source`, not the provider name: a
-    live provider can still fall back to sample data for part of its surface
-    (Duffel covers flights but not stays), and those offers must stay labelled.
+    The provider's own note is authoritative and applies even to an empty
+    result list; the per-offer `synthetic` flags are a backstop for providers
+    that mix real and synthetic results in one response.
     """
-    sources = sorted({str(offer.get("source", "unknown")) for offer in offers})
+    note = provider.synthetic_note(kind)
     payload: dict = {
         "provider": provider.name,
-        "sources": sources,
+        "sources": sorted({str(offer.get("source", "unknown")) for offer in offers}),
         "count": len(offers),
         "offers": offers,
     }
-    if SAMPLE_SOURCE in sources:
-        payload["warning"] = _SAMPLE_DISCLAIMER
+    if note:
+        payload["warning"] = note
+    elif any(offer.get("synthetic") for offer in offers):
+        payload["warning"] = _GENERIC_SYNTHETIC_WARNING
     return payload
 
 
@@ -244,9 +280,17 @@ def search_flights(
 ) -> dict:
     """Search flight options between two airports.
 
-    Returns offers sorted cheapest first. Check the `provider` field on the
-    response: when it is `sample-data`, the offers are illustrative only and
-    must be described that way to the traveler.
+    Returns offers sorted cheapest first.
+
+    Check the response for a `warning` key, and each offer for `synthetic:
+    true`. Either means those offers are not real availability: describe them
+    to the traveler as illustrative planning figures, never as real prices or
+    something bookable. Do not judge this by the `provider` name — a live
+    provider can return synthetic offers, and a search returning no offers at
+    all still carries the warning.
+
+    Offers from real inventory carry `expires_at` and `expires_in_seconds`.
+    Search again rather than quoting one that has expired.
 
     Args:
         origin: Origin airport IATA code, e.g. "SFO".
@@ -257,12 +301,17 @@ def search_flights(
     """
     if travelers < 1:
         return {"error": "travelers must be at least 1."}
-    provider = get_provider()
     try:
+        # Validated here rather than per provider, so the tool behaves the
+        # same way whichever provider is configured.
+        depart = _parse_date(depart_date, "depart_date")
+        if return_date is not None and _parse_date(return_date, "return_date") < depart:
+            return {"error": "return_date cannot fall before depart_date."}
+        provider = get_provider()
         offers = provider.search_flights(origin, destination, depart_date, return_date, travelers)
     except ValueError as exc:
         return {"error": str(exc)}
-    return _wrap(offers, provider)
+    return _wrap(offers, provider, "flights")
 
 
 @tool
@@ -275,9 +324,13 @@ def search_stays(
 ) -> dict:
     """Search places to stay in a location for a date range.
 
-    Returns offers sorted by total cost. Check the `provider` field on the
-    response: when it is `sample-data`, the offers are illustrative only and
-    must be described that way to the traveler.
+    Returns offers sorted by total cost.
+
+    Check the response for a `warning` key, and each offer for `synthetic:
+    true`. Either means those offers are not real availability: describe them
+    to the traveler as illustrative planning figures, never as real prices or
+    something bookable. Do not judge this by the `provider` name — lodging is
+    synthetic even when the provider is a live flight source.
 
     Args:
         location: City or neighbourhood to search, e.g. "Kyoto" or "Shibuya".
@@ -288,23 +341,30 @@ def search_stays(
     """
     if guests < 1:
         return {"error": "guests must be at least 1."}
-    provider = get_provider()
     try:
+        if _parse_date(check_out, "check_out") <= _parse_date(check_in, "check_in"):
+            return {"error": "check_out must be at least one day after check_in."}
+        provider = get_provider()
         offers = provider.search_stays(location, check_in, check_out, guests, max_nightly_rate)
     except ValueError as exc:
         return {"error": str(exc)}
-    return _wrap(offers, provider)
+    return _wrap(offers, provider, "stays")
 
 
 @tool
-def date_offset(start_date: str, days: int) -> str:
+def date_offset(start_date: str, days: int) -> dict:
     """Shift an ISO date by a number of days, for building day-by-day plans.
+
+    Returns `{"date": "YYYY-MM-DD"}`, or `{"error": ...}` if the input was not
+    an ISO date. Never write the error text into an itinerary as if it were a
+    date.
 
     Args:
         start_date: The reference date as YYYY-MM-DD.
         days: Days to add; negative values move backwards.
     """
     try:
-        return (_parse_date(start_date, "start_date") + timedelta(days=days)).isoformat()
+        shifted = _parse_date(start_date, "start_date") + timedelta(days=days)
     except ValueError as exc:
-        return str(exc)
+        return {"error": str(exc)}
+    return {"date": shifted.isoformat()}
