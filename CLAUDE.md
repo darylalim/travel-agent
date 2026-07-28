@@ -15,7 +15,16 @@ uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 uv run pytest                            # 47 tests, ~0.04s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
+
+bash .claude/hooks/test-hooks.sh         # 77 cases pinning the Claude Code hooks
 ```
+
+The hooks in `.claude/` enforce parts of this file mechanically: the data-honesty
+co-change rule, Duffel's read-only constraint, `_PROVIDER_ENV` coverage, and the
+`.env` credentials. They are shell regexes whose character classes and verb lists
+are load-bearing — an adversarial review of the first draft found thirteen real
+defects, one of which deleted imports Claude had just written. `test-hooks.sh`
+pins every fix, so run it after touching a hook.
 
 When working with Python, invoke the relevant `/astral:<skill>` (from the
 `astral-sh/astral` plugin) for `uv`, `ty`, and `ruff` to ensure best practices
