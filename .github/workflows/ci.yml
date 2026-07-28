@@ -1,0 +1,165 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A second push to the same branch makes the in-flight run obsolete.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint, types, version pins
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          # 3.11 is the pinned target for ruff, ty, and langgraph.json alike.
+          python-version: "3.11"
+
+      # --locked fails if uv.lock has drifted from pyproject.toml, so a
+      # dependency change that never made it into the lockfile is caught here
+      # rather than as a mystery resolution difference later.
+      - run: uv sync --locked
+
+      - name: ruff check
+        run: uv run --no-sync ruff check .
+
+      # --check only. `ruff check --fix` is deliberately never run in this
+      # project: there is no [tool.ruff.lint] select, so the default set
+      # includes F401, whose "safe" fix deletes unused imports. See
+      # .claude/hooks/python-gate.sh for the incident that established this.
+      - name: ruff format --check
+        run: uv run --no-sync ruff format --check .
+
+      - name: ty check
+        run: uv run --no-sync ty check
+
+      # CLAUDE.md: three places pin 3.11 and have to stay in agreement.
+      # Nothing else enforces it, and disagreement fails at deploy time.
+      - name: Python version pins agree
+        run: |
+          uv run --no-sync python - <<'PY'
+          import json, pathlib, sys, tomllib
+
+          pyproject = tomllib.loads(pathlib.Path("pyproject.toml").read_text())
+          ruff_target = pyproject["tool"]["ruff"]["target-version"]  # "py311"
+
+          pins = {
+              "[tool.ruff] target-version": f"{ruff_target[2]}.{ruff_target[3:]}",
+              "[tool.ty.environment] python-version":
+                  pyproject["tool"]["ty"]["environment"]["python-version"],
+              "langgraph.json python_version":
+                  json.loads(pathlib.Path("langgraph.json").read_text())["python_version"],
+          }
+          for where, value in pins.items():
+              print(f"  {value}  <- {where}")
+          if len(set(pins.values())) > 1:
+              sys.exit("\nThese three must agree — see CLAUDE.md, 'Commands'.")
+          PY
+
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.11 is what langgraph.json deploys on; 3.12 and 3.13 back the
+        # looser requires-python = ">=3.11,<4.0" the package advertises.
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+
+      - run: uv sync --locked
+
+      # No network, no model calls, no API token: conftest.py's autouse
+      # fixture unsets the provider env vars around every test.
+      - name: pytest
+        run: uv run --no-sync pytest -q
+
+  graph:
+    name: Graph builds at import
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.11"
+
+      - run: uv sync --locked
+
+      # agent.py builds the agent as an import side effect, because
+      # langgraph.json needs a module-level `graph`. That constructs a model
+      # client and the full tool stack, so a bad tool signature or a stale
+      # deepagents argument breaks `langgraph dev` at startup — and the test
+      # suite never touches this path, by design.
+      #
+      # Deliberately run with no ANTHROPIC_API_KEY and no TAVILY_API_KEY: the
+      # graph must build without credentials (only the search tool is
+      # conditional), and this job must never be able to reach a paid API.
+      - name: Import every graph langgraph.json declares
+        run: |
+          uv run --no-sync python - <<'PY'
+          import importlib.util, json, pathlib
+
+          config = json.loads(pathlib.Path("langgraph.json").read_text())
+          for name, target in config["graphs"].items():
+              file, _, attribute = target.rpartition(":")
+              spec = importlib.util.spec_from_file_location(f"_langgraph_{name}", file)
+              module = importlib.util.module_from_spec(spec)
+              spec.loader.exec_module(module)
+              graph = getattr(module, attribute)
+              print(f"  {name}: {target} -> {type(graph).__name__}")
+          PY
+
+  hooks:
+    name: Claude Code hooks (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # The hooks are shell regexes whose character classes are load-bearing.
+        # Contributors exercise them on macOS; ubuntu adds the GNU grep/sed
+        # side, where a BSD-only assumption would otherwise go unnoticed.
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.11"
+
+      # python-gate.sh runs `uv run ruff/ty/pytest` over the whole project, and
+      # exits 0 silently when uv is absent — which would turn its "deny" cases
+      # into false passes. So the environment has to be real and synced.
+      - run: uv sync --locked
+
+      - name: test-hooks.sh
+        run: |
+          # Every assertion parses hook JSON with jq. Without it all 77 cases
+          # fail at once, which reads as a hook regression rather than a
+          # missing tool. Both runner images ship jq; say so plainly if not.
+          command -v jq >/dev/null || { echo "::error::jq is required by the hook tests"; exit 1; }
+          bash .claude/hooks/test-hooks.sh

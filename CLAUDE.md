@@ -26,6 +26,14 @@ are load-bearing — an adversarial review of the first draft found thirteen rea
 defects, one of which deleted imports Claude had just written. `test-hooks.sh`
 pins every fix, so run it after touching a hook.
 
+`.github/workflows/ci.yml` runs the same commands on push and PR, plus two
+checks with no local equivalent: it asserts the three-way 3.11 pin below, and
+it imports the module-level `graph` — a path `pytest` deliberately never takes,
+so an import-time break in `agent.py` surfaces there instead of in `langgraph
+dev`. CI syncs with `uv sync --locked`, so editing a dependency without
+re-locking fails it. Tests run on 3.11/3.12/3.13 and the hook suite on Linux
+and macOS; lint and types run on 3.11 alone, which is what both tools target.
+
 When working with Python, invoke the relevant `/astral:<skill>` (from the
 `astral-sh/astral` plugin) for `uv`, `ty`, and `ruff` to ensure best practices
 are followed.

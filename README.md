@@ -1,5 +1,7 @@
 # travel-agent
 
+[![CI](https://github.com/darylalim/travel-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/darylalim/travel-agent/actions/workflows/ci.yml)
+
 Travel agent built on Deep Agents.
 
 Researches destinations, gathers flight and lodging options, builds a
