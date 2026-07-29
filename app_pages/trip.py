@@ -20,6 +20,12 @@ from travel_agent.ui import ITINERARY_PATH, WORKSPACE_FILES, offers, search_labe
 # Only these three have currency presets; anything else needs a printf format.
 _CURRENCY_PRESETS = {"USD": "dollar", "EUR": "euro", "JPY": "yen"}
 
+# One reserved slot for `_pick_search`'s bookkeeping. Session state is a single
+# flat namespace shared with widget keys, so per-selector scratch keys derived
+# from the widget's own name (`flights_search_count`) sit one plausible widget
+# away from a silent collision.
+_SEARCH_STAMPS = "_search_stamps"
+
 record = st.session_state.record
 budget = record.latest("summarize_budget")
 flight_searches = record.payloads.get("search_flights", [])
@@ -81,13 +87,19 @@ def _pick_search(searches: list[dict[str, Any]], key: str) -> dict[str, Any] | N
     newest = len(searches) - 1
     # `default=` seeds only the first render, so a third search would leave the
     # control parked on the second while the caption claimed otherwise. Writing
-    # the widget's session state before it renders re-points it whenever the
-    # count changes, and leaves a deliberate choice alone in between. Passing
-    # `default=` as well is what logs "created with a default value but also
-    # had its value set via the Session State API".
-    counted = f"{key}_count"
-    if st.session_state.get(counted) != len(searches):
-        st.session_state[counted] = len(searches)
+    # the widget's session state before it renders re-points it, and leaves a
+    # deliberate choice alone in between. Passing `default=` as well is what
+    # logs "created with a default value but also had its value set via the
+    # Session State API".
+    #
+    # The stamp carries the thread id because widget state outlives a trip:
+    # "Start a new trip" swaps the record and the thread but not the selection,
+    # and the new trip's second search would match the old trip's count — so a
+    # count alone silently re-parks the control on the stale index.
+    stamps = st.session_state.setdefault(_SEARCH_STAMPS, {})
+    stamp = (st.session_state.get("thread_id"), len(searches))
+    if stamps.get(key) != stamp:
+        stamps[key] = stamp
         st.session_state[key] = newest
 
     chosen = st.segmented_control(
@@ -95,6 +107,11 @@ def _pick_search(searches: list[dict[str, Any]], key: str) -> dict[str, Any] | N
         options=list(range(len(searches))),
         format_func=lambda index: search_label(searches[index]),
         key=key,
+        # Without this the traveler can clear the selection by clicking the
+        # selected segment, leaving the control blank while the table below
+        # still shows a search — and the stamp above, unchanged, never
+        # re-points it. There is no meaningful "no search selected" state.
+        required=True,
         label_visibility="collapsed",
         # Survives a trip to the Plan page and back; widget values otherwise
         # reset on every page switch.
