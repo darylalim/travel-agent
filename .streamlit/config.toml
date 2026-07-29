@@ -1,0 +1,82 @@
+# Theme for the Streamlit UI (`uv run streamlit run streamlit_app.py`).
+#
+# All appearance lives here rather than in CSS injected from Python: internal
+# class names are unstable across Streamlit releases, and injected styles
+# fight the theme rather than extending it.
+#
+# Both [theme.light] and [theme.dark] are defined on purpose — the appearance
+# toggle only appears to the user when both exist. A lone [theme] section
+# would pin the app to one mode.
+#
+# The ten keys below are valid ONLY at the top level; Streamlit silently
+# ignores them inside [theme.light] / [theme.dark] / [theme.sidebar].
+
+[theme]
+baseFontSize = 14
+baseFontWeight = 400
+showSidebarBorder = true
+metricValueFontSize = "30px"
+metricValueFontWeight = 600
+# Mid-tone hues, chosen to stay legible against both backgrounds below.
+chartCategoricalColors = [
+    "#14B8A6",
+    "#F59E0B",
+    "#6366F1",
+    "#F43F5E",
+    "#0EA5E9",
+    "#84CC16",
+    "#A78BFA",
+]
+
+baseRadius = "8px"
+buttonRadius = "8px"
+linkUnderline = false
+headingFontSizes = ["32px", "25px", "21px", "17px", "15px", "13px"]
+headingFontWeights = [600, 600, 600, 600, 600, 600]
+# Falls back to a system font when offline; no restart needed either way.
+font = "'Inter':https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+codeFont = "'JetBrains Mono':https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
+codeFontSize = "0.85rem"
+
+# Warm paper and deep teal: calm and editorial, so the itinerary reads like a
+# document rather than a control panel.
+[theme.light]
+primaryColor = "#0F766E"
+backgroundColor = "#FDFCFA"
+secondaryBackgroundColor = "#F4F1EB"
+codeBackgroundColor = "#F0EDE6"
+textColor = "#1C1917"
+linkColor = "#0F766E"
+borderColor = "#E5E0D6"
+showWidgetBorder = true
+dataframeBorderColor = "#E5E0D6"
+dataframeHeaderBackgroundColor = "#F4F1EB"
+# Amber carries the synthetic-fare notice: visible, not alarming.
+orangeColor = "#B45309"
+
+[theme.light.sidebar]
+backgroundColor = "#F7F4EE"
+secondaryBackgroundColor = "#EFEBE2"
+borderColor = "#E5E0D6"
+textColor = "#1C1917"
+primaryColor = "#0F766E"
+
+[theme.dark]
+primaryColor = "#2DD4BF"
+backgroundColor = "#17161A"
+secondaryBackgroundColor = "#211F25"
+codeBackgroundColor = "#26242B"
+textColor = "#EDE9E3"
+linkColor = "#2DD4BF"
+borderColor = "#34313A"
+showWidgetBorder = true
+dataframeBorderColor = "#34313A"
+dataframeHeaderBackgroundColor = "#211F25"
+orangeColor = "#FBBF24"
+
+[theme.dark.sidebar]
+backgroundColor = "#1C1B20"
+secondaryBackgroundColor = "#26242B"
+borderColor = "#34313A"
+textColor = "#EDE9E3"
+primaryColor = "#2DD4BF"

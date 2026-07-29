@@ -23,12 +23,49 @@ web.
 
 ```bash
 uv run langgraph dev          # LangGraph Studio at :2024 — the main way to run it
+uv run streamlit run streamlit_app.py          # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto in September, 2 people, $4000"
 ```
 
 `langgraph dev` is the recommended path: the server supplies the checkpointer
 and store, so traveler memory persists across runs and you get a visual trace
 of every subagent call. The CLI keeps state in-process only.
+
+The Streamlit UI sits between the two. It wires persistence in-process like
+the CLI, but holds the agent in `st.cache_resource`, which is scoped to the
+server process rather than the session — so the traveler profile under
+`/memories/` survives a page reload and a second browser tab, and only dies
+when you restart the server.
+
+### The browser UI
+
+Two pages, wired with `st.navigation`:
+
+- **Plan** — chat with the agent. Its prose streams token by token; tool calls
+  appear as a collapsed activity trail beside it, so you can watch it delegate
+  to `availability-scout` without the subagent's own chatter filling the
+  transcript.
+- **Trip** — the same trip as figures: budget KPIs against the ceiling, cost
+  by category, flight and lodging comparison tables, and the itinerary. Each
+  table names the query behind it, and when the scout tried several — nearby
+  airports, dates shifted a day — you get a control to switch between them.
+  They are deliberately not merged into one table: those are different
+  questions, and a combined list sorted by price would rank a cheaper flight
+  on other dates above a dearer one on the dates you actually asked for.
+
+The Trip page reads the **structured tool payloads**, not the markdown the
+agent wrote, so `synthetic` and `warning` reach the screen as data. Every
+synthetic result is labelled in the table and repeated as a standing notice at
+the top of the page — a caveat that only existed in chat scrollback would be
+too easy to scroll past.
+
+Getting those payloads takes some care. deepagents folds a subagent's state
+back into the parent *without* its `messages`, substituting a single
+`ToolMessage` holding only the subagent's closing prose. Since `search_flights`
+and `search_stays` are bound only to `availability-scout`, reading message
+history after a run finds no search results at all. The UI therefore captures
+them mid-stream, with `subgraphs=True` so nested messages are emitted in the
+first place. `tests/test_ui.py` pins the behaviour.
 
 ## How it works
 
@@ -43,6 +80,8 @@ delegation (`task`) out of the box. This project adds:
 | Flights & lodging | `tools/availability.py`, `tools/duffel.py` | Provider seam — see below |
 | Budget math | `tools/budget.py` | Pure arithmetic, so the model never adds up a column itself |
 | Graph | `agent.py` | Wires the above together; exports `graph` for `langgraph.json` |
+| Browser UI | `streamlit_app.py`, `app_pages/` | Two-page Streamlit app; theme in `.streamlit/config.toml` |
+| UI runtime | `ui.py` | Cached agent, turn streaming, and the state readback the pages use |
 
 ### Storage
 
@@ -134,5 +173,5 @@ uv run ruff format .
 ## Stack
 
 `deepagents` 0.6.12 · `langchain` 1.3+ · `langgraph` 1.2+ ·
-`claude-opus-5` via `langchain-anthropic` · Duffel API `v2` over `httpx`.
-Requires Python 3.11+.
+`claude-opus-5` via `langchain-anthropic` · Duffel API `v2` over `httpx` ·
+`streamlit` 1.60+ for the browser UI. Requires Python 3.11+.
