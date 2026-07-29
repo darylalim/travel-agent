@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
-uv run pytest                            # 60 tests, ~0.5s, no network, no model calls
+uv run pytest                            # 69 tests, ~2s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -192,10 +192,36 @@ Other things that bite here:
   the same class of misrepresentation the data-honesty invariant exists to
   prevent. `_pick_search` names each query instead; don't "simplify" it into a
   concatenation.
+- `default=` seeds a keyed widget's **first render only**. `_pick_search` wants
+  a *moving* default — each new search — so it writes `st.session_state[key]`
+  before the widget renders instead. Passing both logs "created with a default
+  value but also had its value set via the Session State API". Nothing errors
+  when this is wrong; the control just quietly stops tracking.
+- Widget state outlives a trip. "Start a new trip" swaps the record and the
+  thread id, but a widget using `persist_state="session"` keeps its value, so
+  anything gating on trip identity must say so — `_pick_search` stamps
+  `(thread_id, len(searches))`, because the count alone collides across trips.
+  Scratch keys go in the one reserved `_search_stamps` dict: session state is a
+  single flat namespace shared with widget keys.
+- `st.segmented_control` defaults to `required=False`, so a single-select
+  control can be cleared by clicking the selected option. Where there is no
+  meaningful empty state — one of N searches is always on screen — pass
+  `required=True`.
+- Streamlit's stop button and a mid-stream page switch raise `StopException` /
+  `RerunException`, which subclass **`BaseException`, not `Exception`**. So
+  `except Exception` cannot see them (and must not catch them — that breaks the
+  stop button); anything that has to survive an interrupted turn goes in a
+  `finally`.
 - The pages directory must be `app_pages/`. A directory named `pages/` triggers
   Streamlit's legacy auto-discovery alongside `st.navigation`.
 - `st.set_page_config` is called once, first, in the entry point. A second call
   in a page silently overrides it.
+
+An assistant bubble is rebuilt from `st.session_state.messages` on every rerun,
+so whatever the live run rendered has to be reconstructable from the stored
+entry — including the status element's label and state. Deriving them from
+`len(activity)` replays a failed turn as a green "N steps", and the message
+visibly rearranges itself on the next interaction.
 
 ## Tests
 
@@ -204,6 +230,15 @@ request construction; `map_offer` is pure and tested against a payload shaped to
 Duffel's documented schema. `test_ui.py` runs no Streamlit server — it drives
 the plain data structures the stream routes into, which is where the UI's
 decisions actually live.
+
+`test_pages.py` runs the page scripts themselves through
+`streamlit.testing.v1.AppTest`, a headless script runner — still no server, no
+browser, and `stream_turn` is patched out so no agent is built. It exists for
+the hazards listed under "Streamlit UI" above, which live in Streamlit's own
+widget and control-flow semantics rather than in this project's data, and which
+all fail silently: the page renders, nothing raises, and the traveler is shown
+the wrong search or loses a turn from the transcript. Reach for `AppTest` when
+a bug is only observable across two reruns.
 
 `tests/conftest.py` has an **autouse** fixture that unsets provider env vars and
 clears the `_build_provider` cache around every test. Without it the suite picks
