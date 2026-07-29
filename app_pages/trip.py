@@ -62,7 +62,7 @@ def _truncation_note(payload: dict[str, Any] | None) -> None:
 
 
 def _pick_search(searches: list[dict[str, Any]], key: str) -> dict[str, Any] | None:
-    """Choose which of several searches to show, newest by default.
+    """Choose which of several searches to show, jumping to each new one.
 
     Deliberately not merged. `availability-scout` varies its searches, so the
     union of two result sets is not one comparable list — sorting it by price
@@ -79,11 +79,21 @@ def _pick_search(searches: list[dict[str, Any]], key: str) -> dict[str, Any] | N
         return searches[0]
 
     newest = len(searches) - 1
+    # `default=` seeds only the first render, so a third search would leave the
+    # control parked on the second while the caption claimed otherwise. Writing
+    # the widget's session state before it renders re-points it whenever the
+    # count changes, and leaves a deliberate choice alone in between. Passing
+    # `default=` as well is what logs "created with a default value but also
+    # had its value set via the Session State API".
+    counted = f"{key}_count"
+    if st.session_state.get(counted) != len(searches):
+        st.session_state[counted] = len(searches)
+        st.session_state[key] = newest
+
     chosen = st.segmented_control(
         "Which search",
         options=list(range(len(searches))),
         format_func=lambda index: search_label(searches[index]),
-        default=newest,
         key=key,
         label_visibility="collapsed",
         # Survives a trip to the Plan page and back; widget values otherwise
