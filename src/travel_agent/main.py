@@ -63,8 +63,13 @@ def main(argv: list[str] | None = None) -> int:
             config=config,
             stream_mode="messages",
         ):
+            # `.text` is a `TextAccessor`, which subclasses `str` *and* stays
+            # callable for backwards compatibility — so `callable(text)` is
+            # always True and calling it takes the accessor deprecated in
+            # langchain-core 1.0 and removed in 2.0. The value is already the
+            # string, and it holds text blocks only, so thinking never prints.
             if text := getattr(chunk, "text", None):
-                print(text() if callable(text) else text, end="", flush=True)
+                print(text, end="", flush=True)
         print("\n")
 
 
