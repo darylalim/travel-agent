@@ -1,15 +1,16 @@
 """Plan page: converse with the travel agent.
 
 Element order inside an assistant bubble is fixed — activity, then any data
-caveat, then the prose — and the replay loop below reproduces it exactly. If
-the live run and the replay disagree, the message visibly rearranges itself
-on the next interaction.
+caveat, then the prose, then any failure notice — and the replay loop below
+reproduces it exactly. If the live run and the replay disagree, the message
+visibly rearranges itself on the next interaction.
 
 The title lives in `streamlit_app.py`; pages do not set their own.
 """
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import Any
 
 import streamlit as st
@@ -43,6 +44,8 @@ for entry in st.session_state.messages:
             for caveat in entry.get("caveats", []):
                 st.warning(caveat, icon=":material/warning:")
         st.markdown(entry["content"])
+        if entry.get("error"):
+            st.error(entry["error"], icon=":material/error:")
 
 # Suggestions stand in for a first prompt and disappear once the chat starts.
 suggested = None
@@ -85,21 +88,35 @@ if prompt:
             slots[call_id].write(label)
             labels[call_id] = label
 
+        streamed: list[str] = []
+
+        def tee(chunks: Iterator[str]) -> Iterator[str]:
+            """Keep a copy of the prose as it streams.
+
+            `st.write_stream` returns the joined text only when it completes.
+            If the run raises it has already painted whatever arrived first,
+            and that text would be lost — so the replayed bubble would show
+            less than the live one did. Collecting here keeps the two equal.
+            """
+            for chunk in chunks:
+                streamed.append(chunk)
+                yield chunk
+
         failure: str | None = None
         try:
             # Only `str` is ever yielded, so this returns a plain string.
-            reply = st.write_stream(stream_turn(thread_id, prompt, record, on_activity))
+            reply = st.write_stream(tee(stream_turn(thread_id, prompt, record, on_activity)))
         except Exception as exc:  # noqa: BLE001 - surfaced to the traveler, not swallowed
             # Deliberately not BaseException: Streamlit's stop/rerun control
             # flow subclasses it, and catching that would break the stop button.
-            reply = ""
-            failure = str(exc)
+            reply = "".join(streamed)
+            failure = f"The agent stopped: {exc}"
             status.update(label="Could not finish", state="error")
         else:
             status.update(label=f"{len(labels)} steps", state="complete")
 
         if failure is not None:
-            st.error(f"The agent stopped: {failure}", icon=":material/error:")
+            st.error(failure, icon=":material/error:")
 
         # Caveats are shown once, when first raised; the Trip page keeps the
         # standing list so a warning is never only visible in scrollback.
@@ -108,14 +125,25 @@ if prompt:
         for caveat in fresh:
             caveat_box.warning(caveat, icon=":material/warning:")
 
+    if reply:
+        content = reply
+    elif failure is not None:
+        content = "_The agent stopped before writing anything._"
+    else:
+        content = "_The agent returned no text for that turn._"
+
     # No further write of `reply` — st.write_stream already replaced its own
     # placeholder with the finished markdown, so rendering again duplicates it.
-    if reply or failure is None:
-        st.session_state.messages.append(
-            {
-                "role": "assistant",
-                "content": reply or "_The agent returned no text for that turn._",
-                "activity": list(labels.values()),
-                "caveats": fresh,
-            }
-        )
+    #
+    # A failed turn is appended too. The traveler's message went into history
+    # before the run started, so skipping this would replay a question with no
+    # answer beneath it, and the error above is drawn only for this run.
+    st.session_state.messages.append(
+        {
+            "role": "assistant",
+            "content": content,
+            "activity": list(labels.values()),
+            "caveats": fresh,
+            "error": failure,
+        }
+    )
