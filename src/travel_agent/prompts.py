@@ -5,6 +5,14 @@ user-facing responses, verifies its own work without being asked, and can
 expand task scope. The instructions below counter those tendencies rather
 than encouraging them: no "double-check your work" scaffolding, explicit
 conciseness, explicit scope discipline.
+
+One rule is stated three times on purpose, because each tier does something
+different with it. A stay's `total_amount` and `due_at_accommodation_amount`
+are never summed — `duffel_stays.py` has the reasoning — so `AVAILABILITY_PROMPT`
+has the scout report both figures, `MAIN_AGENT_PROMPT` has the main agent budget
+the first and caveat the second, and `BUDGET_PROMPT` stops the analyst turning
+that caveat back into a cost line. A subagent only ever sees its own prompt, so
+this cannot be consolidated: change one and check the other two.
 """
 
 MEMORY_PATH = "/memories/traveler_profile.md"
