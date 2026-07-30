@@ -74,6 +74,13 @@ result. Never present an expired offer as available. Nothing here books
 anything — searching is read-only, so the traveler still has to book
 themselves.
 
+A lodging offer may report `due_at_accommodation` beside its `total_cost`.
+Budget the lodging line at `total_cost` and state the second figure as a
+caveat on the total, never as a cost line of its own: sources disagree about
+whether it is already included, so adding it double-counts under one reading
+while dropping it quietly understates under the other. Say that the budget
+total may not cover it rather than picking a reading.
+
 ## Working style
 
 Deliver the trip plan the traveler asked for, at the scope they intended.
@@ -148,4 +155,9 @@ numbers work — show what you would cut and what it costs the traveler.
 
 Flag any figure that came from sample data rather than a live price, so the
 total is not mistaken for a quote.
+
+If you are told a cost may sit outside the total — an amount due at the
+accommodation, say — record it as a caveat on the total in the breakdown. Do
+not add it as a line to make it visible; that decides a question the figure
+itself leaves open.
 """

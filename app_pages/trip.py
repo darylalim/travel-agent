@@ -534,6 +534,7 @@ if stay_offers:
             "nightly_rate",
             "nights",
             "total_cost",
+            "due_at_accommodation",
             "guest_rating",
             "free_cancellation",
             "provenance",
@@ -544,6 +545,24 @@ if stay_offers:
             "nightly_rate": st.column_config.NumberColumn("Per night", format=rate_format),
             "nights": st.column_config.NumberColumn("Nights", format="%d", width="small"),
             "total_cost": st.column_config.NumberColumn("Total", format=rate_format),
+            # Shown beside the total, never folded into it — Duffel's docs
+            # disagree about whether this amount is already inside
+            # `total_amount`, so `map_stay_result` passes both through
+            # unsummed. `column_order` is a whitelist, so omitting this key
+            # here is what silently dropped the figure: the traveler read a
+            # column headed "Total" that may exclude a charge due at the desk,
+            # on the one surface the agent cannot caveat. Sample offers never
+            # carry it and render as `placeholder` instead.
+            "due_at_accommodation": st.column_config.NumberColumn(
+                "Due at property",
+                format=rate_format,
+                help=(
+                    "Charged at the property rather than upfront. Reported "
+                    "separately because sources disagree about whether it is "
+                    "already included in the total, so the two are never added "
+                    "together."
+                ),
+            ),
             # max_value is required: a float column defaults to a 0-1 scale,
             # which would render every 0-10 rating as a full bar.
             "guest_rating": st.column_config.ProgressColumn(

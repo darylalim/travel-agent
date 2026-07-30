@@ -149,6 +149,17 @@ def _captions(app: AppTest) -> list[str]:
     return [element.value for element in app.caption]
 
 
+def _table(app: AppTest, index: int = 0) -> tuple[list[str], dict[str, Any]]:
+    """One rendered table's column order and its column config, as sent.
+
+    Both come off the proto rather than the call site, so a key present in
+    `column_config` but missing from `column_order` reads as what the traveler
+    actually sees: absent.
+    """
+    element = app.dataframe[index]
+    return list(element.proto.column_order), json.loads(element.proto.columns)
+
+
 @pytest.fixture
 def trip_page() -> AppTest:
     """The Trip page with an empty first trip."""
@@ -561,6 +572,49 @@ def test_the_stays_chart_plots_cost_against_rating(trip_page):
     # of a 0-10 scale and would otherwise collapse onto one edge.
     assert encoding["x"]["scale"]["zero"] is False
     assert encoding["y"]["scale"]["zero"] is False
+
+
+def test_the_amount_due_at_the_property_reaches_the_table(trip_page):
+    """A charge the total may exclude must not be dropped by the whitelist.
+
+    `map_stay_result` keeps `total_amount` and `due_at_accommodation_amount`
+    apart on purpose: Duffel's docs disagree about whether the second sits
+    inside the first, so summing double-counts under one reading and
+    subtracting understates under the other. That care is undone if the second
+    figure never renders — `column_order` is a whitelist that hides every key
+    it does not name, so leaving this one out shows a column headed "Total"
+    that may exclude a charge due at the desk, on the one surface the agent
+    cannot attach a caveat to.
+
+    Asserted off the proto because the failure is invisible: the page renders,
+    nothing raises, the table is simply one column narrower.
+    """
+    record = trip_page.session_state["record"]
+    record.record_tool(
+        _search(
+            "search_stays",
+            [
+                {**_stay_offer(1876.0, 8.9), "due_at_accommodation": 140.0},
+                {**_stay_offer(1498.0, 8.6, free=False), "due_at_accommodation": 90.0},
+                # A live offer always carries the key and nulls it when the
+                # rate has no such charge (`map_stay_result`); a sample offer
+                # omits it entirely. Both reach the column as its placeholder,
+                # so it has to tolerate being partly — or wholly — empty.
+                _stay_offer(1043.0, 9.1, free=None),
+            ],
+        )
+    )
+    trip_page.run()
+
+    order, columns = _table(trip_page)
+    assert "due_at_accommodation" in order
+    # Immediately after the total it qualifies; a traveler reading left to
+    # right meets the caveat while the number it qualifies is still on screen.
+    assert order.index("due_at_accommodation") == order.index("total_cost") + 1
+    assert columns["due_at_accommodation"]["label"] == "Due at property"
+    # The help text is the only place the reason survives to the traveler, so
+    # it is part of the contract rather than decoration.
+    assert "never added together" in columns["due_at_accommodation"]["help"]
 
 
 def test_a_wholly_sample_data_chart_says_so_on_the_chart(trip_page):

@@ -229,8 +229,15 @@ so nested messages are emitted in the first place — without it
 `langgraph/pregel/_messages.py` drops every message whose checkpoint namespace
 is nested. That same flag is why prose has to be filtered back out by
 namespace: root-namespace chunks are the main agent's answer, anything deeper
-is subagent chatter that belongs in the activity trail. `tests/test_ui.py` pins
-the capture, including the zero-offer case.
+is subagent chatter that belongs in the activity trail.
+
+`tests/test_ui.py` pins this against a scripted fake stream rather than only
+describing it: that `subgraphs=True` and both stream modes are requested at
+all, that a namespaced `ToolMessage` is captured while namespaced prose *and*
+subagent state emissions are not, and the zero-offer case. It also pins
+`CAPTURED_TOOLS`, whose entries are string literals two packages from the tools
+they name — `availability-scout`'s toolset is pinned whole, so a fourth search
+has to decide about capture instead of silently bypassing the honesty notice.
 
 Other things that bite here:
 
@@ -279,6 +286,13 @@ Other things that bite here:
   Streamlit's legacy auto-discovery alongside `st.navigation`.
 - `st.set_page_config` is called once, first, in the entry point. A second call
   in a page silently overrides it.
+- **`st.dataframe`'s `column_order` is a whitelist and hides what it does not
+  name.** A key configured in `column_config` but missing from the order is
+  simply absent from the table — which is how `due_at_accommodation` came to be
+  dropped from a column headed "Total" that may exclude it. Assert on
+  `element.proto.column_order`, never the call site: `column_config` alone
+  passes either way. Any field the data-honesty invariant put there needs that
+  assertion, because the failure renders perfectly and raises nothing.
 - **Don't pass `icon=` to `st.expander`.** `st.status` *is* an expandable
   carrying an icon, so that is how AppTest tells them apart — `element_tree.py`
   routes any `expandable` with an icon to `Status` and everything else to
