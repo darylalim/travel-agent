@@ -248,6 +248,64 @@ def search_label(payload: dict[str, Any] | None) -> str:
     return " · ".join(part for part in parts if part) or "Search"
 
 
+# Colour bands for the Trip page's two tradeoff scatters. They live here rather
+# than in the page because they are pure data mapping — the same reason
+# `search_label` does — and because a page script cannot be imported, so nothing
+# in `app_pages/` is unit-testable.
+#
+# Three bands each, and that is a ceiling rather than a tidy number. A scatter is
+# an "all-pairs" form: any two dots can end up side by side, so *every* pair of
+# hues has to clear colour-blind separation, not just the pairs a legend places
+# next to each other. That gate is strictly harder than adjacent-only, and three
+# slots of the theme palette are what clear it. A fourth band is not a fourth
+# colour away — no ordering of the palette separates four.
+STOP_BANDS = ("Nonstop", "One stop", "Two or more stops")
+CANCEL_BANDS = ("Free cancellation", "No free cancellation", "Not stated")
+
+
+def stop_band(stops: Any) -> str | None:
+    """Bucket a flight offer's stop count into one of `STOP_BANDS`.
+
+    Three or more stops fold into the last band rather than earning a colour of
+    their own. **None when the count is unreadable**, and callers drop those
+    offers instead of plotting them — the same treatment `total_fare` gets when
+    a price will not parse.
+
+    That is reachable rather than defensive: `map_offer` reads `stops` off the
+    first slice, and an offer carrying no slices at all leaves it `None`. All
+    three bands here make a positive claim about a real count, so there is no
+    slot left to say "we could not tell" — and "Two or more stops" is a claim,
+    not a safe default. An offer whose stops nobody can read is better left off
+    the chart than drawn in the least attractive band it might not belong to.
+    """
+    if not isinstance(stops, (int, float)):
+        return None
+    if stops <= 0:
+        return STOP_BANDS[0]
+    if stops == 1:
+        return STOP_BANDS[1]
+    return STOP_BANDS[2]
+
+
+def cancel_band(free: Any) -> str:
+    """Bucket a stay's cancellation policy into one of `CANCEL_BANDS`.
+
+    Anything that is not an explicit bool lands in "Not stated" rather than
+    defaulting to "No free cancellation" — the same reasoning as warning about
+    synthetic data on an *empty* result set. Absent information is not a
+    negative finding, and a traveler choosing on flexibility must not be told a
+    policy was checked when it was not.
+
+    Unlike `stop_band` this never returns None, and the difference is not an
+    inconsistency: only two of these three bands carry a real value, so the
+    third slot is free to mean "unknown" honestly. All three stop bands are
+    spoken for.
+    """
+    if not isinstance(free, bool):
+        return CANCEL_BANDS[2]
+    return CANCEL_BANDS[0] if free else CANCEL_BANDS[1]
+
+
 def _unpack(item: Any) -> tuple[tuple[str, ...], str, Any]:
     """Normalise a stream item to `(namespace, mode, data)`.
 

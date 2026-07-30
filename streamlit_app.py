@@ -59,7 +59,8 @@ pages = [
 page = st.navigation(pages, position="top")
 
 with st.sidebar:
-    st.subheader("Trip")
+    # No heading above this: one button does not need a section label, and an
+    # h3 in a narrow column outweighs the control it introduces.
     if st.button(
         "Start a new trip",
         icon=":material/restart_alt:",
@@ -72,10 +73,29 @@ with st.sidebar:
         st.session_state.seen_caveats = []
         st.rerun()
 
-    provider = os.getenv("TRAVEL_AGENT_PROVIDER", "sample-data")
-    st.caption(f"Availability provider: `{provider}`")
-    if not os.getenv("TAVILY_API_KEY"):
-        st.caption(":material/info: `TAVILY_API_KEY` unset — destination research is disabled.")
+    st.space("medium")
+    st.caption("Setup")
+    # Stacked rather than `horizontal=True`: badges size to their content, and
+    # two of them overflow a sidebar this narrow.
+    with st.container(gap="xsmall"):
+        # Grey on purpose, and never green. A colour reading as "live" would be
+        # a claim about the data, which the provider name cannot support: a
+        # Duffel *test* token returns fictional fares and Duffel lodging falls
+        # through to sample data. Provenance is stated per offer on the Trip
+        # page, off each offer's own `synthetic` flag.
+        st.badge(
+            os.getenv("TRAVEL_AGENT_PROVIDER", "sample-data"),
+            icon=":material/inventory_2:",
+            color="gray",
+            help="Availability provider. Every offer is labelled individually on the Trip page.",
+        )
+        if not os.getenv("TAVILY_API_KEY"):
+            st.badge(
+                "No web research",
+                icon=":material/travel_explore:",
+                color="gray",
+                help="`TAVILY_API_KEY` is not set, so the agent cannot research destinations.",
+            )
 
 # Pages do not set their own title; the entry script owns it.
 st.title(f"{page.icon} {page.title}")

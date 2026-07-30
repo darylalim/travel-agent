@@ -18,7 +18,17 @@ import json
 
 from langchain_core.messages import ToolMessage
 
-from travel_agent.ui import TripRecord, _tool_label, _unpack, offers, search_label
+from travel_agent.ui import (
+    CANCEL_BANDS,
+    STOP_BANDS,
+    TripRecord,
+    _tool_label,
+    _unpack,
+    cancel_band,
+    offers,
+    search_label,
+    stop_band,
+)
 
 
 def _tool_message(name: str, payload: dict) -> ToolMessage:
@@ -176,3 +186,58 @@ def test_search_label_degrades_rather_than_raising():
     assert search_label(
         {"offers": [{"origin": "SFO", "destination": "NRT", "depart_date": "soon"}]}
     ) == ("SFO→NRT")
+
+
+def test_stop_band_folds_the_tail_but_never_invents_one():
+    """Three or more stops share the last band; an unknown count gets none.
+
+    The bands are a colour domain for a scatter, which is an all-pairs form and
+    so caps at three hues. All three are spent on real counts, leaving no slot
+    to mean "we could not tell" — and "Two or more stops" is a claim about the
+    itinerary, not a safe default. So an unreadable count returns None and the
+    caller leaves the offer off the chart, exactly as it does for an offer whose
+    fare would not parse.
+    """
+    assert stop_band(0) == "Nonstop"
+    assert stop_band(1) == "One stop"
+    assert stop_band(2) == "Two or more stops"
+    # The fold: a four-stop itinerary does not earn a fourth colour.
+    assert stop_band(4) == STOP_BANDS[2]
+
+    # `map_offer` reads `stops` off the first slice, so an offer carrying no
+    # slices at all arrives as None. That is the reachable path, not a guard.
+    assert stop_band(None) is None
+    assert stop_band("two") is None
+    # Negative counts are nonsense rather than unknown, and nonstop is the
+    # honest reading of "fewer than one stop".
+    assert stop_band(-1) == "Nonstop"
+
+
+def test_cancel_band_does_not_report_an_unknown_policy_as_a_no():
+    """ "Not stated" exists so absence never becomes a negative finding.
+
+    The same reasoning as warning about synthetic data on an empty result set: a
+    traveler choosing on flexibility must not be told a policy was checked when
+    it was not. Unlike the stop bands there is room for it — only two of these
+    three carry a real value.
+    """
+    assert cancel_band(True) == "Free cancellation"
+    assert cancel_band(False) == "No free cancellation"
+
+    for absent in (None, "yes", 1, 0, ""):
+        assert cancel_band(absent) == "Not stated", absent
+
+
+def test_the_band_lists_stay_within_the_all_pairs_colour_budget():
+    """Three is the ceiling, and adding a fourth is not a one-line change.
+
+    A scatter can place any two dots side by side, so every pair of hues has to
+    clear colour-blind separation — a strictly harder gate than the adjacent-only
+    one a legend implies, and one the theme palette clears with three slots. A
+    fourth band would need a fourth hue that no ordering of the palette
+    separates, so this guards a fact about the palette, not a style preference.
+    """
+    for bands in (STOP_BANDS, CANCEL_BANDS):
+        assert len(bands) == 3, bands
+        # Duplicates would silently collapse two meanings onto one colour.
+        assert len(set(bands)) == 3, bands

@@ -216,6 +216,22 @@ Other things that bite here:
   Streamlit's legacy auto-discovery alongside `st.navigation`.
 - `st.set_page_config` is called once, first, in the entry point. A second call
   in a page silently overrides it.
+- **Don't pass `icon=` to `st.expander`.** `st.status` *is* an expandable
+  carrying an icon, so that is how AppTest tells them apart — `element_tree.py`
+  routes any `expandable` with an icon to `Status` and everything else to
+  `Expander`. An expander given `icon=` therefore vanishes from `at.expander`
+  and shows up in `at.status` with a meaningless `state`, which `test_pages.py`
+  compares element for element. The browser renders it correctly either way;
+  only the page's testability breaks. Prefix the icon into the label instead.
+- **`chartCategoricalColors` is top-level only**, like the other nine keys in
+  that block — Streamlit silently ignores it inside `[theme.light]` /
+  `[theme.dark]`. So one palette serves both modes, and a usable hue has to sit
+  in the *intersection* of the two OKLCH lightness bands (light 0.43–0.77, dark
+  0.48–0.67), i.e. inside the dark one. Eyeballing this is how the first palette
+  ended up with five of seven slots too light to hold against the dark surface.
+  Validate with the dataviz skill's `validate_palette.js` before changing a
+  value, and run `--pairs all` for the first three slots — a scatter can put any
+  two marks side by side, so it needs every pair separated, not just neighbours.
 
 An assistant bubble is rebuilt from `st.session_state.messages` on every rerun,
 so whatever the live run rendered has to be reconstructable from the stored
@@ -239,6 +255,13 @@ widget and control-flow semantics rather than in this project's data, and which
 all fail silently: the page renders, nothing raises, and the traveler is shown
 the wrong search or loses a turn from the transcript. Reach for `AppTest` when
 a bug is only observable across two reruns.
+
+A page script cannot be imported, so nothing defined inside `app_pages/` is
+unit-testable — `AppTest` can only see what the page renders. Pure data mapping
+therefore lives in `ui.py` even when it is purely presentational (`search_label`,
+`stop_band`, `cancel_band`) and is tested directly in `test_ui.py`. Keep
+`AppTest` for what only a rendered page can show: which elements appear, in what
+order, and what a second rerun does.
 
 `tests/conftest.py` has an **autouse** fixture that unsets provider env vars and
 clears the `_build_provider` cache around every test. Without it the suite picks

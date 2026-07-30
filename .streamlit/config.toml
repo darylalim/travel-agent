@@ -17,15 +17,26 @@ baseFontWeight = 400
 showSidebarBorder = true
 metricValueFontSize = "30px"
 metricValueFontWeight = 600
-# Mid-tone hues, chosen to stay legible against both backgrounds below.
+# One palette serves both modes: this key is top-level only, so there is no
+# [theme.dark] override to fall back on. That makes the usable window the
+# *intersection* of the two OKLCH lightness bands — light 0.43-0.77, dark
+# 0.48-0.67 — i.e. the dark band. The earlier hues were picked by eye at
+# Tailwind 400/500 and five of the seven sat above 0.67, too light to hold
+# against #17161A. Each hue below is the same family re-stepped to land inside
+# 0.48-0.67, which also lifts every slot past 3:1 on the light surface.
+#
+# Checked, not eyeballed, with the dataviz skill's validate_palette.js: all
+# seven pass adjacent-pair CVD in both modes, and slots 1-3 additionally pass
+# the stricter --pairs all gate that scatter plots require (any two marks can
+# end up neighbours). Re-run it before changing a value here.
 chartCategoricalColors = [
-    "#14B8A6",
-    "#F59E0B",
+    "#0D9488",
+    "#D97706",
     "#6366F1",
     "#F43F5E",
-    "#0EA5E9",
-    "#84CC16",
-    "#A78BFA",
+    "#0284C7",
+    "#65A30D",
+    "#8B5CF6",
 ]
 
 baseRadius = "8px"

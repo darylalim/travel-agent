@@ -61,8 +61,13 @@ for entry in st.session_state.messages:
 # Suggestions stand in for a first prompt and disappear once the chat starts.
 suggested = None
 if not st.session_state.messages:
-    st.caption("Describe a trip, or start from one of these.")
-    choice = st.pills("Suggestions", list(SUGGESTIONS), label_visibility="collapsed")
+    # Centred: on a wide layout an empty transcript is mostly whitespace, and a
+    # left-hugging caption above three chips reads as a stray label rather than
+    # an invitation. Only the empty state is centred — once the chat starts,
+    # messages are left-aligned and a centred block would fight them.
+    with st.container(horizontal_alignment="center", gap="small"):
+        st.caption("Describe a trip, or start from one of these.")
+        choice = st.pills("Suggestions", list(SUGGESTIONS), label_visibility="collapsed")
     if choice:
         suggested = SUGGESTIONS[choice]
 
