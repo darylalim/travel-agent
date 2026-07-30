@@ -87,6 +87,31 @@ def _flight_offer(
     }
 
 
+def _stay_offer(
+    cost: float,
+    rating: float,
+    *,
+    free: bool | None = True,
+    synthetic: bool = True,
+) -> dict[str, Any]:
+    """One lodging offer, carrying only the fields the trip page reads."""
+    return {
+        "name": "Central boutique hotel",
+        "kind": "hotel",
+        "location": "Kyoto",
+        "check_in": "2026-09-10",
+        "check_out": "2026-09-17",
+        "nights": 7,
+        "guests": 2,
+        "nightly_rate": round(cost / 7, 2),
+        "total_cost": cost,
+        "guest_rating": rating,
+        "free_cancellation": free,
+        "currency": "USD",
+        "synthetic": synthetic,
+    }
+
+
 def _search(
     name: str,
     offers: list[dict[str, Any]],
@@ -483,14 +508,137 @@ def test_a_band_missing_from_one_search_does_not_repaint_the_others(trip_page):
     trip_page.run()
 
     # The spend bar renders above the flight scatter.
-    spend, flights = (chart["encoding"]["color"]["scale"]["domain"] for chart in _charts(trip_page))
-    assert spend == [
-        "flights",
-        "lodging",
-        "food",
-        "activities",
-        "transport",
-        "fees",
-        "other",
+    spend, flights = _charts(trip_page)
+    assert flights["encoding"]["color"]["scale"]["domain"] == [
+        "Nonstop",
+        "One stop",
+        "Two or more stops",
     ]
-    assert flights == ["Nonstop", "One stop", "Two or more stops"]
+    # The spend bar carries no colour encoding at all, which is what keeps it out
+    # of this problem: one hue for every bar, so no two fills ever touch and no
+    # pairlist has to be validated. See the comment at its call site — a stacked
+    # part-to-whole version was reverted precisely because pinning a domain there
+    # put non-adjacent palette slots in contact.
+    assert "color" not in spend["encoding"]
+
+
+def test_the_stays_chart_plots_cost_against_rating(trip_page):
+    """The lodging scatter is a near-copy of the flight one, so pin what differs.
+
+    Both charts run through one `_tradeoff_chart` and differ only in a `_Tradeoff`
+    config: fields, titles and band vocabulary. That is exactly the shape where a
+    swapped axis or a stale field name renders silently and looks plausible — a
+    cost plotted on the rating axis is still a chart. Asserting the encoding
+    catches it; looking at the page does not.
+    """
+    record = trip_page.session_state["record"]
+    record.record_tool(
+        _search(
+            "search_stays",
+            [
+                _stay_offer(1876.0, 8.9, free=True),
+                _stay_offer(1498.0, 8.6, free=False),
+                _stay_offer(1043.0, 9.1, free=None),
+            ],
+        )
+    )
+    trip_page.run()
+
+    (stays,) = _charts(trip_page)
+    encoding = stays["encoding"]
+    assert encoding["x"]["field"] == "guest_rating"
+    assert encoding["x"]["title"] == "Guest rating"
+    assert encoding["y"]["field"] == "total_cost"
+    assert encoding["y"]["title"] == "Total cost (USD)"
+    # Cancellation bands, not stop bands, and pinned in full so the absent one
+    # cannot hand its hue to another.
+    assert encoding["color"]["scale"]["domain"] == [
+        "Free cancellation",
+        "No free cancellation",
+        "Not stated",
+    ]
+    # Neither axis includes zero: ratings cluster in a narrow band near the top
+    # of a 0-10 scale and would otherwise collapse onto one edge.
+    assert encoding["x"]["scale"]["zero"] is False
+    assert encoding["y"]["scale"]["zero"] is False
+
+
+def test_a_wholly_sample_data_chart_says_so_on_the_chart(trip_page):
+    """The standing notice is too far away to serve a chart further down.
+
+    It renders once at the top of the page, above the KPI row, the spend bar, the
+    flight chart and its table — so by the time the stays scatter is on screen it
+    has scrolled off, and `provenance` otherwise lives only in a tooltip that a
+    touch device cannot reach. The table under each chart labels every row; the
+    chart has to label itself, and not only when sources are mixed.
+    """
+    record = trip_page.session_state["record"]
+    record.record_tool(
+        _search(
+            "search_flights",
+            [
+                _flight_offer(1840, 640, 0),
+                _flight_offer(1520, 775, 1),
+                _flight_offer(1310, 910, 2),
+            ],
+            warning="These are synthetic sample offers.",
+        )
+    )
+    trip_page.run()
+    assert any("Every dot here is sample data" in caption for caption in _captions(trip_page))
+
+    # Real inventory says nothing — silence is the absence of a caveat, not a
+    # claim, and the table's provenance column still reads "Live" per row.
+    live = TripRecord()
+    live.record_tool(
+        _search(
+            "search_flights",
+            [
+                _flight_offer(1840, 640, 0, synthetic=False),
+                _flight_offer(1520, 775, 1, synthetic=False),
+                _flight_offer(1310, 910, 2, synthetic=False),
+            ],
+        )
+    )
+    trip_page.session_state["record"] = live
+    trip_page.run()
+    assert not any("sample data" in caption for caption in _captions(trip_page))
+
+
+def test_the_outbound_leg_note_appears_only_for_a_round_trip(trip_page):
+    """Stops and journey time cover `slices[0]`, which is half a return trip.
+
+    `map_offer` reads both off the first slice and `search_flights` appends a
+    second when a return date is given, so a round trip whose return leg connects
+    twice is still coloured "Nonstop" on an axis titled "Journey time". A one-way
+    search has nothing omitted, so the note would be noise there.
+    """
+    one_way = TripRecord()
+    one_way.record_tool(
+        _search(
+            "search_flights",
+            [
+                _flight_offer(1840, 640, 0),
+                _flight_offer(1520, 775, 1),
+                _flight_offer(1310, 910, 2),
+            ],
+        )
+    )
+    trip_page.session_state["record"] = one_way
+    trip_page.run()
+    assert not any("outbound leg" in caption for caption in _captions(trip_page))
+
+    returning = TripRecord()
+    returning.record_tool(
+        _search(
+            "search_flights",
+            [
+                {**_flight_offer(1840, 640, 0), "return_date": "2026-09-17"},
+                {**_flight_offer(1520, 775, 1), "return_date": "2026-09-17"},
+                {**_flight_offer(1310, 910, 2), "return_date": "2026-09-17"},
+            ],
+        )
+    )
+    trip_page.session_state["record"] = returning
+    trip_page.run()
+    assert any("outbound leg" in caption for caption in _captions(trip_page))

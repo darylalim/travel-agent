@@ -153,6 +153,15 @@ touches LangGraph belongs in `ui.py`. Appearance lives entirely in
 `.streamlit/config.toml` — never CSS injected from Python, whose internal class
 names are unstable across releases and fight the theme rather than extend it.
 
+Charts split that rule along one line: **colour comes from the theme, geometry
+does not.** A Vega spec omits `color.scale.range` so `theme="streamlit"` fills it
+from `chartCategoricalColors`, and no hex is ever written in Python. Mark size,
+opacity, chart and card heights and legend padding *are* set in the spec, because
+`config.toml` has no vocabulary for them. Don't claim otherwise in a comment —
+an earlier draft said a spec "keeps every appearance value in config.toml" while
+hardcoding six of them, which sends the next editor looking in the TOML for a dot
+size that was never there.
+
 **Subagent tool results never reach the parent's message history.** deepagents
 folds a subagent's state back without its `messages` (`_EXCLUDED_STATE_KEYS` in
 `middleware/subagents.py`), substituting a single `ToolMessage` that carries
@@ -232,6 +241,21 @@ Other things that bite here:
   Validate with the dataviz skill's `validate_palette.js` before changing a
   value, and run `--pairs all` for the first three slots — a scatter can put any
   two marks side by side, so it needs every pair separated, not just neighbours.
+- **The pairlist to validate follows the chart form, and a pinned domain changes
+  it.** Pinning `color.scale.domain` is what keeps hues stable when a category or
+  band is missing, but it also means the marks that end up *touching* are
+  whichever values the data has — not the palette's adjacent pairs. A stacked
+  spend bar was reverted over this: `{flights, lodging, food, other}` put slot 3
+  against slot 7 at CVD ΔE 0.8, and a stacked bar has no gap, stroke or label
+  left once colour fails, because the 2px surface gap the spec wants needs a
+  surface colour a Vega spec cannot read. Magnitude comparisons stay a
+  single-hue `st.bar_chart`, which has no adjacency to validate.
+- **`axis.values` cannot extend a scale domain.** Vega's `validTicks` silently
+  drops any tick that falls outside the range, so a tick pinned to the budget
+  vanished whenever the estimate came in under it — taking every other value
+  label with it and leaving a caption pointing at a line that was not drawn. A
+  reference line placed past the data needs the scale widened too, or it is not a
+  reference line.
 
 An assistant bubble is rebuilt from `st.session_state.messages` on every rerun,
 so whatever the live run rendered has to be reconstructable from the stored

@@ -306,6 +306,61 @@ def cancel_band(free: Any) -> str:
     return CANCEL_BANDS[0] if free else CANCEL_BANDS[1]
 
 
+# Only these three have a Streamlit currency preset; anything else needs a
+# printf format built from the code itself.
+CURRENCY_PRESETS = {"USD": "dollar", "EUR": "euro", "JPY": "yen"}
+
+
+def currency_code(items: list[dict[str, Any]], fallback: str = "USD") -> str:
+    """Currency these offers are quoted in, for axis titles and number formats."""
+    for item in items:
+        code = item.get("currency")
+        if isinstance(code, str) and code:
+            return code
+    return fallback
+
+
+def money_format(items: list[dict[str, Any]], fallback: str = "USD") -> str:
+    """Number format for whatever currency these offers are quoted in."""
+    code = currency_code(items, fallback)
+    return CURRENCY_PRESETS.get(code, f"%.2f {code}")
+
+
+def source_column(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Add a visible provenance field to each offer.
+
+    Derived from each offer's own `synthetic` flag, never from the provider
+    name: Duffel test mode returns fictional fares, and Duffel lodging falls
+    through to sample data, so the provider is wrong in both directions.
+
+    This is the single derivation of provenance for the whole page — the table
+    column, the chart tooltips and the chart's own provenance caption all read
+    the field it writes, rather than each re-reading `synthetic` on its own.
+    """
+    return [
+        {**item, "provenance": "Sample data" if item.get("synthetic") else "Live"} for item in items
+    ]
+
+
+def costing_series(history: list[dict[str, Any]], key: str) -> list[float] | None:
+    """One figure's run across successive costings, for a metric sparkline.
+
+    None below two points, because a one-point trend is a dot.
+
+    Named "costings" rather than "history" on purpose. `summarize_budget` is
+    re-run whenever the plan changes, but nothing guarantees consecutive
+    payloads are consecutive versions of *one* plan: `BUDGET_PROMPT` asks the
+    analyst to propose cuts, and the main agent can cost several variants
+    against a stateless subagent inside a single turn. So the values are the
+    costings in the order they were run and no more than that — which is why the
+    card renders them as bars rather than a line.
+    """
+    values = [
+        float(payload[key]) for payload in history if isinstance(payload.get(key), (int, float))
+    ]
+    return values if len(values) >= 2 else None
+
+
 def _unpack(item: Any) -> tuple[tuple[str, ...], str, Any]:
     """Normalise a stream item to `(namespace, mode, data)`.
 

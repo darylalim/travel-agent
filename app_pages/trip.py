@@ -11,23 +11,27 @@ The title lives in `streamlit_app.py`; pages do not set their own.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
 import streamlit as st
 
 from travel_agent.ui import (
     CANCEL_BANDS,
+    CURRENCY_PRESETS,
     ITINERARY_PATH,
     STOP_BANDS,
     WORKSPACE_FILES,
     cancel_band,
+    costing_series,
+    currency_code,
+    money_format,
     offers,
     search_label,
+    source_column,
     stop_band,
 )
-
-# Only these three have currency presets; anything else needs a printf format.
-_CURRENCY_PRESETS = {"USD": "dollar", "EUR": "euro", "JPY": "yen"}
 
 # One reserved slot for `_pick_search`'s bookkeeping. Session state is a single
 # flat namespace shared with widget keys, so per-selector scratch keys derived
@@ -49,69 +53,110 @@ if not any((flight_searches, stay_searches, budget, record.files)):
     st.stop()
 
 
-def _currency_code(items: list[dict[str, Any]], fallback: str = "USD") -> str:
-    """Currency these offers are quoted in, for axis titles and number formats."""
-    for item in items:
-        code = item.get("currency")
-        if isinstance(code, str) and code:
-            return code
-    return fallback
-
-
-def _money(items: list[dict[str, Any]], fallback: str = "USD") -> str:
-    """Number format for whatever currency these offers are quoted in."""
-    code = _currency_code(items, fallback)
-    return _CURRENCY_PRESETS.get(code, f"%.2f {code}")
-
-
-# Mirrors the `Category` literal in `tools/budget.py`. Pinned in full, and never
-# narrowed to the categories actually present: dropping the absent ones would
-# shift every later category up a slot, so a trip with no `transport` line would
-# paint `fees` in `transport`'s colour.
-_CATEGORY_ORDER = ("flights", "lodging", "food", "activities", "transport", "fees", "other")
-
-# Shared by every chart on this page, so the three legends read as one system.
-# The padding is not cosmetic: Vega's default leaves 11-14px between horizontal
-# entries, and an 8px swatch fills nearly all of it, so a long label runs into
-# the swatch of the entry after it ("No free cancellation● Not stated"). There is
-# room to spare at this width — the default is simply tight.
+# Shared by both scatters, so their legends read as one system. The padding is
+# not cosmetic: Vega's default leaves 11-14px between horizontal entries, and an
+# 8px swatch fills nearly all of it, so a long label runs into the swatch of the
+# entry after it ("No free cancellation● Not stated"). There is room to spare at
+# this width — the default is simply tight.
 _LEGEND = {"orient": "bottom", "title": None, "columnPadding": 18, "labelOffset": 6}
 
 
-def _mixed_source_note(plotted: list[dict[str, Any]]) -> None:
-    """Name a blend of real and synthetic offers inside one chart.
+def _provenance_note(plotted: list[dict[str, Any]]) -> None:
+    """Say on the chart itself where its figures came from.
 
-    The standing notice at the top of the page covers a wholly synthetic set,
-    and the table labels every row. A *mixed* set is the gap between them: the
-    chart plots real and invented figures as identical marks, so the blend has
-    to be said out loud.
+    The standing notice lives at the top of the page, above the KPI row, the
+    spend bar, the flight chart and its table — so by the time the stays scatter
+    is on screen it has scrolled away, and the tooltip carrying `provenance` is
+    unreachable on a touch device. The table below each chart labels every row;
+    the chart is a surface reaching the traveler with no model in between and has
+    to label itself too, whether the set is wholly synthetic or a blend.
+
+    Reads `provenance`, which `source_column` already derived, rather than
+    re-reading `synthetic`: two independent readings of one flag is how the
+    table and the chart drift apart.
     """
-    synthetic = sum(1 for offer in plotted if offer.get("synthetic"))
-    if 0 < synthetic < len(plotted):
+    if not plotted:
+        return
+    sample = sum(1 for offer in plotted if offer.get("provenance") == "Sample data")
+    if not sample:
+        return
+    if sample == len(plotted):
         st.caption(
-            f":material/warning: Mixed sources — {synthetic} of {len(plotted)} plotted "
-            f"offers {'is' if synthetic == 1 else 'are'} sample data. "
+            ":material/warning: Every dot here is sample data — illustrative planning "
+            "figures, not real availability, and nothing here is bookable."
+        )
+    else:
+        st.caption(
+            f":material/warning: Mixed sources — {sample} of {len(plotted)} plotted "
+            f"offers {'is' if sample == 1 else 'are'} sample data. "
             "The table below labels each row."
         )
 
 
-def _tradeoff_scatter(
-    rows: list[dict[str, Any]],
-    *,
-    x_field: str,
-    x_title: str,
-    y_field: str,
-    y_title: str,
-    bands: tuple[str, ...],
-    tooltip: list[dict[str, Any]],
-) -> None:
-    """Draw one "cheap versus good" scatter, shared by flights and stays.
+@dataclass(frozen=True)
+class _Tradeoff:
+    """Everything that differs between the flight and stay tradeoff scatters.
 
-    The scout is asked for "the best on price, the best on convenience, and the
-    tradeoff between them". In a table that comparison means reading two numeric
-    columns against each other row by row; as position it is one glance, and the
-    offers nobody should pick — worse on both counts than something else on the
-    list — fall in one corner.
+    Both charts answer the same question — is this offer worth considering, given
+    something cheaper or better exists — so they share one spec, one legend, one
+    caption convention and one provenance note. Only the fields, titles and band
+    vocabulary change, and they live here so a third chart is a fourth instance
+    rather than a third copy of forty lines.
+    """
+
+    x_field: str
+    x_title: str
+    x_tooltip: str
+    y_field: str
+    y_prefix: str
+    name_field: str
+    name_title: str
+    bands: tuple[str, ...]
+    band_title: str
+    band_source: str
+    band_of: Callable[[Any], str | None]
+    caption: str
+
+
+_FLIGHT_TRADEOFF = _Tradeoff(
+    x_field="duration_minutes",
+    x_title="Journey time (minutes)",
+    x_tooltip="Minutes",
+    y_field="total_fare",
+    y_prefix="Total fare",
+    name_field="carrier",
+    name_title="Carrier",
+    bands=STOP_BANDS,
+    band_title="Stops",
+    band_source="stops",
+    band_of=stop_band,
+    caption=":material/scatter_plot: One dot per offer — down is cheaper, left is quicker.",
+)
+
+# Price against quality rather than price against time, so the good corner is
+# bottom-right instead of bottom-left. `kind` would be the obvious third variable
+# and is not usable: hotel/apartment/guesthouse/hostel is five values against an
+# all-pairs budget of three, and any bucketing of it would be arbitrary.
+# Cancellation policy is genuinely three-valued, orthogonal to both axes, and the
+# thing a traveler weighs against a good price.
+_STAY_TRADEOFF = _Tradeoff(
+    x_field="guest_rating",
+    x_title="Guest rating",
+    x_tooltip="Rating",
+    y_field="total_cost",
+    y_prefix="Total cost",
+    name_field="name",
+    name_title="Property",
+    bands=CANCEL_BANDS,
+    band_title="Cancellation",
+    band_source="free_cancellation",
+    band_of=cancel_band,
+    caption=":material/scatter_plot: One dot per place — down is cheaper, right is better rated.",
+)
+
+
+def _tradeoff_chart(items: list[dict[str, Any]], cfg: _Tradeoff) -> list[dict[str, Any]]:
+    """Draw one "cheap versus good" scatter; return the offers actually plotted.
 
     A hand-written Vega-Lite spec rather than `st.scatter_chart`, for two things
     the sugar cannot express:
@@ -130,265 +175,109 @@ def _tradeoff_scatter(
       `st.scatter_chart` pins the colours but sets `legend: null`, trading the
       mislabel for no key at all.
 
-    `range` is deliberately absent: `theme="streamlit"` (the default) supplies it
-    from `chartCategoricalColors`, so appearance stays in `.streamlit/config.toml`
-    and no hex is duplicated into Python. Those first three slots are validated
-    for all-pairs CVD separation in both modes — see the note in that file.
+    Colour is the only thing this takes from the theme: `range` is deliberately
+    absent, so `theme="streamlit"` fills it from `chartCategoricalColors` and no
+    hex is duplicated into Python. Geometry — mark size, opacity, the chart
+    height, the legend padding — is set here rather than in `config.toml`, which
+    has no vocabulary for it.
+
+    An offer needs every plotted figure to be drawable, its band included: each
+    band makes a positive claim, so `band_of` returns None rather than guessing,
+    and a dot with no band would fall outside the pinned domain — drawn, but
+    keyed to nothing in the legend. Bands are computed once per offer and carried
+    forward, so the filter and the projection cannot drift apart.
     """
+    banded = [
+        (offer, cfg.band_of(offer.get(cfg.band_source)))
+        for offer in items
+        if isinstance(offer.get(cfg.x_field), (int, float))
+        and isinstance(offer.get(cfg.y_field), (int, float))
+    ]
+    plotted = [(offer, band) for offer, band in banded if band is not None]
+    # Two points describe a line, not a tradeoff; the table says it better.
+    if len(plotted) < 3:
+        return []
+
+    axis_money = f"{cfg.y_prefix} ({currency_code([offer for offer, _ in plotted])})"
     st.vega_lite_chart(
-        rows,
+        [
+            {
+                cfg.x_field: offer[cfg.x_field],
+                cfg.y_field: offer[cfg.y_field],
+                "band": band,
+                "name": offer.get(cfg.name_field) or "—",
+                "provenance": offer.get("provenance") or "—",
+            }
+            for offer, band in plotted
+        ],
         {
             # ~10px across, satisfying the >=8px marker floor. Semi-opaque
             # instead of the 2px surface ring the spec asks for on overlapping
             # dots: that ring has to be painted in the surface colour, which
             # differs between light and dark, and a Vega spec cannot read the
-            # active theme — hardcoding either would break one mode and pull
-            # appearance out of config.toml.
+            # active theme — hardcoding either would break one mode.
             "mark": {"type": "circle", "size": 90, "opacity": 0.85},
             "encoding": {
                 "x": {
-                    "field": x_field,
+                    "field": cfg.x_field,
                     "type": "quantitative",
-                    "title": x_title,
+                    "title": cfg.x_title,
                     "scale": {"zero": False, "nice": True, "padding": 14},
                     "axis": {"grid": False},
                 },
                 "y": {
-                    "field": y_field,
+                    "field": cfg.y_field,
                     "type": "quantitative",
-                    "title": y_title,
+                    "title": axis_money,
                     "scale": {"zero": False, "nice": True, "padding": 14},
                     "axis": {"grid": True, "format": ",.0f"},
                 },
                 "color": {
                     "field": "band",
                     "type": "nominal",
-                    "scale": {"domain": list(bands)},
+                    "scale": {"domain": list(cfg.bands)},
                     "legend": dict(_LEGEND),
                 },
-                "tooltip": tooltip,
+                "tooltip": [
+                    {"field": "name", "type": "nominal", "title": cfg.name_title},
+                    {
+                        "field": cfg.y_field,
+                        "type": "quantitative",
+                        "title": axis_money,
+                        "format": ",.2f",
+                    },
+                    {"field": cfg.x_field, "type": "quantitative", "title": cfg.x_tooltip},
+                    {"field": "band", "type": "nominal", "title": cfg.band_title},
+                    {"field": "provenance", "type": "nominal", "title": "Data"},
+                ],
             },
         },
         height=300,
     )
+    st.caption(cfg.caption)
+    return [offer for offer, _ in plotted]
 
 
-def _flight_tradeoff_chart(items: list[dict[str, Any]]) -> None:
-    """Fare against journey time, coloured by how many stops it costs.
+def _outbound_only_note(plotted: list[dict[str, Any]]) -> None:
+    """Flag that a round trip's stops and journey time cover the outbound leg.
 
-    An offer needs all three figures to be drawable, `stops` included: every
-    stop band makes a positive claim, so `stop_band` returns None rather than
-    guessing, and a dot with no band would fall outside the pinned colour
-    domain — drawn, but keyed to nothing in the legend.
+    `map_offer` reads both off `slices[0]`, and `search_flights` builds a second
+    slice whenever a return date is given — so on a return itinerary the colour
+    band and the x position describe half the journey, and an offer whose return
+    leg connects twice still lands in the chart's "Nonstop" hue. The table's own
+    Duration help says the same thing.
+
+    Sample offers carry one notional duration rather than per-leg figures, so on
+    those the note is conservative rather than exact. That is the safe direction
+    for a figure already labelled synthetic, and it avoids keying the wording off
+    the provider name — which says nothing reliable, as the honesty invariant
+    elsewhere on this page keeps pointing out.
     """
-    plottable = [
-        offer
-        for offer in items
-        if isinstance(offer.get("duration_minutes"), (int, float))
-        and isinstance(offer.get("total_fare"), (int, float))
-        and stop_band(offer.get("stops")) is not None
-    ]
-    # Two points describe a line, not a tradeoff; the table says it better.
-    if len(plottable) < 3:
-        return
-
-    axis_money = f"Total fare ({_currency_code(plottable)})"
-    _tradeoff_scatter(
-        [
-            {
-                "duration_minutes": offer["duration_minutes"],
-                "total_fare": offer["total_fare"],
-                "band": stop_band(offer.get("stops")),
-                "carrier": offer.get("carrier") or "—",
-                "provenance": offer.get("provenance") or "—",
-            }
-            for offer in plottable
-        ],
-        x_field="duration_minutes",
-        x_title="Journey time (minutes)",
-        y_field="total_fare",
-        y_title=axis_money,
-        bands=STOP_BANDS,
-        tooltip=[
-            {"field": "carrier", "type": "nominal", "title": "Carrier"},
-            {
-                "field": "total_fare",
-                "type": "quantitative",
-                "title": axis_money,
-                "format": ",.2f",
-            },
-            {"field": "duration_minutes", "type": "quantitative", "title": "Minutes"},
-            {"field": "band", "type": "nominal", "title": "Stops"},
-            {"field": "provenance", "type": "nominal", "title": "Data"},
-        ],
-    )
-    st.caption(":material/scatter_plot: One dot per offer — down is cheaper, left is quicker.")
-    _mixed_source_note(plottable)
-
-
-def _stay_tradeoff_chart(items: list[dict[str, Any]]) -> None:
-    """Total cost against guest rating, coloured by cancellation policy.
-
-    The lodging counterpart to the flight chart: price against quality rather
-    than price against time, so the good corner is bottom-right instead of
-    bottom-left. `kind` would be the obvious third variable and is not usable —
-    hotel/apartment/guesthouse/hostel is five values against an all-pairs budget
-    of three, and any bucketing of it would be arbitrary. Cancellation policy is
-    genuinely three-valued, orthogonal to both axes, and the thing a traveler
-    weighs against a good price.
-    """
-    plottable = [
-        offer
-        for offer in items
-        if isinstance(offer.get("guest_rating"), (int, float))
-        and isinstance(offer.get("total_cost"), (int, float))
-    ]
-    if len(plottable) < 3:
-        return
-
-    axis_money = f"Total cost ({_currency_code(plottable)})"
-    _tradeoff_scatter(
-        [
-            {
-                "guest_rating": offer["guest_rating"],
-                "total_cost": offer["total_cost"],
-                "band": cancel_band(offer.get("free_cancellation")),
-                "name": offer.get("name") or "—",
-                "provenance": offer.get("provenance") or "—",
-            }
-            for offer in plottable
-        ],
-        x_field="guest_rating",
-        x_title="Guest rating",
-        y_field="total_cost",
-        y_title=axis_money,
-        bands=CANCEL_BANDS,
-        tooltip=[
-            {"field": "name", "type": "nominal", "title": "Property"},
-            {
-                "field": "total_cost",
-                "type": "quantitative",
-                "title": axis_money,
-                "format": ",.2f",
-            },
-            {"field": "guest_rating", "type": "quantitative", "title": "Rating"},
-            {"field": "band", "type": "nominal", "title": "Cancellation"},
-            {"field": "provenance", "type": "nominal", "title": "Data"},
-        ],
-    )
-    st.caption(
-        ":material/scatter_plot: One dot per place — down is cheaper, right is better rated."
-    )
-    _mixed_source_note(plottable)
-
-
-def _budget_bar(by_category: dict[str, Any], ceiling: Any, currency: str) -> None:
-    """Spend as one stacked bar, with the budget marked on the axis.
-
-    Part-to-whole rather than the plain magnitude bar this replaces: the
-    question the KPI row cannot answer is *which* categories fill the ceiling.
-    The trade is that comparing two categories against each other is now harder
-    than comparing two bar lengths — their exact figures stay in the tooltips,
-    the KPI row, and `/trip/budget.md`.
-
-    The ceiling is a gridline, not a `rule` layer, because Vega strokes an
-    unstyled rule in literal `black` — invisible on the dark surface — and the
-    only alternative is hardcoding a colour that is wrong in one mode. Axis
-    gridlines are drawn in the active theme's own colour, so pinning a single
-    gridline to the budget gets a reference line for free and keeps every
-    appearance value in config.toml.
-
-    Segments touch: the 2px surface gap the spec asks for between stacked fills
-    would need that same unavailable surface colour, and a stroke around each
-    segment is explicitly the wrong mechanism. Adjacent-pair CVD separation is
-    validated for all seven slots in both modes, which is the gate that makes
-    touching segments legible.
-    """
-    rows = [
-        {"category": name, "amount": value, "order": index}
-        for index, name in enumerate(_CATEGORY_ORDER)
-        if isinstance(value := by_category.get(name), (int, float))
-    ]
-    # Any category the agent reports that budget.py's literal does not list.
-    # Appended rather than dropped, so an unrecognised line is still visible.
-    rows += [
-        {"category": name, "amount": value, "order": len(_CATEGORY_ORDER) + index}
-        for index, (name, value) in enumerate(sorted(by_category.items()))
-        if name not in _CATEGORY_ORDER and isinstance(value, (int, float))
-    ]
-    if not rows:
-        return
-
-    domain = [row["category"] for row in sorted(rows, key=lambda row: row["order"])]
-    known = list(_CATEGORY_ORDER) + [name for name in domain if name not in _CATEGORY_ORDER]
-    ticks = [0.0]
-    if isinstance(ceiling, (int, float)) and ceiling > 0:
-        ticks.append(float(ceiling))
-
-    st.vega_lite_chart(
-        rows,
-        {
-            "mark": {"type": "bar", "height": 34},
-            "encoding": {
-                "x": {
-                    "field": "amount",
-                    "type": "quantitative",
-                    "stack": "zero",
-                    "title": f"Spend ({currency})",
-                    # Zero stays: this is a bar, and length carries the value.
-                    #
-                    # `zindex: 1` lifts the axis above the marks. Vega draws
-                    # gridlines under them by default, so the budget line was
-                    # hidden by the very bar it exists to be crossed by —
-                    # visible either side of the stack and not where it counts.
-                    "axis": {"grid": True, "values": ticks, "format": ",.0f", "zindex": 1},
-                },
-                "color": {
-                    "field": "category",
-                    "type": "nominal",
-                    "scale": {"domain": known},
-                    "legend": dict(_LEGEND),
-                },
-                "order": {"field": "order", "type": "quantitative"},
-                "tooltip": [
-                    {"field": "category", "type": "nominal", "title": "Category"},
-                    {
-                        "field": "amount",
-                        "type": "quantitative",
-                        "title": f"Spend ({currency})",
-                        "format": ",.2f",
-                    },
-                ],
-            },
-        },
-        height=170,
-    )
-
-
-def _budget_series(history: list[dict[str, Any]], key: str) -> list[float] | None:
-    """One figure's run across successive costings, for a metric sparkline.
-
-    `summarize_budget` is called again whenever the plan changes, so the payload
-    list is a history rather than a set of retries — which is what makes a
-    sparkline meaningful here and not just decoration. None below two points:
-    a one-point trend line is a dot.
-    """
-    values = [
-        float(payload[key]) for payload in history if isinstance(payload.get(key), (int, float))
-    ]
-    return values if len(values) >= 2 else None
-
-
-def _source_column(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Add a visible provenance column.
-
-    Derived from each offer's own `synthetic` flag, never from the provider
-    name: Duffel test mode returns fictional fares, and Duffel lodging falls
-    through to sample data, so the provider is wrong in both directions.
-    """
-    return [
-        {**item, "provenance": "Sample data" if item.get("synthetic") else "Live"} for item in items
-    ]
+    if any(offer.get("return_date") for offer in plotted):
+        st.caption(
+            ":material/flight_land: Stops and journey time describe the outbound leg; "
+            "the return is not in these figures."
+        )
 
 
 def _truncation_note(payload: dict[str, Any] | None) -> None:
@@ -462,7 +351,7 @@ if budget:
     ceiling = budget.get("budget_total")
     remaining = budget.get("remaining")
     used = budget.get("percent_of_budget_used")
-    money = _CURRENCY_PRESETS.get(str(budget.get("currency", "USD")), "%.2f")
+    money = CURRENCY_PRESETS.get(str(budget.get("currency", "USD")), "%.2f")
 
     # Every costing so far, oldest first, so the cards can show where the
     # estimate has been rather than only where it landed.
@@ -483,13 +372,25 @@ if budget:
             format=money,
             border=True,
             height=_CARD_HEIGHT,
-            help="Every priced line the budget analyst was given.",
-            # Only this card gets a trend. The other two figures are this one
-            # rearranged — `remaining` is the ceiling minus it, `used` is it over
-            # the ceiling — so their sparklines would be the same series mirrored
-            # and rescaled. Three copies of one shape read as three findings.
-            chart_data=_budget_series(costings, "total_estimated"),
-            chart_type="line",
+            help=(
+                "Every priced line the budget analyst was given. The bars are each "
+                "costing run so far, not one plan tracked over time."
+            ),
+            # Only this card carries the costings. The other two figures are this
+            # one rearranged — `remaining` is the ceiling minus it, `used` is it
+            # over the ceiling — so their sparklines would be the same series
+            # mirrored and rescaled. Three copies of one shape read as three
+            # findings.
+            #
+            # Bars rather than a line. The marks are successive costings in the
+            # order they ran, which is not the same as one plan revised over
+            # time: BUDGET_PROMPT asks the analyst to propose cuts, and the main
+            # agent can cost several variants against a stateless subagent inside
+            # one turn. A line asserts a trend through them; bars show them as
+            # the separate figures they are. Same reasoning that stops
+            # `_pick_search` merging two searches into one table.
+            chart_data=costing_series(costings, "total_estimated"),
+            chart_type="bar",
         )
         st.metric(
             "Remaining",
@@ -520,24 +421,49 @@ if budget:
     by_category = budget.get("by_category")
     if isinstance(by_category, dict) and by_category:
         st.subheader("Where the money goes", anchor=False)
-        _budget_bar(by_category, ceiling, str(budget.get("currency", "USD")))
-        if isinstance(ceiling, (int, float)) and ceiling > 0:
-            st.caption(
-                ":material/straighten: The right-hand gridline is the budget — "
-                "a bar that crosses it is the overage."
-            )
+        # One hue, one bar per category. The job is comparing magnitudes and a
+        # bar length does that better than anything else; a single series needs
+        # no legend, because the subheading already names what is plotted.
+        #
+        # Deliberately *not* a stacked part-to-whole bar with the budget marked
+        # on the axis. That was built and reverted, for two measured reasons.
+        #
+        # `axis.values` cannot extend a scale domain, so Vega's `validTicks`
+        # silently drops a tick sitting past the data: with a 3,440 estimate
+        # against a 4,000 budget the rendered labels were just ["0"], no budget
+        # gridline and no value scale at all. The reference line only ever
+        # appeared when over budget — the one case the KPI delta and the notice
+        # above already state — while the caption claimed it unconditionally.
+        #
+        # And pinning the colour domain to all seven categories, which is what
+        # keeps hues stable across re-costings, means the segments that actually
+        # touch are whichever categories the trip has, not the palette's adjacent
+        # pairs. An ordinary {flights, lodging, food, other} puts slot 3 against
+        # slot 7 at CVD ΔE 0.8 and 6.3 normal-vision — both hard failures — and a
+        # stacked bar has no gap, stroke or label left to separate them once
+        # colour fails. Only adjacent pairs were validated, which is the wrong
+        # pairlist for a form whose adjacencies depend on the data.
+        st.bar_chart(
+            [{"category": name, "amount": value} for name, value in by_category.items()],
+            x="category",
+            y="amount",
+            horizontal=True,
+            height=260,
+        )
 
 flights = None
 if flight_searches:
     st.subheader("Flights", anchor=False)
     flights = _pick_search(flight_searches, "flights_search")
 
-flight_offers = _source_column(offers(flights))
+flight_offers = source_column(offers(flights))
 if flight_offers:
     # Shape first, detail second: the chart answers "which of these is worth
     # considering", the table answers "what exactly is it".
-    _flight_tradeoff_chart(flight_offers)
-    fare_format = _money(flight_offers)
+    _plotted = _tradeoff_chart(flight_offers, _FLIGHT_TRADEOFF)
+    _outbound_only_note(_plotted)
+    _provenance_note(_plotted)
+    fare_format = money_format(flight_offers)
     st.dataframe(
         flight_offers,
         hide_index=True,
@@ -564,7 +490,10 @@ if flight_offers:
             "duration_minutes": st.column_config.NumberColumn(
                 "Duration",
                 format="%d min",
-                help="Whole journey, layovers included.",
+                # Not "whole journey", which this said and is not true of a
+                # return trip: `map_offer` reads duration off `slices[0]`, so on
+                # a round trip both this and Stops describe the outbound leg.
+                help="Outbound leg, layovers included. A return leg is not counted here.",
             ),
             "stops": st.column_config.NumberColumn(
                 "Stops", format="%d", width="small", alignment="center"
@@ -589,11 +518,11 @@ if stay_searches:
     st.subheader("Places to stay", anchor=False)
     stays = _pick_search(stay_searches, "stays_search")
 
-stay_offers = _source_column(offers(stays))
+stay_offers = source_column(offers(stays))
 if stay_offers:
     # Same order as the flights section: shape first, then the detail.
-    _stay_tradeoff_chart(stay_offers)
-    rate_format = _money(stay_offers)
+    _provenance_note(_tradeoff_chart(stay_offers, _STAY_TRADEOFF))
+    rate_format = money_format(stay_offers)
     st.dataframe(
         stay_offers,
         hide_index=True,

@@ -25,8 +25,12 @@ from travel_agent.ui import (
     _tool_label,
     _unpack,
     cancel_band,
+    costing_series,
+    currency_code,
+    money_format,
     offers,
     search_label,
+    source_column,
     stop_band,
 )
 
@@ -241,3 +245,56 @@ def test_the_band_lists_stay_within_the_all_pairs_colour_budget():
         assert len(bands) == 3, bands
         # Duplicates would silently collapse two meanings onto one colour.
         assert len(set(bands)) == 3, bands
+
+
+def test_money_format_falls_back_without_a_preset():
+    """Only three currencies have a Streamlit preset; the rest need a format."""
+    assert currency_code([{"currency": "JPY"}]) == "JPY"
+    assert money_format([{"currency": "JPY"}]) == "yen"
+    # An unlisted code still has to render as money, with the code visible.
+    assert money_format([{"currency": "SEK"}]) == "%.2f SEK"
+    # A blank or missing code falls through to the next offer, then the default.
+    assert money_format([{"currency": ""}, {"currency": "EUR"}]) == "euro"
+    assert money_format([{}]) == "dollar"
+    assert money_format([]) == "dollar"
+
+
+def test_source_column_keys_off_synthetic_never_the_provider():
+    """Provenance is a property of the offer, not of where it came from.
+
+    Duffel in test mode returns fictional fares and Duffel lodging falls through
+    to sample data, so a `duffel` offer can be either. Reading the provider name
+    gets this wrong in both directions at once; reading `synthetic` cannot.
+    """
+    labelled = source_column(
+        [
+            {"source": "duffel", "synthetic": True},
+            {"source": "duffel", "synthetic": False},
+            {"source": "sample-data", "synthetic": True},
+        ]
+    )
+    assert [item["provenance"] for item in labelled] == ["Sample data", "Live", "Sample data"]
+    # The original fields survive; provenance is added, not substituted.
+    assert labelled[0]["source"] == "duffel"
+
+
+def test_costing_series_needs_two_points_to_be_a_series():
+    """A one-point trend is a dot, and an empty one is not a chart.
+
+    These feed `st.metric(chart_data=...)`, which draws whatever it is handed —
+    so the guard has to live here rather than being inferred from the render.
+    """
+
+    def costing(total):
+        return {"total_estimated": total, "budget_total": 4000.0}
+
+    assert costing_series([], "total_estimated") is None
+    assert costing_series([costing(4300)], "total_estimated") is None
+    assert costing_series([costing(4300), costing(3700)], "total_estimated") == [4300.0, 3700.0]
+
+    # Payloads missing the key are skipped rather than read as zero, which would
+    # draw a costing that never happened.
+    assert costing_series([costing(4300), {}, costing(3700)], "total_estimated") == [4300.0, 3700.0]
+    assert costing_series([costing(4300), {"total_estimated": None}], "total_estimated") is None
+    # Ints become floats so the series is uniform for the sparkline.
+    assert costing_series([costing(1), costing(2)], "total_estimated") == [1.0, 2.0]
