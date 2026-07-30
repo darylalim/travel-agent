@@ -262,9 +262,10 @@ def test_money_format_falls_back_without_a_preset():
 def test_source_column_keys_off_synthetic_never_the_provider():
     """Provenance is a property of the offer, not of where it came from.
 
-    Duffel in test mode returns fictional fares and Duffel lodging falls through
-    to sample data, so a `duffel` offer can be either. Reading the provider name
-    gets this wrong in both directions at once; reading `synthetic` cannot.
+    A provider called `duffel` returns fictional fares and sample lodging under
+    a test token, and real inventory of both under a live one — so a `duffel`
+    offer can be either. Reading the provider name gets this wrong in both
+    directions; reading `synthetic` cannot.
     """
     labelled = source_column(
         [

@@ -141,6 +141,28 @@ deny "duffel-api SDK .orders.create( denied"
 run no-booking.sh '{"tool_name":"Edit","tool_input":{"file_path":"a.py","new_string":"r = self._http().post(f\"{API_BASE}/air/payments\", json=p)"}}'
 deny "/air/payments denied"
 
+# Stays. /stays/search is a POST too, so the path has to be the discriminator
+# rather than the verb — these cases pin both halves of that.
+run no-booking.sh '{"tool_name":"Edit","tool_input":{"file_path":"a.py","new_string":"r = http.post(f\"{API_BASE}/stays/search\", json=p)"}}'
+allow "stays search, the real code path, is allowed"
+run no-booking.sh '{"tool_name":"Edit","tool_input":{"file_path":"'"$ROOT"'/src/travel_agent/tools/duffel_stays.py","new_string":"It never creates a quote or a booking: no /stays/quotes, no /stays/bookings."}}'
+allow "docstring mentioning the Stays booking paths is not blocked"
+run no-booking.sh '{"tool_name":"Write","tool_input":{"file_path":"'"$ROOT"'/tests/test_duffel_stays.py","content":"assert \"/stays/bookings\" not in url"}}'
+allow "tests/ exempt, so the Stays invariant can be given a regression test"
+
+run no-booking.sh '{"tool_name":"Edit","tool_input":{"file_path":"a.py","new_string":"post(f\"{API_BASE}/stays/bookings\", json=p)"}}'
+deny "f-string Stays booking URL denied"
+run no-booking.sh '{"tool_name":"Edit","tool_input":{"file_path":"a.py","new_string":"post(f\"{API_BASE}/stays/quotes\", json=p)"}}'
+deny "quote creation denied — it creates server-side state on the way to booking"
+run no-booking.sh '{"tool_name":"Edit","tool_input":{"file_path":"a.py","new_string":"url = API_BASE + \"/stays/bookings\""}}'
+deny "explicit Stays concatenation denied"
+run no-booking.sh '{"tool_name":"Write","tool_input":{"file_path":"a.py","content":"U = \"https://api.duffel.com/stays/bookings\""}}'
+deny "full-host Stays booking URL denied"
+run no-booking.sh '{"tool_name":"Edit","tool_input":{"file_path":"a.py","new_string":"post(f\"{booking_url}/actions/cancel\")"}}'
+deny "cancel built off an already-scoped booking URL denied"
+run no-booking.sh '{"tool_name":"Edit","tool_input":{"file_path":"a.py","new_string":"client.bookings.create(rate_id=x)"}}'
+deny "SDK .bookings.create( denied"
+
 # `printf ... | grep -q` returns 141 under pipefail past the 64 KiB pipe
 # buffer, which inverts the guard. Herestrings are why this passes.
 BIG=$(head -c 70000 /dev/zero | tr '\0' 'x')
@@ -293,6 +315,16 @@ OUT=$(stop); block "further provider change -> blocks again"
 OUT=$(stop); RC=0; allow "tests touched -> allow"
 (cd "$G" && git checkout -q -- . && echo 'z = 1' > src/travel_agent/prompts.py)
 OUT=$(stop); RC=0; allow "unrelated src file -> allow"
+
+# duffel_stays.py decides `synthetic` for lodging, so it must be watched like
+# the other two. The file list is spelled twice inside the hook — the PROVIDERS
+# string and the regex — and a mismatch would leave it silently unguarded.
+(cd "$G" && echo 'a = 1' > src/travel_agent/tools/duffel_stays.py \
+ && git add -A && git -c user.email=t@t -c user.name=t commit -qm stays \
+ && echo 'a = 2' > src/travel_agent/tools/duffel_stays.py)
+OUT=$(stop); block "duffel_stays.py changed alone, tests untouched -> block"
+(cd "$G" && echo 'y = 3' > tests/test_t.py)
+OUT=$(stop); RC=0; allow "duffel_stays.py with tests touched -> allow"
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" = 0 ]

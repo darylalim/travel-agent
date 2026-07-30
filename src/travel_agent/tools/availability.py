@@ -1,8 +1,9 @@
 """Flight and lodging search, across pluggable providers.
 
 Two providers are registered: `sample-data` (synthetic offers, the default)
-and `duffel` (live flight search; lodging still falls through to sample data).
-Select one with `TRAVEL_AGENT_PROVIDER`.
+and `duffel` (live flight and lodging search under a live token; both fall back
+to synthetic offers under a test token). Select one with
+`TRAVEL_AGENT_PROVIDER`.
 
 The safety property this module exists to hold: **the traveler must never be
 shown synthetic inventory described as real**. It is enforced in three places
@@ -300,6 +301,22 @@ def get_provider() -> AvailabilityProvider:
     return _build_provider(os.getenv("TRAVEL_AGENT_PROVIDER", SAMPLE_SOURCE))
 
 
+# What survived the trim, and what to vary to see the rest. Both differ by
+# kind: flights keep a three-way representative selection (`_select_flights`)
+# while stays are a straight cheapest-first slice, and "nearby airports" is not
+# advice you can act on when looking for a hotel.
+_TRUNCATION_NOTES: dict[SearchKind, tuple[str, str]] = {
+    "flights": (
+        "the cheapest, the fastest, and those with the fewest stops",
+        "different dates, nearby airports, a price ceiling",
+    ),
+    "stays": (
+        "the cheapest",
+        "different dates, a different neighbourhood, a price ceiling",
+    ),
+}
+
+
 def _wrap(
     offers: list[dict],
     provider: AvailabilityProvider,
@@ -322,10 +339,10 @@ def _wrap(
         "offers": offers,
     }
     if found > len(offers):
+        kept, advice = _TRUNCATION_NOTES[kind]
         payload["truncated"] = (
-            f"Showing {len(offers)} of {found} offers — the cheapest, the fastest, "
-            "and those with the fewest stops. Narrow the search (different dates, "
-            "nearby airports, a price ceiling) to surface other options."
+            f"Showing {len(offers)} of {found} offers — {kept}. "
+            f"Narrow the search ({advice}) to surface other options."
         )
     if note:
         payload["warning"] = note
@@ -397,15 +414,33 @@ def search_stays(
     Check the response for a `warning` key, and each offer for `synthetic:
     true`. Either means those offers are not real availability: describe them
     to the traveler as illustrative planning figures, never as real prices or
-    something bookable. Do not judge this by the `provider` name — lodging is
-    synthetic even when the provider is a live flight source.
+    something bookable. Judge every search on its own result — never by the
+    `provider` name, and never by what a flight search in the same
+    conversation returned.
+
+    `total_cost` is the price the provider quotes. Some offers also carry
+    `due_at_accommodation`, payable on arrival; the two figures may or may not
+    overlap depending on the source, so report them side by side and do not
+    add them together into a single total.
+
+    `free_cancellation` is **absent** when the policy is unknown. Absent is not
+    the same as false — do not tell the traveler a stay is non-refundable
+    unless the field is present and false.
+
+    Offers from real inventory carry `expires_at` and `expires_in_seconds`.
+    Search again rather than quoting one that has expired.
 
     Args:
-        location: City or neighbourhood to search, e.g. "Kyoto" or "Shibuya".
+        location: City to search, e.g. "Kyoto". Sample data accepts any
+            free-text place; live lodging search covers a fixed list of cities
+            and the error names them when it does not recognise one.
         check_in: Arrival date as YYYY-MM-DD.
         check_out: Departure date as YYYY-MM-DD.
         guests: Number of guests.
-        max_nightly_rate: Optional ceiling on nightly rate, in USD.
+        max_nightly_rate: Optional ceiling on nightly rate, in USD. Applied
+            only to offers quoted in USD — an offer priced in another currency
+            is returned regardless, so check its `currency` before treating it
+            as within budget.
     """
     if guests < 1:
         return {"error": "guests must be at least 1."}

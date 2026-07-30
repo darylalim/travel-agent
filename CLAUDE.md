@@ -13,11 +13,11 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
-uv run pytest                            # 69 tests, ~2s, no network, no model calls
+uv run pytest                            # 134 tests, ~3s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
-bash .claude/hooks/test-hooks.sh         # 77 cases pinning the Claude Code hooks
+bash .claude/hooks/test-hooks.sh         # 88 cases pinning the Claude Code hooks
 ```
 
 The hooks in `.claude/` enforce parts of this file mechanically: the data-honesty
@@ -26,6 +26,13 @@ co-change rule, Duffel's read-only constraint, `_PROVIDER_ENV` coverage, and the
 are load-bearing — an adversarial review of the first draft found thirteen real
 defects, one of which deleted imports Claude had just written. `test-hooks.sh`
 pins every fix, so run it after touching a hook.
+
+Two of them generalise differently, which is easy to get backwards:
+`provider-env-drift.sh` **globs** `src/travel_agent/tools/*.py`, so a new
+provider file is covered automatically; `honesty-cochange.sh` **hardcodes** its
+file list in two places that must agree (`PROVIDERS=` and the regex below it).
+Add a provider module and only the second needs editing — miss it and the file
+is silently unguarded.
 
 `.github/workflows/ci.yml` runs the same commands on push and PR, plus two
 checks with no local equivalent: it asserts the three-way 3.11 pin below, and
@@ -73,9 +80,18 @@ maintained in one place. Five enforcement points must stay in agreement:
    the naive way to fetch those fields returns nothing, silently.
 
 Point 4 is the subtle one. `synthetic` is not a property of the provider:
-Duffel in *test mode* returns fictional fares, and Duffel *lodging* falls
-through to `SampleProvider`. Both are synthetic under a provider named
-`duffel`. Judging by provider name gets this wrong in two directions at once.
+Duffel in *test mode* returns fictional fares for flights and routes lodging to
+`SampleProvider`, so both are synthetic under a provider named `duffel` — while
+the *same* provider on a live token returns real inventory for both. Judging by
+provider name gets this wrong in both directions, and the direction it gets
+wrong changed when Duffel Stays landed. Key off `warning`/`synthetic`.
+
+Lodging is the part that moved, and the reason is worth keeping: Duffel's Stays
+test inventory sits at one coordinate pair, so a test-token search of a real
+city returns an empty list rather than an error. Sample data is both the more
+useful and the more honest answer there, which is why the test/live split lives
+in `DuffelProvider.search_stays` rather than being pushed down into
+`duffel_stays.py`.
 
 When you change an offer's shape, a provider, or a warning, update the tool
 docstring in the same edit — the docstring is the model's only interface to
@@ -119,9 +135,16 @@ are interpolated into prompt text — change them there, not inline.
 ## Provider seam
 
 `AvailabilityProvider` is a `Protocol` in `availability.py`; `_PROVIDERS` maps
-`TRAVEL_AGENT_PROVIDER` values to factories. To add one (Amadeus, Duffel Stays):
+`TRAVEL_AGENT_PROVIDER` values to factories. To add one (Amadeus, Booking.com):
 implement the protocol, register a factory, and set each offer's `source` to the
 provider name.
+
+`duffel` is one entry serving both kinds. Flights live in `duffel.py`, lodging
+in `duffel_stays.py`, and `DuffelProvider` composes them — `duffel_stays.py`
+imports `API_BASE`, `DuffelError`, `describe_error` and `seconds_until` from
+`duffel.py` at module scope, so `duffel.py` imports `fetch_stays` **inside**
+`search_stays` or the two cycle. Same lazy-import trick `_load_duffel` uses one
+level up, for the same reason.
 
 - `_build_provider` is `@cache`d, so construction and its side effects (the
   live-token warning) happen once per process. Failed construction isn't cached,
@@ -136,14 +159,45 @@ provider name.
   `_select_flights` keeps the cheapest, fastest, and fewest-stops offers so a
   nonstop survives when all the cheap fares are multi-stop.
 
-**Duffel is read-only** — offer requests and reads, never `POST /air/orders`.
-Adding booking means putting order creation behind Deep Agents' `interrupt_on`
-human-approval gate; that is a deliberate design decision, not a config change.
+**Duffel is read-only** — searches and reads, never `POST /air/orders` or
+`POST /stays/bookings`, and never a quote. Adding booking means putting order
+creation behind Deep Agents' `interrupt_on` human-approval gate; that is a
+deliberate design decision, not a config change. `no-booking.sh` enforces this
+by **path, not verb** — `/stays/search` is itself a POST — and only on URL
+*construction*, so prose and test assertions naming the path still pass.
 
-Duffel v2 response shape, easy to get wrong: `live_mode` is top level;
+Duffel v2 Air response shape, easy to get wrong: `live_mode` is top level;
 `duration` sits on each **slice** (covering layovers — summing segments
 understates multi-stop trips); `cabin_class` is nested at
 `slices[].segments[].passengers[].cabin_class`, not on the offer.
+
+Duffel v2 **Stays** is shaped differently enough that Air intuitions mislead:
+
+- Results arrive at `data.results[]`, not `data.offers`.
+- **There is no `live_mode` field anywhere on Stays.** The token is the only
+  signal, which is why `map_stay_result` takes `synthetic` as a given rather
+  than reading it. Do not go looking for the flag that works on Air.
+- Search is by `geographic_coordinates` — there is **no city-name form**. Hence
+  `CITY_COORDINATES`, and hence an unknown city being an error rather than a
+  nearest match.
+- `review_score` is 0–10 and `rating` is 1–5 stars. Only the first may feed
+  `guest_rating`; the Trip page renders it on a hardcoded 0–10 progress bar and
+  axis, so backfilling stars shows a four-star hotel as 4/10.
+- An **empty** `cancellation_timeline` means non-refundable; an **absent** one
+  means unknown. `free_cancellation` is omitted for the second, because
+  `cancel_band` renders a missing key as "Not stated" and that is a different
+  claim from "no".
+- `total_amount` and `due_at_accommodation_amount` are **not summed**. Duffel's
+  own docs disagree about whether the second sits inside the first, so both are
+  passed through as they arrive. Adding them double-counts under one reading;
+  subtracting understates under the other.
+- No `supplier_timeout` — that knob is Air-only, so the Stays timeout is a flat
+  constant and its error message must not point at `DUFFEL_SUPPLIER_TIMEOUT_MS`.
+
+`max_nightly_rate` is a bare USD number and a live search is not always in USD.
+The ceiling is applied only to offers quoted in USD; others pass through
+unfiltered rather than being silently dropped, since an empty result set says
+nothing about why it is empty.
 
 ## Streamlit UI
 

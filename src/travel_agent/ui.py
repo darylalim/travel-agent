@@ -166,10 +166,10 @@ class TripRecord:
     def caveats(self) -> list[str]:
         """Distinct synthetic-data warnings raised by any search so far.
 
-        Keyed off the `warning` field, never the provider name. Duffel in test
-        mode returns fictional fares under a provider called `duffel`, and
-        Duffel lodging falls through to sample data, so the provider name is
-        wrong in two directions at once.
+        Keyed off the `warning` field, never the provider name. A provider
+        called `duffel` returns fictional fares and sample lodging under a test
+        token and real inventory of both under a live one, so the name says
+        nothing about whether any particular result is real.
 
         Order is preserved rather than sorted: flights and lodging can carry
         different caveats in one plan, and a warning survives even when the
@@ -330,8 +330,8 @@ def source_column(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Add a visible provenance field to each offer.
 
     Derived from each offer's own `synthetic` flag, never from the provider
-    name: Duffel test mode returns fictional fares, and Duffel lodging falls
-    through to sample data, so the provider is wrong in both directions.
+    name: the same provider called `duffel` returns fictional fares and sample
+    lodging on a test token, and real inventory of both on a live one.
 
     This is the single derivation of provenance for the whole page — the table
     column, the chart tooltips and the chart's own provenance caption all read

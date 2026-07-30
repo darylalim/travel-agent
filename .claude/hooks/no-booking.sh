@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
-# PreToolUse (Edit|Write) — refuse edits that add Duffel order or payment creation.
+# PreToolUse (Edit|Write) — refuse edits that add Duffel booking or payment creation.
 #
 # CLAUDE.md: "Duffel is read-only — offer requests and reads, never POST
 # /air/orders. Adding booking means putting order creation behind Deep Agents'
 # interrupt_on human-approval gate; that is a deliberate design decision, not a
 # config change." Creating an order spends real money and cannot be undone from
 # here, so this is a hard deny rather than a reminder.
+#
+# Both products are covered. Air books through /air/orders; Stays books through
+# /stays/bookings, and /stays/quotes creates server-side state on the way there.
+# The verb cannot be the discriminator: /stays/search is itself a POST, and it
+# is the one call this integration is built to make. So the path is.
 #
 # The match targets URL CONSTRUCTION only, not any mention of the path. Two
 # things must keep working:
@@ -16,9 +21,16 @@
 # So a plain quoted "/air/orders" is allowed, and only the forms that actually
 # build a request URL are denied:
 #     f"{API_BASE}/air/orders"          -> "}" immediately before the path
+#     f"{API_BASE}/stays/bookings"      -> same, for Stays
 #     "https://api.duffel.com/air/..."  -> full host
 #     API_BASE + "/air/orders"          -> explicit concatenation
+#     f"{booking_url}/actions/cancel"   -> cancel built off an existing URL
 #     client.orders.create(...)         -> duffel-api SDK call
+#
+# The cancel clause needs its own alternative rather than riding the path ones:
+# a cancel URL is plausibly built from an already-scoped booking URL, where the
+# "}" is followed by /actions/cancel and the /stays/bookings text never appears
+# in that string at all.
 # Files under tests/ are exempt entirely: the suite is offline by construction
 # (conftest's autouse fixture plus httpx.MockTransport), so no test can create a
 # real order, and the hook must never block testing the invariant it protects.
@@ -48,16 +60,20 @@ body=$(printf '%s' "$input" | jq -r '
 PATTERN='\}/air/(orders|payments)'
 PATTERN="$PATTERN"'|duffel\.com/air/(orders|payments)'
 PATTERN="$PATTERN"'|API_BASE[[:space:]]*\+[[:space:]]*["'\''][[:space:]]*/air/(orders|payments)'
-PATTERN="$PATTERN"'|\.orders\.create\('
+PATTERN="$PATTERN"'|\}/stays/(bookings|quotes)'
+PATTERN="$PATTERN"'|duffel\.com/stays/(bookings|quotes)'
+PATTERN="$PATTERN"'|API_BASE[[:space:]]*\+[[:space:]]*["'\''][[:space:]]*/stays/(bookings|quotes)'
+PATTERN="$PATTERN"'|\}/actions/cancel'
+PATTERN="$PATTERN"'|\.(orders|bookings)\.(create|cancel)\('
 
 if grep -qE "$PATTERN" <<<"$body"; then
   jq -n '{hookSpecificOutput: {
     hookEventName: "PreToolUse",
     permissionDecision: "deny",
     permissionDecisionReason: (
-      "This edit builds a request URL for Duffel order or payment creation. The Duffel integration is deliberately read-only — it creates offer requests and reads offers back, and never POSTs to /air/orders (see CLAUDE.md, \"Provider seam\", and the duffel.py module docstring).\n\n" +
-      "Order creation spends real money and is not reversible from the agent loop. It is only acceptable behind Deep Agents interrupt_on human-approval gate, which is an architectural decision for the user to make explicitly — not something to add as part of a provider edit.\n\n" +
-      "Stop and ask the user. Note this hook allows a plain quoted \"/air/orders\" (so assertions and prose are fine) and exempts tests/ entirely; it only fires on URL construction such as f\"{API_BASE}/air/orders\"."
+      "This edit builds a request URL for Duffel booking, quote or payment creation. The Duffel integration is deliberately read-only — it creates offer requests and searches, reads the results back, and never POSTs to /air/orders or /stays/bookings (see CLAUDE.md, \"Provider seam\", and the duffel.py and duffel_stays.py module docstrings).\n\n" +
+      "Booking spends real money and is not reversible from the agent loop. It is only acceptable behind Deep Agents interrupt_on human-approval gate, which is an architectural decision for the user to make explicitly — not something to add as part of a provider edit.\n\n" +
+      "Stop and ask the user. Note this hook allows a plain quoted \"/air/orders\" or \"/stays/bookings\" (so assertions and prose are fine) and exempts tests/ entirely; it only fires on URL construction such as f\"{API_BASE}/air/orders\". Searching — /air/offer_requests and /stays/search — is always allowed."
     )
   }}'
   exit 0

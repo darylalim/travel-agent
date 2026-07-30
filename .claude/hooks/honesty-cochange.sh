@@ -25,14 +25,19 @@ root="${CLAUDE_PROJECT_DIR:-$PWD}"
 cd "$root" 2>/dev/null || exit 0
 git rev-parse --git-dir >/dev/null 2>&1 || exit 0
 
-PROVIDERS="src/travel_agent/tools/availability.py src/travel_agent/tools/duffel.py"
+# Every file that can decide whether an offer is real. duffel_stays.py belongs
+# here for the same reason the other two do: it sets `synthetic` and derives
+# `free_cancellation` and `guest_rating`. NOTE this list is spelled twice — here
+# and in the regex below — and they must agree, or a file is watched by the
+# fingerprint but never triggers the check.
+PROVIDERS="src/travel_agent/tools/availability.py src/travel_agent/tools/duffel.py src/travel_agent/tools/duffel_stays.py"
 
 # Porcelain paths are always relative to the repo root. $NF picks the
 # destination side of a rename ("R  old -> new").
 changed=$(git status --porcelain -- src tests 2>/dev/null | awk '{print $NF}')
 [ -n "$changed" ] || exit 0
 
-grep -qE '^src/travel_agent/tools/(availability|duffel)\.py$' <<<"$changed" || exit 0
+grep -qE '^src/travel_agent/tools/(availability|duffel|duffel_stays)\.py$' <<<"$changed" || exit 0
 grep -q '^tests/' <<<"$changed" && exit 0
 
 # State lives outside the repo so it never shows up in git status or a diff.
@@ -48,7 +53,7 @@ fi
 printf '%s' "$fingerprint" >"$state_file" 2>/dev/null
 
 jq -n '{decision: "block", reason: (
-  "availability.py and/or duffel.py has uncommitted changes, but nothing under tests/ does.\n\n" +
+  "A provider file (availability.py, duffel.py or duffel_stays.py) has uncommitted changes, but nothing under tests/ does.\n\n" +
   "The data-honesty invariant — the traveler is never shown synthetic inventory described as real — spans four enforcement points that must agree:\n" +
   "  1. every offer carries `synthetic: bool` alongside `source`\n" +
   "  2. providers implement `synthetic_note(kind)`, consulted even when a search returns nothing\n" +

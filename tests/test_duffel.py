@@ -20,6 +20,7 @@ from travel_agent.tools.duffel import (
     DuffelError,
     DuffelProvider,
     map_offer,
+    parse_amount,
     parse_iso_duration,
 )
 
@@ -109,6 +110,25 @@ def _responds(payload: dict, status: int = 200, headers: dict | None = None) -> 
 )
 def test_parse_iso_duration(value, expected):
     assert parse_iso_duration(value) == expected
+
+
+# --- amount parsing ---------------------------------------------------------
+
+
+@pytest.mark.parametrize("raw", [None, "", "on request", "1,299.00", [], True, False])
+def test_unusable_amounts_parse_to_none_never_zero(raw):
+    """A zero sorts to the front and gets recommended as the cheapest option.
+
+    `True` is in here because `bool` subclasses `int`: without an explicit
+    guard it would parse to a perfectly plausible-looking 1.0.
+    """
+    assert parse_amount(raw) is None
+
+
+@pytest.mark.parametrize(("raw", "expected"), [("912.40", 912.40), (48, 48.0), (0, 0.0)])
+def test_real_amounts_parse_through(raw, expected):
+    """A genuine zero is preserved — it is unusable *input* that becomes None."""
+    assert parse_amount(raw) == expected
 
 
 # --- offer mapping ----------------------------------------------------------
@@ -215,12 +235,29 @@ def test_test_token_provider_declares_flights_synthetic():
     assert "test mode" in (provider.synthetic_note("flights") or "")
 
 
-def test_live_token_provider_declares_flights_real():
+def test_live_token_provider_declares_both_kinds_real():
+    """A live token searches Duffel Stays for real, so lodging loses the caveat.
+
+    This is the one place synthetic-ness is decided for lodging: a Stays result
+    carries no `live_mode` field to fall back on.
+    """
     provider = DuffelProvider(token=LIVE_TOKEN)
     assert provider.test_mode is False
     assert provider.synthetic_note("flights") is None
-    # Lodging is still sample data even on a live token.
-    assert provider.synthetic_note("stays") is not None
+    assert provider.synthetic_note("stays") is None
+
+
+def test_test_token_provider_declares_stays_synthetic_as_sample_data():
+    """Test-mode lodging routes to SampleProvider, so it gets *that* disclaimer.
+
+    Not the Duffel-test-mode one: no Duffel airline names are involved, and the
+    two disclaimers make different promises about what the numbers are.
+    """
+    provider = DuffelProvider(token=TEST_TOKEN)
+    note = provider.synthetic_note("stays") or ""
+
+    assert "sample" in note.lower()
+    assert "airline" not in note.lower()
 
 
 def test_search_with_a_test_token_warns_through_the_tool(monkeypatch):
@@ -490,7 +527,14 @@ def test_bad_dates_are_rejected_before_any_network_call(monkeypatch):
 
 
 def test_lodging_still_returns_labelled_sample_data_under_duffel(monkeypatch):
-    """Duffel covers flights only, so stays must keep the sample-data caveat."""
+    """A test token keeps the sample-data caveat on lodging — for a new reason.
+
+    Duffel Stays is wired up now, but its test inventory sits at one coordinate
+    pair, so a test-token search of a real city would return nothing. Lodging
+    routes to `SampleProvider` instead, and is labelled as such. The assertions
+    below are unchanged from when Duffel had no Stays support at all; only why
+    they hold has moved.
+    """
     monkeypatch.setenv("TRAVEL_AGENT_PROVIDER", "duffel")
     monkeypatch.setenv("DUFFEL_API_TOKEN", TEST_TOKEN)
 

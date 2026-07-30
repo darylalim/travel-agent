@@ -27,8 +27,15 @@ We talk to the REST API over `httpx` rather than the `duffel-api` PyPI
 package: that package was last released in 2023, is still classified Alpha,
 and would drag in `requests`.
 
-Out of scope for now, deliberately: Duffel Stays (lodging still comes from
-`SampleProvider`) and cabin selection (every search requests economy).
+Lodging lives in `duffel_stays.py`, and which of the two runs is decided by the
+token: a live token searches Duffel Stays for real, a test token routes to
+`SampleProvider` instead. Duffel's Stays test inventory exists at exactly one
+coordinate pair, so a test-mode search of a real city returns nothing at all —
+sample data is the more useful *and* the more honest answer there, and it is
+labelled as sample data either way.
+
+Out of scope for now, deliberately: cabin selection (every search requests
+economy).
 """
 
 from __future__ import annotations
@@ -96,8 +103,12 @@ def parse_iso_duration(value: str | None) -> int | None:
     return total or None
 
 
-def _seconds_until(timestamp: str | None) -> int | None:
-    """Seconds remaining until an ISO 8601 timestamp, floored at zero."""
+def seconds_until(timestamp: str | None) -> int | None:
+    """Seconds remaining until an ISO 8601 timestamp, floored at zero.
+
+    Public rather than underscored because `duffel_stays` imports it: Stays
+    results expire the same way Air offers do.
+    """
     if not timestamp:
         return None
     try:
@@ -140,14 +151,20 @@ def _cabin_class(slices: list[dict[str, Any]]) -> str | None:
     return None
 
 
-def _total_amount(offer: dict[str, Any]) -> float | None:
-    """Offer total as a float, or None when absent or unparseable.
+def parse_amount(raw: Any) -> float | None:
+    """Parse one of Duffel's stringified numbers, or None when unusable.
 
     Deliberately not defaulted to zero: a zero fare sorts to the front and
-    would be recommended to the traveler as the cheapest flight.
+    would be recommended to the traveler as the cheapest flight, and a zero
+    rating renders as an empty bar beside real scores.
+
+    `bool` is rejected explicitly because it is a subclass of `int`, so `True`
+    would otherwise parse to a perfectly valid-looking 1.0.
+
+    Public rather than underscored because `duffel_stays` reuses it for rate,
+    review-score and refund amounts.
     """
-    raw = offer.get("total_amount")
-    if raw is None:
+    if raw is None or isinstance(raw, bool):
         return None
     try:
         return float(raw)
@@ -189,7 +206,7 @@ def map_offer(offer: dict[str, Any], travelers: int) -> dict[str, Any]:
     slices = [_map_slice(s) for s in (offer.get("slices") or [])]
     outbound = slices[0] if slices else {}
 
-    total = _total_amount(offer)
+    total = parse_amount(offer.get("total_amount"))
     # live_mode is false for test-mode inventory, which is fictional.
     live = bool(offer.get("live_mode", False))
 
@@ -214,13 +231,17 @@ def map_offer(offer: dict[str, Any], travelers: int) -> dict[str, Any]:
         # Duffel offers go stale in minutes. The agent must re-search rather
         # than quote an expired offer, so surface the deadline explicitly.
         "expires_at": offer.get("expires_at"),
-        "expires_in_seconds": _seconds_until(offer.get("expires_at")),
+        "expires_in_seconds": seconds_until(offer.get("expires_at")),
         "slices": slices,
     }
 
 
-def _describe_error(response: httpx.Response) -> str:
-    """Turn a Duffel error body into one readable line."""
+def describe_error(response: httpx.Response) -> str:
+    """Turn a Duffel error body into one readable line.
+
+    Public rather than underscored because `duffel_stays` imports it: Stays
+    returns the same `{"errors": [...]}` envelope as Air.
+    """
     request_id = response.headers.get("x-request-id", "unknown")
     try:
         errors = response.json().get("errors") or []
@@ -238,8 +259,27 @@ def _describe_error(response: httpx.Response) -> str:
     return f"Duffel {response.status_code}: {response.text[:200]} (request {request_id})"
 
 
+def raise_for_status(response: httpx.Response) -> None:
+    """Raise `DuffelError` for a rate limit or any other error status.
+
+    Shared by Air and Stays, which return the same error envelope. Rate
+    limiting is called out separately from the generic message because it is
+    the one failure the caller can act on by simply waiting.
+    """
+    if response.status_code == 429:
+        retry = response.headers.get("ratelimit-reset", "shortly")
+        raise DuffelError(f"Duffel rate limit hit; resets {retry}.")
+    if response.status_code >= 400:
+        raise DuffelError(describe_error(response))
+
+
 class DuffelProvider:
-    """Live flight offers from Duffel. Lodging falls through to sample data."""
+    """Live flight offers from Duffel, and lodging via `duffel_stays`.
+
+    Both kinds are real under a live token and synthetic under a test one, so
+    the token is the single thing that decides synthetic-ness — see
+    `synthetic_note`.
+    """
 
     name = DUFFEL_SOURCE
 
@@ -279,10 +319,21 @@ class DuffelProvider:
             )
 
     def synthetic_note(self, kind: SearchKind) -> str | None:
-        if kind == "stays":
-            # Duffel Stays is not wired up; lodging comes from SampleProvider.
-            return SAMPLE_DISCLAIMER
-        return DUFFEL_TEST_DISCLAIMER if self.test_mode else None
+        """Disclaimer for a search of this kind, or None for real inventory.
+
+        The token decides, and `kind` only picks the wording:
+
+        - live token — both kinds are real inventory, so neither is flagged.
+        - test token, flights — Duffel's own fictional test-mode fares.
+        - test token, stays — `search_stays` routes to `SampleProvider`, so the
+          honest disclaimer is the sample-data one, not the Duffel-test one.
+
+        Note this is the *only* signal for lodging: a Stays result carries no
+        `live_mode` field to cross-check against, unlike an Air offer.
+        """
+        if not self.test_mode:
+            return None
+        return SAMPLE_DISCLAIMER if kind == "stays" else DUFFEL_TEST_DISCLAIMER
 
     def _http(self) -> httpx.Client:
         """One pooled client per provider; providers are cached per process."""
@@ -354,11 +405,7 @@ class DuffelProvider:
         except httpx.HTTPError as exc:
             raise DuffelError(f"Could not reach Duffel: {exc}") from exc
 
-        if response.status_code == 429:
-            retry = response.headers.get("ratelimit-reset", "shortly")
-            raise DuffelError(f"Duffel rate limit hit; resets {retry}.")
-        if response.status_code >= 400:
-            raise DuffelError(_describe_error(response))
+        raise_for_status(response)
 
         raw = (response.json().get("data") or {}).get("offers") or []
         mapped = [map_offer(offer, travelers) for offer in raw]
@@ -380,12 +427,27 @@ class DuffelProvider:
         guests: int,
         max_nightly_rate: float | None,
     ) -> list[dict]:
-        """Lodging is not wired to Duffel Stays yet — returns sample data.
+        """Live Duffel Stays under a live token, sample data under a test one.
 
-        Offers keep `source: "sample-data"` and `synthetic: true`, and
-        `synthetic_note("stays")` carries the disclaimer even when this
-        returns nothing.
+        A test token cannot return anything useful here: Duffel's Stays test
+        inventory sits at a single coordinate pair, so searching a real city
+        would come back empty — not as an error, just as nothing. Sample data
+        answers the question the traveler actually asked and keeps its
+        `source: "sample-data"` and `synthetic: true`, with
+        `synthetic_note("stays")` carrying the disclaimer even when the result
+        is empty.
+
+        Live results are real inventory, so they carry `synthetic: false` and
+        no warning — the first time that has been true of lodging.
         """
-        return SampleProvider().search_stays(
-            location, check_in, check_out, guests, max_nightly_rate
-        )
+        if self.test_mode:
+            return SampleProvider().search_stays(
+                location, check_in, check_out, guests, max_nightly_rate
+            )
+
+        # Imported here, not at module scope: duffel_stays imports this module
+        # for API_BASE, DuffelError and the two shared helpers, so a top-level
+        # import in both directions is a cycle.
+        from travel_agent.tools.duffel_stays import fetch_stays
+
+        return fetch_stays(self._http(), location, check_in, check_out, guests, max_nightly_rate)

@@ -79,10 +79,11 @@ with st.sidebar:
     # two of them overflow a sidebar this narrow.
     with st.container(gap="xsmall"):
         # Grey on purpose, and never green. A colour reading as "live" would be
-        # a claim about the data, which the provider name cannot support: a
-        # Duffel *test* token returns fictional fares and Duffel lodging falls
-        # through to sample data. Provenance is stated per offer on the Trip
-        # page, off each offer's own `synthetic` flag.
+        # a claim about the data, which the provider name cannot support: the
+        # same provider called `duffel` returns fictional fares and sample
+        # lodging on a test token, and real inventory on a live one. Provenance
+        # is stated per offer on the Trip page, off each offer's own
+        # `synthetic` flag.
         st.badge(
             os.getenv("TRAVEL_AGENT_PROVIDER", "sample-data"),
             icon=":material/inventory_2:",

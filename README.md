@@ -77,7 +77,7 @@ delegation (`task`) out of the box. This project adds:
 | System prompts | `prompts.py` | Workspace layout, memory contract, delegation rules |
 | Subagents | `subagents.py` | `destination-researcher`, `availability-scout`, `budget-analyst` |
 | Web search | `tools/search.py` | Tavily, optional |
-| Flights & lodging | `tools/availability.py`, `tools/duffel.py` | Provider seam — see below |
+| Flights & lodging | `tools/availability.py`, `tools/duffel.py`, `tools/duffel_stays.py` | Provider seam — see below |
 | Budget math | `tools/budget.py` | Pure arithmetic, so the model never adds up a column itself |
 | Graph | `agent.py` | Wires the above together; exports `graph` for `langgraph.json` |
 | Browser UI | `streamlit_app.py`, `app_pages/` | Two-page Streamlit app; theme in `.streamlit/config.toml` |
@@ -106,8 +106,8 @@ with `TRAVEL_AGENT_PROVIDER`:
 | Value | Flights | Lodging |
 |---|---|---|
 | `sample-data` (default) | Synthetic | Synthetic |
-| `duffel` + test token | **Synthetic** (Duffel test inventory) | Synthetic |
-| `duffel` + live token | **Real** | Synthetic |
+| `duffel` + test token | **Synthetic** (Duffel test inventory) | Synthetic (sample data) |
+| `duffel` + live token | **Real** | **Real** (Duffel Stays) |
 
 The safety property: **the traveler is never shown synthetic inventory
 described as real.** Every offer carries `synthetic: bool`, and a response
@@ -116,9 +116,16 @@ key off those two fields.
 
 Note the middle row. A Duffel *test* token returns fictional airlines at
 invented fares — synthetic despite coming from a live API over the network, so
-it is labelled exactly like sample data. Judging by the provider name would
-get this wrong in two different ways at once: test-mode flights would look
-real, and lodging under `duffel` would too.
+it is labelled exactly like sample data. Judging by the provider name would get
+this wrong in both directions: test-mode flights under `duffel` would look
+real, and real lodging under `duffel` would look synthetic if the rule were
+"lodging is always sample data".
+
+Lodging is the row that moves. Duffel's Stays test inventory exists at a single
+coordinate pair, so a test-mode search of an actual city returns nothing at
+all — not an error, just an empty list. Sample data answers the question the
+traveler asked, so a test token routes lodging there and says so; a live token
+searches Duffel Stays for real.
 
 An empty result set is warned about as well, since providers declare
 synthetic-ness up front. Otherwise "no offers" from a synthetic source would
@@ -127,11 +134,19 @@ read as "we checked real inventory and found nothing available".
 Sample offers are deterministic — seeded off the query, so prices don't drift
 mid-conversation.
 
-**Duffel is read-only.** It creates offer requests and reads offers back; it
-never calls `POST /air/orders`, so nothing is booked and no payment is taken,
-on a test token or a live one. Adding booking would mean putting order
-creation behind Deep Agents' `interrupt_on` human-approval gate — that is a
-deliberate decision, not a config change.
+**Duffel is read-only.** It creates offer requests and searches and reads the
+results back; it never calls `POST /air/orders` or `POST /stays/bookings`, and
+never creates a quote, so nothing is booked and no payment is taken, on a test
+token or a live one. Adding booking would mean putting order creation behind
+Deep Agents' `interrupt_on` human-approval gate — that is a deliberate
+decision, not a config change.
+
+The verb is not the discriminator here: `/stays/search` is itself a `POST`, and
+it is the one call the lodging path is built to make. So
+`.claude/hooks/no-booking.sh` matches on the **path**, and only on forms that
+actually construct a request URL — a bare `"/stays/bookings"` in a docstring or
+a test assertion stays allowed, because the hook must never block testing the
+invariant it protects.
 
 To use it: create a test token in the Duffel dashboard under *Developer test
 mode* (`duffel_test_…`), set `DUFFEL_API_TOKEN` and
@@ -148,8 +163,20 @@ Two things worth knowing:
   The trim keeps the cheapest, the fastest, and the fewest-stops options, so a
   nonstop still survives when the cheapest fares are all multi-stop. Responses
   carry `total_found`, `count`, and a `truncated` note.
-- **Duffel Stays is not wired up**, so lodging still returns sample data. Cabin
-  selection is likewise out of scope — every search is economy.
+- **Live lodging search covers a fixed list of cities.** Duffel Stays searches
+  by latitude and longitude — there is no city-name form, and Duffel's own
+  guide says you will "probably need to use a geocoding service." Rather than
+  take that dependency and another API key, the provider ships a static table
+  and refuses what it does not know, naming the cities that do work. A
+  nearest-match guess would label results with a city nobody asked for, which
+  is far harder to notice than an error.
+- **A stay's two prices are reported, never summed.** Duffel's docs disagree
+  about whether `due_at_accommodation_amount` sits inside `total_amount` or on
+  top of it, so both are surfaced as they arrive. Adding them double-counts
+  under one reading and subtracting understates under the other, and either
+  way the traveler would be shown a confident number nobody can source.
+- **Cabin selection is out of scope** — every flight search is economy. So is
+  multi-room lodging search: one room, all guests.
 
 We call Duffel's REST API over `httpx` rather than the `duffel-api` PyPI
 package, which was last released in 2023, is classified Alpha, and would add a
@@ -158,7 +185,7 @@ against `httpx.MockTransport`, and `tests/conftest.py` clears the provider env
 vars for every test — so the suite needs no token and never reaches the
 network, whatever you have exported.
 
-To add another provider (Amadeus, Skyscanner, Duffel Stays): implement the
+To add another provider (Amadeus, Skyscanner, Booking.com): implement the
 protocol, register a factory in `_PROVIDERS`, and set `source` to the provider
 name so the sample-data caveat drops out of the agent's replies automatically.
 

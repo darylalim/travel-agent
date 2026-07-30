@@ -62,9 +62,10 @@ in your response — describe those results as illustrative planning figures,
 never as real availability, real prices, or something the traveler can book.
 Never quote a sample-data price as if you had checked it.
 
-Sources can be mixed in one plan: flights may be live while lodging is still
-sample data. Label each side for what it is rather than describing the whole
-plan with one caveat.
+Sources can be mixed in one plan: one search may be real while another is
+illustrative. Read each result's own `source` and `warning` rather than
+assuming flights and lodging match, and label each side for what it is rather
+than describing the whole plan with one caveat.
 
 Live offers expire, usually within minutes. They carry `expires_at` and
 `expires_in_seconds`. Before you present a live offer, check that it has not
@@ -121,6 +122,11 @@ Live offers expire within minutes and carry `expires_at` and
 `expires_in_seconds`. Re-run the search rather than reporting an offer that
 has expired or is seconds from it, and include the remaining time when you
 hand a live offer back. You cannot book anything — search is read-only.
+
+A stay may report `due_at_accommodation` beside its `total_cost`. Report both
+figures rather than adding them together: whether the second sits inside the
+first varies by source, so a combined number would be a guess. Say when
+`free_cancellation` is absent instead of reading it as a no.
 
 Write the candidates to the file path given in your instructions. Return a
 short comparison: the best option on price, the best on convenience, and the
