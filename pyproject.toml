@@ -1,7 +1,7 @@
 [project]
 name = "travel-agent"
 version = "0.1.0"
-description = "Travel agent built on Deep Agents."
+description = "Travel planning agent on Deep Agents. Research destinations and search flight and lodging inventory via Duffel."
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
 dependencies = [

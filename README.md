@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/darylalim/travel-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/darylalim/travel-agent/actions/workflows/ci.yml)
 
-Travel agent built on Deep Agents.
+Travel planning agent on Deep Agents. Research destinations and search flight and lodging inventory via Duffel.
 
 Researches destinations, gathers flight and lodging options, builds a
 day-by-day itinerary, costs it against a budget, and remembers traveler
