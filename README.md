@@ -1,4 +1,4 @@
-# travel-agent
+# Travel Agent
 
 [![CI](https://github.com/darylalim/travel-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/darylalim/travel-agent/actions/workflows/ci.yml)
 
