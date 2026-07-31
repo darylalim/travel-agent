@@ -3,6 +3,11 @@ name = "travel-agent"
 version = "0.1.0"
 description = "Travel planning agent on Deep Agents. Research destinations and search flight and lodging inventory via Duffel."
 readme = "README.md"
+# PEP 639: an SPDX expression plus the file it resolves to, so the built wheel
+# carries the licence text as well as the identifier. A bare LICENSE at the repo
+# root satisfies GitHub but leaves the distributed artefact unlicensed.
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11,<4.0"
 dependencies = [
     # Ceiling, not caprice: 0.7.0 removes `StoreBackend()` without an explicit

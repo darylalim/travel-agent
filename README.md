@@ -218,3 +218,9 @@ CI runs the same checks on push and pull request, with tests across Python
 `deepagents` 0.6.x · `langchain` 1.3+ · `langgraph` 1.2+ ·
 `claude-opus-5` via `langchain-anthropic` · Duffel API `v2` over `httpx` ·
 `streamlit` 1.60+ for the browser UI. Requires Python 3.11+.
+
+## License
+
+MIT — see [LICENSE](LICENSE). The stack it builds on is permissive throughout:
+`deepagents`, `langchain` and `langgraph` are MIT, `httpx` and `python-dotenv`
+BSD-3-Clause, `streamlit` Apache-2.0.
