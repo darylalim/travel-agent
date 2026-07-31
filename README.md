@@ -153,7 +153,7 @@ mode* (`duffel_test_…`), set `DUFFEL_API_TOKEN` and
 `TRAVEL_AGENT_PROVIDER=duffel` in `.env`. Test-mode results are fictional and
 are labelled as such — see the table above.
 
-Two things worth knowing:
+A few things worth knowing:
 
 - **Offers expire, usually in minutes.** Each carries `expires_at` and
   `expires_in_seconds`, and the prompts tell the agent to re-search rather than
@@ -175,8 +175,22 @@ Two things worth knowing:
   top of it, so both are surfaced as they arrive. Adding them double-counts
   under one reading and subtracting understates under the other, and either
   way the traveler would be shown a confident number nobody can source.
-- **Cabin selection is out of scope** — every flight search is economy. So is
-  multi-room lodging search: one room, all guests.
+- **Cabin class is a search parameter**, defaulting to economy. It is validated
+  and normalised at the tool layer, so "Premium Economy" and `premium-economy`
+  both land on `premium_economy`, while anything unrecognised is an error
+  naming the four that work rather than a guess — coercing "biz" to business
+  commits the traveler to a fare several times the one they meant. Duffel
+  treats cabin as a **preference rather than a filter**, so a search can
+  succeed without returning what it asked for: the response echoes
+  `requested_cabin`, each offer carries the cabin it actually came back in
+  (`mixed` when one itinerary's legs disagree), and a `cabin_note` appears when
+  those differ. That note is a separate field from `warning` deliberately — a
+  real fare in the wrong cabin is not the same problem as a fictional one, and
+  a live search that has no honesty caveat to raise must not borrow that
+  banner. The 20-offer trim selects the requested cabin first for the same
+  reason: a lower cabin is always cheaper, so trimming by price alone would
+  answer a business search with twenty economy fares and raise nothing.
+- **Multi-room lodging search is out of scope** — one room, all guests.
 
 We call Duffel's REST API over `httpx` rather than the `duffel-api` PyPI
 package, which was last released in 2023, is classified Alpha, and would add a

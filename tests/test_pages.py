@@ -617,6 +617,54 @@ def test_the_amount_due_at_the_property_reaches_the_table(trip_page):
     assert "never added together" in columns["due_at_accommodation"]["help"]
 
 
+def test_the_cabin_an_offer_came_back_in_reaches_the_table(trip_page):
+    """Cabin is only worth requesting if what returned is visible.
+
+    Same whitelist hazard as the charge above: `column_order` hides every key
+    it does not name, so a Cabin column dropped from it would leave a business
+    search looking exactly like an economy one. The help text carries the only
+    explanation of "mixed" the traveler ever gets.
+    """
+    record = trip_page.session_state["record"]
+    record.record_tool(
+        _search(
+            "search_flights",
+            [
+                {**_flight_offer(9000.0, 640, 0), "cabin": "business"},
+                {**_flight_offer(9400.0, 700, 1), "cabin": "mixed"},
+            ],
+        )
+    )
+    trip_page.run()
+
+    order, columns = _table(trip_page)
+    assert "cabin" in order
+    assert columns["cabin"]["label"] == "Cabin"
+    assert "mixed" in columns["cabin"]["help"].lower()
+
+
+def test_a_cabin_mismatch_is_reported_under_the_flights_table(trip_page):
+    """The note is scoped to the selected search, not the page-wide caveats.
+
+    Those accumulate across the trip and never clear, which is right for "these
+    prices are not real" and wrong for a fact about one query's results.
+    """
+    record = trip_page.session_state["record"]
+    payload = {
+        "offers": [{**_flight_offer(900.0, 640, 0), "cabin": "economy"}],
+        "requested_cabin": "business",
+        "cabin_note": "Searched business, but 1 of 1 offers came back as economy.",
+    }
+    record.record_tool(
+        ToolMessage(content=json.dumps(payload), name="search_flights", tool_call_id="call")
+    )
+    trip_page.run()
+
+    assert any("came back as economy" in caption for caption in _captions(trip_page))
+    # Not promoted into the standing warnings, which are the honesty channel.
+    assert not any("came back as economy" in element.value for element in trip_page.warning)
+
+
 def test_a_wholly_sample_data_chart_says_so_on_the_chart(trip_page):
     """The standing notice is too far away to serve a chart further down.
 

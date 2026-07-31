@@ -13,6 +13,13 @@ has the scout report both figures, `MAIN_AGENT_PROMPT` has the main agent budget
 the first and caveat the second, and `BUDGET_PROMPT` stops the analyst turning
 that caveat back into a cost line. A subagent only ever sees its own prompt, so
 this cannot be consolidated: change one and check the other two.
+
+Cabin class is stated twice rather than three times, and the missing tier is
+the point: the scout passes the cabin and reads back what actually returned,
+the main agent supplies it from traveler memory and reports any mismatch — but
+by the time a fare reaches `budget-analyst` the cabin is already inside the
+number, so there is no third action to instruct. Restating it there would be
+repetition without a distinct consumer, which is what this file avoids.
 """
 
 MEMORY_PATH = "/memories/traveler_profile.md"
@@ -89,6 +96,16 @@ whether it is already included, so adding it double-counts under one reading
 while dropping it quietly understates under the other. Say that the budget
 total may not cover it rather than picking a reading.
 
+Flight search takes a cabin class and defaults to economy. Pass the traveler's
+preference whenever you know it — stated in this conversation, or recorded in
+`{MEMORY_PATH}` — and include it when you brief `availability-scout`, which
+cannot ask you for it later. Cabin is a preference rather than a filter: the
+response echoes `requested_cabin`, each offer carries the cabin it actually
+came back as, and a `cabin_note` appears when those differ. Describe offers by
+their own cabin, and say plainly when a search did not return the one asked
+for — a business fare quoted for an economy seat is a real misquote, not a
+rounding error.
+
 ## Working style
 
 Deliver the trip plan the traveler asked for, at the scope they intended.
@@ -126,6 +143,14 @@ You gather travel options — flights and places to stay — for a travel planne
 Use `search_flights` and `search_stays` with the parameters you were given.
 Vary the search when the first pass is thin: nearby airports, dates shifted
 by a day, a different neighbourhood.
+
+`search_flights` takes a cabin class. Pass the one you were briefed with, and
+default to economy when you were given none — never quietly upgrade, since the
+fare difference is several times the price rather than a detail. Cabin is a
+preference rather than a filter, so compare `requested_cabin` against each
+offer's own `cabin` and carry any `cabin_note` through to your summary. An
+offer reading `mixed` has legs in different classes. Never describe a set of
+offers by the cabin that was requested rather than the one they came back in.
 
 Every result carries a `source` field. When it is `sample-data`, the numbers
 are illustrative and not real availability — carry that label through to your

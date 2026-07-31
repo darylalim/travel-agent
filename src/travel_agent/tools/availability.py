@@ -23,15 +23,31 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 from collections.abc import Callable
 from datetime import date, timedelta
 from functools import cache
-from typing import Literal, Protocol
+from typing import ClassVar, Literal, Protocol
 
 from langchain_core.tools import tool
 
 SAMPLE_SOURCE = "sample-data"
 SearchKind = Literal["flights", "stays"]
+
+# Duffel's own spelling, reused verbatim so no provider needs a translation
+# table. Internal only: the `@tool` parameter below stays a plain `str`,
+# because LangChain builds a pydantic schema from the signature and would
+# reject an unrecognised value **before** the function body runs — raising
+# where every other bad input here returns `{"error": ...}` for the model to
+# read. Normalising in the body is what keeps that contract.
+CabinClass = Literal["economy", "premium_economy", "business", "first"]
+CABIN_CLASSES: tuple[CabinClass, ...] = ("economy", "premium_economy", "business", "first")
+DEFAULT_CABIN: CabinClass = "economy"
+
+# One itinerary whose legs are not all the same class. A sentinel value on the
+# existing `cabin` field rather than a second field, because the Trip page's
+# `column_order` is a whitelist that silently hides any key it does not name.
+MIXED_CABIN = "mixed"
 
 SAMPLE_DISCLAIMER = (
     "These are synthetic sample offers, not live availability. Prices, times, "
@@ -64,6 +80,7 @@ class AvailabilityProvider(Protocol):
         depart_date: str,
         return_date: str | None,
         travelers: int,
+        cabin: CabinClass = DEFAULT_CABIN,
     ) -> list[dict]: ...
 
     def search_stays(
@@ -100,7 +117,7 @@ MAX_FLIGHT_OFFERS = 20
 MAX_STAY_OFFERS = 20
 
 
-def _select_flights(offers: list[dict], limit: int = MAX_FLIGHT_OFFERS) -> list[dict]:
+def _representative(offers: list[dict], limit: int) -> list[dict]:
     """Trim a large offer set to a bounded but still representative selection.
 
     Cutting purely by price would hide every nonstop whenever the cheapest
@@ -144,11 +161,59 @@ def _select_flights(offers: list[dict], limit: int = MAX_FLIGHT_OFFERS) -> list[
     return [offers[i] for i in sorted(chosen, key=lambda i: _cost(offers[i], "total_fare"))]
 
 
+def _select_flights(
+    offers: list[dict],
+    limit: int = MAX_FLIGHT_OFFERS,
+    requested_cabin: str | None = None,
+) -> list[dict]:
+    """Trim to `limit` offers without losing the cabin that was asked for.
+
+    The trim keeps the cheapest, and a lower cabin is always cheaper. Duffel
+    honours `cabin_class` as a preference, so a business search can return a
+    mix — and cutting that by price alone would fill the whole allowance with
+    economy fares and drop every business offer the traveler actually asked
+    for. Nothing would error; the table would simply be the wrong cabin.
+
+    So the requested cabin is selected from first and the remainder tops up
+    whatever budget is left. With no cabin requested, or when every offer
+    matches, this is exactly `_representative` over the whole set.
+    """
+    if len(offers) <= limit:
+        return offers
+    if requested_cabin is None:
+        return _representative(offers, limit)
+
+    asked = [offer for offer in offers if offer.get("cabin") == requested_cabin]
+    kept = _representative(asked, limit)
+    if len(kept) < limit:
+        others = [offer for offer in offers if offer.get("cabin") != requested_cabin]
+        kept = kept + _representative(others, limit - len(kept))
+    return sorted(kept, key=lambda offer: _cost(offer, "total_fare"))
+
+
 def _parse_date(value: str, field: str) -> date:
     try:
         return date.fromisoformat(value)
     except ValueError as exc:
         raise ValueError(f"{field} must be an ISO date (YYYY-MM-DD), got {value!r}") from exc
+
+
+def _normalize_cabin(value: str) -> CabinClass:
+    """Canonicalise a cabin name, or raise naming the ones that work.
+
+    Case and separators are forgiven — "Premium Economy" and "premium-economy"
+    both land on `premium_economy` — because the model writes these calls from
+    the traveler's own words. Nothing else is: no prefix or fuzzy matching,
+    since coercing "biz" to business quietly commits the traveler to a fare
+    several times the one they meant, while an error naming the four valid
+    values is something the model can read and retry.
+    """
+    key = re.sub(r"[\s-]+", "_", value.strip().lower())
+    if key not in CABIN_CLASSES:
+        known = ", ".join(CABIN_CLASSES)
+        raise ValueError(f"cabin must be one of {known}, got {value!r}")
+    # No cast needed: ty narrows `key` to `CabinClass` off the membership check.
+    return key
 
 
 class SampleProvider:
@@ -165,6 +230,19 @@ class SampleProvider:
         ("Budget hostel, private room", "hostel", 7.8),
     )
 
+    # Cabin scales the fare but is deliberately **not** part of `_seed`: these
+    # are the same four flights whichever cabin is asked for, priced for a
+    # different seat, which is both the more realistic model and the reason a
+    # cabin search does not reshuffle carriers and departure times underneath
+    # the traveler. Indexed directly rather than with `.get`, so a fifth
+    # `CabinClass` added without a multiplier fails loudly here.
+    _CABIN_FARE_MULTIPLIERS: ClassVar[dict[CabinClass, float]] = {
+        "economy": 1.0,
+        "premium_economy": 1.6,
+        "business": 2.8,
+        "first": 4.5,
+    }
+
     def synthetic_note(self, kind: SearchKind) -> str | None:
         return SAMPLE_DISCLAIMER
 
@@ -175,6 +253,7 @@ class SampleProvider:
         depart_date: str,
         return_date: str | None,
         travelers: int,
+        cabin: CabinClass = DEFAULT_CABIN,
     ) -> list[dict]:
         depart = _parse_date(depart_date, "depart_date")
         if return_date is not None:
@@ -184,13 +263,15 @@ class SampleProvider:
 
         seed = _seed(origin, destination, depart_date, return_date or "one-way")
         base_fare = 180 + (seed % 640)
+        cabin_rate = self._CABIN_FARE_MULTIPLIERS[cabin]
         offers = []
 
         for index in range(4):
             carrier = self._CARRIERS[(seed + index) % len(self._CARRIERS)]
             stops = index % 3 if index else 0
             # Nonstop carries a premium; each stop discounts the fare.
-            fare = round((base_fare * (1.28 if stops == 0 else 1.0 - 0.09 * stops)) + index * 23, 2)
+            seat = (base_fare * (1.28 if stops == 0 else 1.0 - 0.09 * stops)) + index * 23
+            fare = round(seat * cabin_rate, 2)
             # Includes notional layover time, so it is comparable with the
             # slice-level duration Duffel reports.
             duration_minutes = 240 + (seed % 300) + stops * 95 + index * 15
@@ -208,7 +289,7 @@ class SampleProvider:
                     "depart_time_local": f"{depart_hour:02d}:{(seed + index * 7) % 60:02d}",
                     "stops": stops,
                     "duration_minutes": duration_minutes,
-                    "cabin": "economy",
+                    "cabin": cabin,
                     "fare_per_traveler": fare,
                     "total_fare": round(fare * travelers, 2),
                     "travelers": travelers,
@@ -317,6 +398,38 @@ _TRUNCATION_NOTES: dict[SearchKind, tuple[str, str]] = {
 }
 
 
+def _cabin_mismatch_note(requested: CabinClass, offers: list[dict]) -> str | None:
+    """Caveat for offers that did not come back in the cabin that was asked for.
+
+    Deliberately *not* folded into `warning`. That field means one thing —
+    these offers are not real inventory — and a live search never sets it, so
+    reusing it for a cabin caveat would put the traveler's "illustrative sample
+    prices" banner on a real, bookable fare. The two caveats are independent
+    and stay independent.
+
+    An offer whose cabin is unreadable is left out rather than counted as a
+    mismatch: absence is not a negative finding, the same reason
+    `free_cancellation` is omitted rather than set false when nobody knows.
+    """
+    found = sorted({cabin for offer in offers if isinstance(cabin := offer.get("cabin"), str)})
+    differing = [cabin for cabin in found if cabin != requested]
+    if not differing:
+        return None
+    count = sum(1 for offer in offers if offer.get("cabin") in differing)
+    listed = " and ".join(filter(None, [", ".join(differing[:-1]), differing[-1]]))
+    mixed = (
+        f" {MIXED_CABIN!r} means one itinerary's legs are not all the same class."
+        if MIXED_CABIN in differing
+        else ""
+    )
+    return (
+        f"Searched {requested}, but {count} of {len(offers)} offers came back as "
+        f"{listed} — cabin is a preference, not a filter.{mixed} "
+        "Read each offer's own cabin rather than describing them all as the "
+        "cabin that was requested."
+    )
+
+
 def _wrap(
     offers: list[dict],
     provider: AvailabilityProvider,
@@ -358,6 +471,7 @@ def search_flights(
     depart_date: str,
     return_date: str | None = None,
     travelers: int = 1,
+    cabin: str = DEFAULT_CABIN,
 ) -> dict:
     """Search flight options between two airports.
 
@@ -377,12 +491,24 @@ def search_flights(
     `count`, a `truncated` note explains what was kept — narrow the search
     rather than assuming the returned set is everything available.
 
+    `requested_cabin` echoes the cabin that was searched for. Each offer's own
+    `cabin` is what actually came back, which need not match: cabin is a
+    preference rather than a filter, and an offer reads `"mixed"` when the legs
+    of one itinerary are not all the same class. Whenever any offer differs, a
+    `cabin_note` says so. It is a separate key from `warning` on purpose —
+    `warning` only ever means the offers are not real inventory, and a real
+    fare in the wrong cabin is a different problem. Quote an offer's own cabin,
+    never the requested one.
+
     Args:
         origin: Origin airport IATA code, e.g. "SFO".
         destination: Destination airport IATA code, e.g. "NRT".
         depart_date: Outbound date as YYYY-MM-DD.
         return_date: Return date as YYYY-MM-DD. Omit for one-way.
         travelers: Number of travelers on the booking.
+        cabin: One of economy, premium_economy, business, first. Case and
+            spaces or hyphens are forgiven; anything else is an error rather
+            than a guess. Defaults to economy.
     """
     if travelers < 1:
         return {"error": "travelers must be at least 1."}
@@ -392,11 +518,20 @@ def search_flights(
         depart = _parse_date(depart_date, "depart_date")
         if return_date is not None and _parse_date(return_date, "return_date") < depart:
             return {"error": "return_date cannot fall before depart_date."}
+        wanted = _normalize_cabin(cabin)
         provider = get_provider()
-        found = provider.search_flights(origin, destination, depart_date, return_date, travelers)
+        found = provider.search_flights(
+            origin, destination, depart_date, return_date, travelers, wanted
+        )
     except ValueError as exc:
         return {"error": str(exc)}
-    return _wrap(_select_flights(found), provider, "flights", total_found=len(found))
+
+    selected = _select_flights(found, requested_cabin=wanted)
+    payload = _wrap(selected, provider, "flights", total_found=len(found))
+    payload["requested_cabin"] = wanted
+    if note := _cabin_mismatch_note(wanted, selected):
+        payload["cabin_note"] = note
+    return payload
 
 
 @tool

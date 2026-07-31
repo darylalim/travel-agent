@@ -171,6 +171,33 @@ Duffel v2 Air response shape, easy to get wrong: `live_mode` is top level;
 understates multi-stop trips); `cabin_class` is nested at
 `slices[].segments[].passengers[].cabin_class`, not on the offer.
 
+Cabin selection turns that nesting into three traps, because Duffel honours
+`cabin_class` as a **preference, not a filter** — a search can succeed and
+return something else:
+
+- **Do not type the `@tool` parameter as the `Literal`.** `CabinClass` exists
+  and is used on the provider signatures, but `search_flights` takes a plain
+  `str`. LangChain builds a pydantic schema from the signature, so a `Literal`
+  validates *before* the body runs and **raises** instead of returning
+  `{"error": ...}` — the one thing every other bad input here is careful not to
+  do. Normalising in the body is what keeps that contract, and it is also what
+  makes "Premium Economy" work at all.
+- **`_select_flights` has to know the requested cabin.** A lower cabin is
+  always cheaper and the trim keeps the cheapest, so trimming by price alone
+  answers a business search with twenty economy fares. Nothing errors; the
+  table is simply the wrong question. The requested cabin is selected from
+  first, and the rest tops up.
+- **The mismatch rides `cabin_note`, never `warning`.** `warning` means one
+  thing — not real inventory — and a *live* search never sets it, so reusing it
+  would put the "illustrative sample prices" banner on a real bookable fare.
+  `search_label` reads `requested_cabin` off the payload for the same family of
+  reason: read off `offers[0]` and a downgraded business search labels itself
+  economy, erasing the mismatch from the one control a human looks at.
+
+`_cabin_class` reports `MIXED_CABIN` rather than the first cabin found, since a
+round trip can come back business out and economy home — same reasoning as
+preferring a slice's own duration over a segment sum.
+
 Duffel v2 **Stays** is shaped differently enough that Air intuitions mislead:
 
 - Results arrive at `data.results[]`, not `data.offers`.

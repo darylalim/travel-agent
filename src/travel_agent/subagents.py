@@ -44,9 +44,10 @@ def build_subagents(search_tools: list[BaseTool] | None = None) -> list[SubAgent
             name="availability-scout",
             description=(
                 "Gathers flight and lodging candidates. Give it origin and "
-                "destination airports, exact dates, traveler count, and any budget "
-                f"ceiling; it writes candidates to {WORKSPACE}/options.md and "
-                "returns a cheapest-vs-most-convenient comparison."
+                "destination airports, exact dates, traveler count, cabin class if "
+                "the traveler has a preference, and any budget ceiling; it writes "
+                f"candidates to {WORKSPACE}/options.md and returns a "
+                "cheapest-vs-most-convenient comparison."
             ),
             system_prompt=AVAILABILITY_PROMPT,
             tools=[search_flights, search_stays, date_offset],

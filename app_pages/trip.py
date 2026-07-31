@@ -286,6 +286,19 @@ def _truncation_note(payload: dict[str, Any] | None) -> None:
         st.caption(f":material/filter_list: {note}")
 
 
+def _cabin_note(payload: dict[str, Any] | None) -> None:
+    """Say when a search did not come back in the cabin it asked for.
+
+    Scoped to the selected search, like the truncation note beside it, rather
+    than joining the standing caveats at the top of the page: those accumulate
+    across the whole trip and are never cleared, which is right for "these
+    prices are not real" and wrong for a fact about one query's results.
+    """
+    note = (payload or {}).get("cabin_note")
+    if isinstance(note, str):
+        st.caption(f":material/flight_class: {note}")
+
+
 def _pick_search(searches: list[dict[str, Any]], key: str) -> dict[str, Any] | None:
     """Choose which of several searches to show, jumping to each new one.
 
@@ -499,7 +512,12 @@ if flight_offers:
                 "Stops", format="%d", width="small", alignment="center"
             ),
             "depart_time_local": st.column_config.TextColumn("Departs", width="small"),
-            "cabin": st.column_config.TextColumn("Cabin", width="small"),
+            "cabin": st.column_config.TextColumn(
+                "Cabin",
+                width="small",
+                help="What the offer came back as, which need not be what was "
+                "searched. 'Mixed' means its legs are not all the same class.",
+            ),
             "provenance": st.column_config.TextColumn(
                 "Data",
                 width="small",
@@ -508,6 +526,7 @@ if flight_offers:
         },
     )
     _truncation_note(flights)
+    _cabin_note(flights)
 elif flight_searches:
     # A search that legitimately found nothing. The caveat above still stands:
     # an unannotated empty result would read as "we checked real inventory".

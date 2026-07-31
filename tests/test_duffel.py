@@ -14,7 +14,12 @@ from datetime import UTC, datetime, timedelta
 import httpx
 import pytest
 
-from travel_agent.tools.availability import SAMPLE_SOURCE, search_flights, search_stays
+from travel_agent.tools.availability import (
+    MIXED_CABIN,
+    SAMPLE_SOURCE,
+    search_flights,
+    search_stays,
+)
 from travel_agent.tools.duffel import (
     DUFFEL_SOURCE,
     DuffelError,
@@ -28,7 +33,7 @@ TEST_TOKEN = "duffel_test_abc123"
 LIVE_TOKEN = "duffel_live_abc123"
 
 
-def _segment(depart: str, arrive: str, duration: str, carrier: str) -> dict:
+def _segment(depart: str, arrive: str, duration: str, carrier: str, cabin: str = "economy") -> dict:
     return {
         "departing_at": depart,
         "arriving_at": arrive,
@@ -36,7 +41,7 @@ def _segment(depart: str, arrive: str, duration: str, carrier: str) -> dict:
         "marketing_carrier": {"name": carrier},
         "operating_carrier": {"name": carrier},
         # Cabin lives here, not on the offer.
-        "passengers": [{"cabin_class": "economy", "cabin_class_marketing_name": "Economy Basic"}],
+        "passengers": [{"cabin_class": cabin, "cabin_class_marketing_name": "Economy Basic"}],
     }
 
 
@@ -158,6 +163,29 @@ def test_cabin_is_read_from_the_nested_passenger_field():
     # An offer with no passenger cabin info reports None rather than guessing.
     bare = map_offer({"id": "off_x", "total_amount": "10.00", "slices": []}, travelers=1)
     assert bare["cabin"] is None
+
+
+def test_an_itinerary_whose_legs_disagree_reports_mixed():
+    """Business out and economy home must not be labelled by whichever leg came first.
+
+    `cabin_class` is a preference for the whole request, not a guarantee per
+    slice, so this is reachable on any round trip.
+    """
+    offer = _offer(_future())
+    for segment in offer["slices"][0]["segments"]:
+        segment["passengers"][0]["cabin_class"] = "business"
+
+    assert map_offer(offer, travelers=1)["cabin"] == MIXED_CABIN
+
+
+def test_a_uniform_cabin_is_reported_as_itself():
+    """Mixed detection must not turn every ordinary offer into "mixed"."""
+    offer = _offer(_future())
+    for slice_ in offer["slices"]:
+        for segment in slice_["segments"]:
+            segment["passengers"][0]["cabin_class"] = "business"
+
+    assert map_offer(offer, travelers=1)["cabin"] == "business"
 
 
 def test_duration_uses_the_slice_total_so_layovers_are_counted():
@@ -318,6 +346,111 @@ def test_search_flights_sends_the_documented_request():
         {"origin": "NRT", "destination": "SFO", "departure_date": "2026-09-20"},
     ]
     assert offers[0]["source"] == DUFFEL_SOURCE
+
+
+def test_the_requested_cabin_reaches_the_offer_request():
+    seen: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"data": {"offers": []}})
+
+    provider = DuffelProvider(token=TEST_TOKEN, transport=httpx.MockTransport(handler))
+    provider.search_flights("SFO", "NRT", "2026-09-12", None, travelers=1, cabin="business")
+
+    # One value for the whole request — Duffel has no per-slice cabin.
+    assert seen["body"]["data"]["cabin_class"] == "business"
+
+
+def _in_cabin(offer: dict, cabin: str) -> dict:
+    """Put every leg of an offer in one cabin."""
+    for slice_ in offer["slices"]:
+        for segment in slice_["segments"]:
+            segment["passengers"][0]["cabin_class"] = cabin
+    return offer
+
+
+def _serving(monkeypatch, offers: list[dict]) -> None:
+    """Point the `duffel` provider at a canned offer list."""
+    from travel_agent.tools import availability
+
+    monkeypatch.setenv("TRAVEL_AGENT_PROVIDER", "duffel")
+    monkeypatch.setenv("DUFFEL_API_TOKEN", TEST_TOKEN)
+    monkeypatch.setitem(
+        availability._PROVIDERS,
+        "duffel",
+        lambda: DuffelProvider(token=TEST_TOKEN, transport=_responds({"data": {"offers": offers}})),
+    )
+
+
+def test_a_cabin_the_search_did_not_ask_for_is_flagged_separately_from_the_warning(monkeypatch):
+    """A real fare in the wrong cabin is not the same problem as a fake fare.
+
+    The two caveats ride separate keys, so the honesty banner is never spent on
+    a cabin mismatch and a mismatch is never mistaken for "these are samples".
+    """
+    _serving(monkeypatch, [_in_cabin(_offer(_future()), "economy")])
+
+    result = search_flights.invoke(
+        {
+            "origin": "SFO",
+            "destination": "NRT",
+            "depart_date": "2026-09-12",
+            "cabin": "business",
+        }
+    )
+
+    assert result["requested_cabin"] == "business"
+    assert "economy" in result["cabin_note"]
+    # Both caveats present, neither standing in for the other.
+    assert "warning" in result
+    assert result["cabin_note"] != result["warning"]
+
+
+def test_a_search_that_got_the_cabin_it_asked_for_carries_no_cabin_note(monkeypatch):
+    _serving(monkeypatch, [_in_cabin(_offer(_future()), "business")])
+
+    result = search_flights.invoke(
+        {
+            "origin": "SFO",
+            "destination": "NRT",
+            "depart_date": "2026-09-12",
+            "cabin": "business",
+        }
+    )
+
+    assert result["requested_cabin"] == "business"
+    assert "cabin_note" not in result, "absent, not empty — nothing to say is not a finding"
+
+
+def test_offers_in_the_cabin_that_was_asked_for_survive_the_trim(monkeypatch):
+    """The trim keeps the cheapest, and a lower cabin is always cheaper.
+
+    Cabin is a preference rather than a filter, so a business search can come
+    back mixed. Trimming that by price alone fills the whole 20-offer allowance
+    with economy fares and drops every business offer the traveler asked for —
+    a table that renders perfectly and answers a different question.
+    """
+    economy = [_in_cabin(_offer(_future(), total=f"{100 + n}.00"), "economy") for n in range(40)]
+    business = [_in_cabin(_offer(_future(), total=f"{9000 + n}.00"), "business") for n in range(3)]
+    _serving(monkeypatch, economy + business)
+
+    result = search_flights.invoke(
+        {
+            "origin": "SFO",
+            "destination": "NRT",
+            "depart_date": "2026-09-12",
+            "cabin": "business",
+        }
+    )
+
+    kept = [offer["cabin"] for offer in result["offers"]]
+    assert kept.count("business") == 3, "the dearest cabin is the one that was asked for"
+    assert result["total_found"] == 43
+    assert len(result["offers"]) == 20
+    assert [offer["total_fare"] for offer in result["offers"]] == sorted(
+        offer["total_fare"] for offer in result["offers"]
+    )
 
 
 def test_one_way_search_sends_a_single_slice():

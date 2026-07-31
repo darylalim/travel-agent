@@ -45,6 +45,10 @@ from langchain_core.messages import AIMessageChunk, ToolMessage
 
 from travel_agent.config import DEFAULT_MODEL
 
+# Safe at module scope, unlike `travel_agent.agent`: this module only defines
+# tools, reading no environment and building no model client on import.
+from travel_agent.tools.availability import DEFAULT_CABIN
+
 # The deliverable files the agent is prompted to write, in the order a reader
 # wants them: what was asked, what was found, what it costs, what to do.
 WORKSPACE_FILES: tuple[tuple[str, str, str], ...] = (
@@ -217,6 +221,17 @@ def _count(value: Any, noun: str) -> str:
     return f"{value} {noun}" if value == 1 else f"{value} {noun}s"
 
 
+def _cabin_suffix(requested: Any) -> str:
+    """Name a non-default cabin, or `""` when there is nothing worth adding.
+
+    Economy is suppressed because it is the default: labelling every ordinary
+    search "Economy" would add a word to each one to distinguish none of them.
+    """
+    if not isinstance(requested, str) or requested == DEFAULT_CABIN:
+        return ""
+    return requested.replace("_", " ").capitalize()
+
+
 def search_label(payload: dict[str, Any] | None) -> str:
     """Describe the query a search answered, e.g. `SFO→NRT · Sep 10–Sep 15 · 2 travelers`.
 
@@ -226,8 +241,12 @@ def search_label(payload: dict[str, Any] | None) -> str:
     would rank a cheaper flight on other dates above a dearer one on the
     requested dates, so the UI keeps them separate and names each query.
 
-    The label is read off the offers: a tool result carries no echo of its own
-    arguments, but every offer records the query it matched.
+    Most of the label is read off the offers, because every offer records the
+    query it matched. Cabin is the exception, and has to be: it comes from the
+    payload's `requested_cabin`, never from an offer's own `cabin`. Cabin is a
+    preference rather than a filter, so a business search whose cheapest result
+    was downgraded to economy would — read off `offers[0]` — label itself
+    "economy" and silently erase the very mismatch worth seeing.
     """
     items = offers(payload)
     if not items:
@@ -238,6 +257,7 @@ def search_label(payload: dict[str, Any] | None) -> str:
             f"{first.get('origin')}→{first.get('destination')}",
             _date_span(first.get("depart_date"), first.get("return_date")),
             _count(first.get("travelers"), "traveler"),
+            _cabin_suffix((payload or {}).get("requested_cabin")),
         ]
     else:
         parts = [

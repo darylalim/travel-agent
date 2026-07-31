@@ -416,6 +416,65 @@ def test_search_label_describes_a_lodging_query():
     assert search_label(payload) == "Kyoto · Sep 10–Sep 15 · 2 guests"
 
 
+def _cabin_payload(requested: str, offer_cabin: str = "business") -> dict:
+    return {
+        "requested_cabin": requested,
+        "offers": [
+            {
+                "origin": "SFO",
+                "destination": "NRT",
+                "depart_date": "2026-09-10",
+                "return_date": "2026-09-15",
+                "travelers": 2,
+                "cabin": offer_cabin,
+            }
+        ],
+    }
+
+
+def test_search_label_names_a_non_default_cabin():
+    """Two searches differing only by cabin must not present as the same option."""
+    assert search_label(_cabin_payload("business")) == (
+        "SFO→NRT · Sep 10–Sep 15 · 2 travelers · Business"
+    )
+    assert search_label(_cabin_payload("premium_economy")).endswith("· Premium economy")
+
+
+def test_search_label_reads_the_request_not_the_first_offer():
+    """A downgraded business search must still read "Business".
+
+    Taking cabin off `offers[0]` — the way every other part of the label is
+    built — would label this search "economy" and erase the mismatch from the
+    one control a human is looking at.
+    """
+    downgraded = _cabin_payload("business", offer_cabin="economy")
+
+    assert search_label(downgraded).endswith("· Business")
+
+
+def test_search_label_suppresses_economy():
+    """Economy is the default; labelling it adds a word that separates nothing."""
+    payload = _cabin_payload("economy", offer_cabin="economy")
+
+    assert search_label(payload) == "SFO→NRT · Sep 10–Sep 15 · 2 travelers"
+
+
+def test_search_label_leaves_a_lodging_query_alone():
+    """Stays carry no cabin, and a stray key must not grow one."""
+    payload = {
+        "requested_cabin": "business",
+        "offers": [
+            {
+                "location": "kyoto",
+                "check_in": "2026-09-10",
+                "check_out": "2026-09-15",
+                "guests": 2,
+            }
+        ],
+    }
+    assert search_label(payload) == "Kyoto · Sep 10–Sep 15 · 2 guests"
+
+
 def test_search_label_degrades_rather_than_raising():
     # An empty search still needs a label — it is one of the options offered.
     assert search_label({"offers": []}) == "No results"

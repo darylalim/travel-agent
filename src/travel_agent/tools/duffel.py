@@ -34,8 +34,11 @@ coordinate pair, so a test-mode search of a real city returns nothing at all —
 sample data is the more useful *and* the more honest answer there, and it is
 labelled as sample data either way.
 
-Out of scope for now, deliberately: cabin selection (every search requests
-economy).
+Cabin is a search parameter, but it is validated and normalised one level up
+in `availability.py` so that every provider behaves identically. Duffel treats
+`cabin_class` as a **preference rather than a filter**, so what comes back is
+not guaranteed to be what was asked for: `_cabin_class` reports what each offer
+actually is, and the tool layer flags any difference.
 """
 
 from __future__ import annotations
@@ -48,7 +51,14 @@ from typing import Any
 
 import httpx
 
-from travel_agent.tools.availability import SAMPLE_DISCLAIMER, SampleProvider, SearchKind
+from travel_agent.tools.availability import (
+    DEFAULT_CABIN,
+    MIXED_CABIN,
+    SAMPLE_DISCLAIMER,
+    CabinClass,
+    SampleProvider,
+    SearchKind,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -138,17 +148,28 @@ def _carrier_names(segments: list[dict[str, Any]]) -> list[str]:
 
 
 def _cabin_class(slices: list[dict[str, Any]]) -> str | None:
-    """First cabin class found at `slices[].segments[].passengers[].cabin_class`.
+    """Cabin across a whole itinerary, read from `slices[].segments[].passengers[]`.
 
     Cabin is not a top-level field on a Duffel offer, despite the request
-    carrying one.
+    carrying one — and it is not necessarily a single value either. Because
+    `cabin_class` is a preference for the search rather than a filter, a round
+    trip can come back business outbound and economy home.
+
+    Reporting the first one found would assert something untrue about the other
+    leg, so a disagreement reports `MIXED_CABIN` instead. Same reasoning as
+    preferring a slice's own duration over a sum of segments that quietly omits
+    layovers: one honest aggregate beats one confident wrong number.
     """
-    for slice_ in slices:
-        for segment in slice_.get("segments") or []:
-            for passenger in segment.get("passengers") or []:
-                if isinstance(cabin := passenger.get("cabin_class"), str):
-                    return cabin
-    return None
+    found = {
+        cabin
+        for slice_ in slices
+        for segment in slice_.get("segments") or []
+        for passenger in segment.get("passengers") or []
+        if isinstance(cabin := passenger.get("cabin_class"), str)
+    }
+    if not found:
+        return None
+    return found.pop() if len(found) == 1 else MIXED_CABIN
 
 
 def parse_amount(raw: Any) -> float | None:
@@ -202,6 +223,9 @@ def map_offer(offer: dict[str, Any], travelers: int) -> dict[str, Any]:
     Kept pure and separate from transport so it can be tested without touching
     the network. `total_fare` is None when the payload carried no usable
     price; callers drop those rather than treating them as free.
+
+    `cabin` is what this offer actually came back as, which need not be what
+    was requested, and is `MIXED_CABIN` when the legs disagree.
     """
     slices = [_map_slice(s) for s in (offer.get("slices") or [])]
     outbound = slices[0] if slices else {}
@@ -363,7 +387,14 @@ class DuffelProvider:
         depart_date: str,
         return_date: str | None,
         travelers: int,
+        cabin: CabinClass = DEFAULT_CABIN,
     ) -> list[dict]:
+        """Search Duffel Air. `cabin` is already normalised by the tool layer.
+
+        Duffel takes one `cabin_class` for the entire request rather than one
+        per slice, and honours it as a preference — so a returned offer's own
+        cabin, which `map_offer` reads back, is the thing to trust.
+        """
         slices: list[dict[str, str]] = [
             {
                 "origin": origin.upper(),
@@ -384,7 +415,7 @@ class DuffelProvider:
             "data": {
                 "slices": slices,
                 "passengers": [{"type": "adult"} for _ in range(travelers)],
-                "cabin_class": "economy",
+                "cabin_class": cabin,
             }
         }
 
