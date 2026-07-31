@@ -17,6 +17,7 @@ import pytest
 from travel_agent.tools.availability import (
     MIXED_CABIN,
     SAMPLE_SOURCE,
+    SampleProvider,
     search_flights,
     search_stays,
 )
@@ -186,6 +187,56 @@ def test_a_uniform_cabin_is_reported_as_itself():
             segment["passengers"][0]["cabin_class"] = "business"
 
     assert map_offer(offer, travelers=1)["cabin"] == "business"
+
+
+def test_the_dates_a_search_asked_for_are_read_back_off_the_slices():
+    """Duffel echoes no depart or return date, and two consumers read both.
+
+    `search_label` names each search in the Trip page's picker, and
+    `availability-scout` is prompted to shift dates by a day — so without these
+    two date-varied searches labelled identically and the control offered two
+    options nobody could tell apart. The Trip page's outbound-leg caveat gates
+    on `return_date` too, so it never fired on a live round trip.
+    """
+    mapped = map_offer(_offer(_future()), travelers=2)
+
+    assert mapped["depart_date"] == "2026-09-12"
+    assert mapped["return_date"] == "2026-09-20"
+
+
+def test_a_one_way_offer_reports_no_return_date():
+    """One slice is one leg. A return date invented here would reach the label."""
+    one_way = _offer(_future())
+    del one_way["slices"][1]
+
+    assert map_offer(one_way, travelers=1)["return_date"] is None
+
+
+def test_both_providers_agree_on_the_shape_of_a_flight_offer():
+    """A key one provider sets and the other omits blanks a page silently.
+
+    Nothing raises when a key is absent — `.get` returns None and every reader
+    downstream treats None as "nothing to say" — so the failure is a caption
+    that quietly stops rendering rather than an error. `depart_date` and
+    `return_date` drifted exactly this way, so the agreement is pinned rather
+    than described.
+    """
+    sample = SampleProvider().search_flights("SFO", "NRT", "2026-09-12", "2026-09-20", 2)[0]
+    duffel = map_offer(_offer(_future()), travelers=2)
+
+    missing = sorted(set(sample) - set(duffel))
+    assert not missing, f"a live offer must carry every field a sample offer does: {missing}"
+
+    # Duffel may add to that shape — a sample offer has no equivalent of any of
+    # these, and every reader treats them as optional. Listed rather than
+    # ignored so a sixth has to be a decision.
+    assert set(duffel) - set(sample) == {
+        "live_mode",
+        "offer_id",
+        "expires_at",
+        "expires_in_seconds",
+        "slices",
+    }
 
 
 def test_duration_uses_the_slice_total_so_layovers_are_counted():

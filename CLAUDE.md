@@ -198,6 +198,21 @@ return something else:
 round trip can come back business out and economy home — same reasoning as
 preferring a slice's own duration over a segment sum.
 
+**Both providers must emit the same offer keys**, and nothing about the code
+makes that obvious — `map_offer` and `SampleProvider.search_flights` build
+their dicts independently, hundreds of lines apart. A key one sets and the
+other omits fails silently in one direction only: `.get` returns `None` and
+every reader downstream treats `None` as "nothing to say", so the symptom is a
+caption that quietly stops rendering on the provider returning *real*
+inventory. `depart_date`/`return_date` drifted exactly this way and cost two
+things at once — `search_label` dropped the dates from the search picker
+(making two date-varied searches indistinguishable, the one job `_pick_search`
+has) and the Trip page's outbound-leg caveat never fired on a live round trip.
+Duffel echoes neither date, so `map_offer` derives both from the slices.
+`test_both_providers_agree_on_the_shape_of_a_flight_offer` pins the agreement
+and lists the five keys Duffel is allowed to add, so a sixth has to be a
+decision rather than a drift.
+
 Duffel v2 **Stays** is shaped differently enough that Air intuitions mislead:
 
 - Results arrive at `data.results[]`, not `data.offers`.

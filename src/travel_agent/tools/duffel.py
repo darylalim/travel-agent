@@ -137,6 +137,18 @@ def _local_time(timestamp: str | None) -> str | None:
     return timestamp.split("T", 1)[1][:5]
 
 
+def _local_date(timestamp: str | None) -> str | None:
+    """Extract YYYY-MM-DD from a Duffel local departure/arrival timestamp.
+
+    A Duffel offer does not echo the dates that were searched for, so they are
+    read back off the slices — the outbound slice departs on the outbound date,
+    and a second slice is the return leg.
+    """
+    if not timestamp or "T" not in timestamp:
+        return None
+    return timestamp.split("T", 1)[0]
+
+
 def _carrier_names(segments: list[dict[str, Any]]) -> list[str]:
     """Distinct marketing carriers across a slice's segments."""
     names = {
@@ -226,9 +238,18 @@ def map_offer(offer: dict[str, Any], travelers: int) -> dict[str, Any]:
 
     `cabin` is what this offer actually came back as, which need not be what
     was requested, and is `MIXED_CABIN` when the legs disagree.
+
+    `depart_date` and `return_date` are derived from the slices rather than
+    echoed by Duffel, and exist so this shape matches `SampleProvider`'s. Both
+    are read by consumers that fail silently without them: `search_label` drops
+    the dates from the search picker, and the Trip page's outbound-leg caveat
+    never fires on a round trip.
     """
     slices = [_map_slice(s) for s in (offer.get("slices") or [])]
     outbound = slices[0] if slices else {}
+    # `search_flights` builds a second slice only for a return date, so a
+    # second slice coming back is the return leg.
+    inbound = slices[1] if len(slices) > 1 else {}
 
     total = parse_amount(offer.get("total_amount"))
     # live_mode is false for test-mode inventory, which is fictional.
@@ -242,6 +263,8 @@ def map_offer(offer: dict[str, Any], travelers: int) -> dict[str, Any]:
         "carrier": (offer.get("owner") or {}).get("name"),
         "origin": outbound.get("origin"),
         "destination": outbound.get("destination"),
+        "depart_date": _local_date(outbound.get("departing_at")),
+        "return_date": _local_date(inbound.get("departing_at")),
         "depart_time_local": _local_time(outbound.get("departing_at")),
         "stops": outbound.get("stops"),
         "duration_minutes": outbound.get("duration_minutes"),
