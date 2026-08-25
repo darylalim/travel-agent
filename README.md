@@ -217,8 +217,9 @@ uv run ty check
 bash .claude/hooks/test-hooks.sh  # the Claude Code hooks under .claude/
 ```
 
-CI runs the same checks on push and pull request, with tests across Python
-3.11–3.13 and the hook suite on Linux and macOS.
+CI runs the same checks on push and pull request, with tests on Python 3.11 and
+3.13 — the two ends of the supported range — and the hook suite on Linux and
+macOS.
 
 ## Stack
 

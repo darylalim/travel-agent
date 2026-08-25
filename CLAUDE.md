@@ -30,8 +30,8 @@ CI structurally cannot do — `ci.yml` runs `--check` and can only report.
 That is the test for whether a hook belongs here: it prevents something
 irreversible or invisible that no later gate catches. *Earlier* is not
 *essential*. Three hooks that failed that test were removed, and the properties
-they guarded moved into pytest, where they also run in CI on three Python
-versions and for contributors not using Claude Code:
+they guarded moved into pytest, where they also run in CI on both ends of the
+supported Python range and for contributors not using Claude Code:
 
 | Was | Is now |
 |---|---|
@@ -72,8 +72,21 @@ checks with no local equivalent: it asserts the three-way 3.11 pin below, and
 it imports the module-level `graph` — a path `pytest` deliberately never takes,
 so an import-time break in `agent.py` surfaces there instead of in `langgraph
 dev`. CI syncs with `uv sync --locked`, so editing a dependency without
-re-locking fails it. Tests run on 3.11/3.12/3.13 and the hook suite on Linux
-and macOS; lint and types run on 3.11 alone, which is what both tools target.
+re-locking fails it.
+
+Three jobs, five runners, and each one answers a question no other job does.
+Lint, types, the pin assertion and the graph import share a single 3.11 runner,
+because their environments were byte-identical and the graph import's whole
+point is the interpreter it runs on. Tests run on **3.11 and 3.13 only** — the
+two ends of `requires-python`; nothing is in between, since `numpy` is the sole
+package `uv.lock` forks (at 3.12) and both legs straddle it. The hook suite runs
+on Linux *and* macOS, and the macOS leg is the load-bearing one: `protect-env.sh`
+fails **open** on a grep error, so a GNU-only regex construct passes 61/61 on
+ubuntu while disarming every deny case on the shell the hooks actually run in.
+
+`cancel-in-progress` is conditional on the ref. Cancelling a superseded PR run
+is the point; cancelling a run on `main` is not, because each commit there is a
+permanent point in history and nothing recomputes a verdict it never got.
 
 When working with Python, invoke the relevant `/astral:<skill>` (from the
 `astral-sh/astral` plugin) for `uv`, `ty`, and `ruff` to ensure best practices

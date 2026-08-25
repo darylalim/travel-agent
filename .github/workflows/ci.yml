@@ -6,17 +6,20 @@ on:
   pull_request:
   workflow_dispatch:
 
-# A second push to the same branch makes the in-flight run obsolete.
+# A second push to a PR branch makes the in-flight run obsolete — that is what
+# this is for. A second push to main does not: every commit there is a
+# permanent point in history, and cancelling its run leaves that commit with a
+# verdict nothing will ever recompute. Expressions are allowed in this field.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
 
 jobs:
   quality:
-    name: Lint, types, version pins
+    name: Lint, types, pins, graph import
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -25,7 +28,9 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          # 3.11 is the pinned target for ruff, ty, and langgraph.json alike.
+          # 3.11 is the pinned target for ruff, ty, and langgraph.json alike —
+          # and so the interpreter the graph import below has to run on, since
+          # that is the one a deploy uses.
           python-version: "3.11"
 
       # --locked fails if uv.lock has drifted from pyproject.toml, so a
@@ -69,6 +74,40 @@ jobs:
               sys.exit("\nThese three must agree — see CLAUDE.md, 'Commands'.")
           PY
 
+      # agent.py builds the agent as an import side effect, because
+      # langgraph.json needs a module-level `graph`. That constructs a model
+      # client and the full tool stack, so a bad tool signature or a stale
+      # deepagents argument breaks `langgraph dev` at startup — and the test
+      # suite never touches this path, by design.
+      #
+      # No ANTHROPIC_API_KEY and no TAVILY_API_KEY are set anywhere in this
+      # workflow: the graph must build without credentials (only the search
+      # tool is conditional), and nothing here can reach a paid API.
+      #
+      # This was its own job. Folding it in costs one thing and buys one: the
+      # verdict is now withheld on a run already red for lint or type reasons,
+      # in exchange for a whole runner whose environment was byte-identical to
+      # this one. Keep it in *this* job — the 3.11 above is the point.
+      - name: Import every graph langgraph.json declares
+        run: |
+          uv run --no-sync python - <<'PY'
+          import importlib.util, json, pathlib
+
+          config = json.loads(pathlib.Path("langgraph.json").read_text())
+          graphs = config["graphs"]
+          # An empty mapping iterates zero times and exits 0 — a green check for
+          # having imported nothing, which is the same failure class as a static
+          # scan that quietly stops matching (tests/test_env_isolation.py).
+          assert graphs, "langgraph.json declares no graphs"
+          for name, target in graphs.items():
+              file, _, attribute = target.rpartition(":")
+              spec = importlib.util.spec_from_file_location(f"_langgraph_{name}", file)
+              module = importlib.util.module_from_spec(spec)
+              spec.loader.exec_module(module)
+              graph = getattr(module, attribute)
+              print(f"  {name}: {target} -> {type(graph).__name__}")
+          PY
+
   test:
     name: Tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
@@ -76,9 +115,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 3.11 is what langgraph.json deploys on; 3.12 and 3.13 back the
-        # looser requires-python = ">=3.11,<4.0" the package advertises.
-        python-version: ["3.11", "3.12", "3.13"]
+        # The two ends of the supported range: 3.11 is what langgraph.json
+        # deploys on and what ruff and ty target, 3.13 is the top of the looser
+        # requires-python = ">=3.11,<4.0" the package advertises.
+        #
+        # Nothing sits between them. numpy is the only package uv.lock resolves
+        # to two versions (2.4.6 below 3.12, 2.5.2 at or above), and these two
+        # legs straddle that boundary, so a 3.12 leg would install a set neither
+        # end misses. Add one back the day `uv lock` forks a *second* package at
+        # a different boundary — two boundaries leave a middle band untested.
+        python-version: ["3.11", "3.13"]
     steps:
       - uses: actions/checkout@v5
 
@@ -94,44 +140,6 @@ jobs:
       - name: pytest
         run: uv run --no-sync pytest -q
 
-  graph:
-    name: Graph builds at import
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-          python-version: "3.11"
-
-      - run: uv sync --locked
-
-      # agent.py builds the agent as an import side effect, because
-      # langgraph.json needs a module-level `graph`. That constructs a model
-      # client and the full tool stack, so a bad tool signature or a stale
-      # deepagents argument breaks `langgraph dev` at startup — and the test
-      # suite never touches this path, by design.
-      #
-      # Deliberately run with no ANTHROPIC_API_KEY and no TAVILY_API_KEY: the
-      # graph must build without credentials (only the search tool is
-      # conditional), and this job must never be able to reach a paid API.
-      - name: Import every graph langgraph.json declares
-        run: |
-          uv run --no-sync python - <<'PY'
-          import importlib.util, json, pathlib
-
-          config = json.loads(pathlib.Path("langgraph.json").read_text())
-          for name, target in config["graphs"].items():
-              file, _, attribute = target.rpartition(":")
-              spec = importlib.util.spec_from_file_location(f"_langgraph_{name}", file)
-              module = importlib.util.module_from_spec(spec)
-              spec.loader.exec_module(module)
-              graph = getattr(module, attribute)
-              print(f"  {name}: {target} -> {type(graph).__name__}")
-          PY
-
   hooks:
     name: Claude Code hooks (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -139,9 +147,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # The hooks are shell regexes whose character classes are load-bearing.
-        # Contributors exercise them on macOS; ubuntu adds the GNU grep/sed
-        # side, where a BSD-only assumption would otherwise go unnoticed.
+        # Both legs are load-bearing, and macOS is the one that matters most:
+        # it is the userland the hooks actually execute in (bash 3.2, BSD grep
+        # and sed), and protect-env.sh fails OPEN on a grep error — a segment
+        # whose `grep -qE` exits non-zero is read as "no match in this segment"
+        # and allowed. So a GNU-only construct (`grep -P`, `${verb,,}`) passes
+        # all 61 cases on ubuntu while silently disarming every deny case on the
+        # developer's machine. ubuntu is the cheap second opinion; it cannot
+        # substitute for the leg that runs the real shell.
         os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v5
