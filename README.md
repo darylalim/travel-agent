@@ -221,6 +221,19 @@ CI runs the same checks on push and pull request, with tests on Python 3.11 and
 3.13 — the two ends of the supported range — and the hook suite on Linux and
 macOS.
 
+### Releasing
+
+Bump `[project] version` in `pyproject.toml` and push to `main`. Once the checks
+pass, CI tags that commit `vX.Y.Z` and publishes a GitHub release whose notes are
+the commit subjects since the previous tag. Nothing else is required, and nothing
+is uploaded to a package index — the PyPI name `travel-agent` belongs to an
+unrelated project, so a release is a tag and notes.
+
+The gate asks whether the tag already exists rather than what the push changed,
+so a re-run or a failed run is completed by the next push instead of tagging
+twice. It refuses a version that is not `X.Y.Z`, and refuses one below a version
+that already shipped.
+
 ## Stack
 
 `deepagents` 0.7.x · `langchain` 1.3+ · `langgraph` 1.2+ ·

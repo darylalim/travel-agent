@@ -176,3 +176,160 @@ jobs:
           # missing tool. Both runner images ship jq; say so plainly if not.
           command -v jq >/dev/null || { echo "::error::jq is required by the hook tests"; exit 1; }
           bash .claude/hooks/test-hooks.sh
+
+  # Bumping [project] version in pyproject.toml on main tags that commit and
+  # publishes a GitHub release. Nothing is uploaded anywhere else: the PyPI name
+  # `travel-agent` belongs to an unrelated project, so there is no publish step,
+  # no stored secret and no id-token — GITHUB_TOKEN with contents: write does
+  # both halves, since a tag ref and a release are both contents-scope.
+  #
+  # The gate is LEVEL-triggered — it asks origin whether refs/tags/vX exists,
+  # never what this push changed. A diff against HEAD^ is wrong here in three
+  # independent ways: checkout fetches one commit so HEAD^ may not exist, a push
+  # can carry several commits and the bump need not be in the last one, and a
+  # re-run re-reads the same diff and tags twice. Asking about the tag converges
+  # from any history shape, so a cancelled, failed or re-run job is simply
+  # completed by the next push rather than duplicating or skipping work.
+  #
+  # Depends on every other job, and this is the one place that matters: a
+  # release is where the macOS hook leg's verdict reaches someone who is not
+  # the author. On pull requests the job is skipped, which is correct and free.
+  release:
+    name: Tag and release on version bump
+    needs: [quality, test, hooks]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Job-scoped: this replaces the workflow-level `contents: read` here only.
+    # The other three jobs run `uv sync`, which executes build hooks from
+    # several hundred third-party packages; none of them gets a writable token.
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      # Full history, because the notes are a commit range and the default
+      # fetch-depth of 1 leaves nothing to range over. Tags arrive with it.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Is this version already tagged?
+        id: gate
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, re, subprocess, sys, tomllib
+
+          version = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"]
+
+          # Final releases only. A bare "is it tagged yet" test would let
+          # 0.2.0rc1 cut a real, published, *latest* release, and this repo has
+          # no prerelease practice to fall back on — the first rc would invent
+          # one by accident. Supporting them later means an explicit
+          # --prerelease flag and a decision about what "latest" means.
+          if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+              sys.exit(f"::error::[project] version is not a final release: {version!r}")
+          tag = f"v{version}"
+
+          # Ask the remote, not the checkout: ls-remote is the same answer a
+          # concurrent run would get, and it is true regardless of fetch depth.
+          # Peeled refs (`refs/tags/vX^{}`) are annotated-tag artefacts, not tags.
+          refs = subprocess.run(
+              ["git", "ls-remote", "--tags", "origin", "refs/tags/v*"],
+              capture_output=True, text=True, check=True,
+          ).stdout
+          published = {
+              line.split("refs/tags/")[1]
+              for line in refs.splitlines()
+              if "refs/tags/" in line and not line.endswith("^{}")
+          }
+
+          def parts(t: str) -> tuple[int, ...]:
+              return tuple(int(n) for n in t[1:].split("."))
+
+          if tag in published:
+              print(f"{tag} is already tagged — nothing to release.")
+              new = False
+          else:
+              # Refuse to go backwards. A revert of the bump commit, a
+              # cherry-pick or a rewritten main can leave pyproject at a version
+              # below one that already shipped, and a release is not a state you
+              # can take back — a tag that moves detaches every clone.
+              final = [t for t in published if re.fullmatch(r"v\d+\.\d+\.\d+", t)]
+              if final:
+                  highest = max(final, key=parts)
+                  if parts(tag) < parts(highest):
+                      sys.exit(f"::error::{tag} is below the released {highest}")
+              print(f"{tag} is new — releasing.")
+              new = True
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              print(f"tag={tag}", file=out)
+              print(f"needs_tag={str(new).lower()}", file=out)
+          PY
+
+      # Asked separately from the tag, and that separation is the point: a run
+      # that created the tag and then died leaves a tag with no release, and a
+      # single "already released?" gate would treat that state as finished
+      # forever. Two probes let the next push create only the missing half.
+      - name: Does the release already exist?
+        id: existing
+        env:
+          # Via env rather than inline `${{ }}`, so the shell never sees an
+          # expansion it did not quote. The value is already constrained to
+          # v\d+\.\d+\.\d+ by the step above; this keeps that property readable
+          # here instead of one step away.
+          TAG: ${{ steps.gate.outputs.tag }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "needs_release=false" >> "$GITHUB_OUTPUT"
+            echo "$TAG already has a release."
+          else
+            echo "needs_release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Pinned to github.sha — the commit the four jobs above actually tested.
+      # Letting the tag resolve to a branch name instead points it at main's
+      # head at API-call time, which under any concurrent push is a commit
+      # nothing verified.
+      - name: Create the tag
+        if: steps.gate.outputs.needs_tag == 'true'
+        env:
+          TAG: ${{ steps.gate.outputs.tag }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="refs/tags/$TAG" \
+            -f sha="$GITHUB_SHA"
+
+      # Notes are the commit subjects. `--generate-notes` enumerates merged pull
+      # requests, and every commit in this repo lands directly on main — it
+      # would emit a body with a compare link and nothing else, which reads as a
+      # broken release rather than a quiet one. A CHANGELOG.md would be a third
+      # place the version lives alongside pyproject.toml and the tag, restating
+      # the log it is generated from.
+      - name: Publish the release
+        if: steps.gate.outputs.needs_tag == 'true' || steps.existing.outputs.needs_release == 'true'
+        env:
+          TAG: ${{ steps.gate.outputs.tag }}
+        run: |
+          # Range to the tag when it already exists locally, to github.sha when
+          # it does not. They are the same commit on the normal path — the tag
+          # was just created at that sha and is not in this checkout. They
+          # differ only when healing a tag an earlier run left behind, and there
+          # ranging to HEAD would file every commit since under a release the
+          # tag says stopped earlier.
+          endpoint=$(git rev-parse -q --verify "refs/tags/$TAG^{commit}" || echo "$GITHUB_SHA")
+          previous=$(git tag --list 'v*' --sort=-v:refname | grep -vFx "$TAG" | head -1)
+          if [ -n "$previous" ]; then
+            git log "$previous..$endpoint" --no-merges --reverse --format='- %s' > notes.md
+            printf '\n[Full diff](%s/%s/compare/%s...%s)\n' \
+              "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$previous" "$TAG" >> notes.md
+          else
+            git log "$endpoint" --no-merges --reverse --format='- %s' > notes.md
+          fi
+          # Commit subjects reach the body through a file, never through the
+          # shell — a subject containing backticks or $(…) is data here, not code.
+          #
+          # --verify-tag so this can only ever attach to a tag that already
+          # exists at that sha; tag creation stays in exactly one step above.
+          gh release create "$TAG" --verify-tag --title "$TAG" --notes-file notes.md

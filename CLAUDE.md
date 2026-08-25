@@ -86,7 +86,56 @@ ubuntu while disarming every deny case on the shell the hooks actually run in.
 
 `cancel-in-progress` is conditional on the ref. Cancelling a superseded PR run
 is the point; cancelling a run on `main` is not, because each commit there is a
-permanent point in history and nothing recomputes a verdict it never got.
+permanent point in history and nothing recomputes a verdict it never got. The
+`release` job below is the reason that stopped being merely untidy.
+
+### Releasing
+
+A fourth job tags and publishes when `[project] version` changes on `main`. It
+`needs` the other three, so a release is the one place the macOS hook leg's
+verdict reaches someone who is not the author.
+
+The gate is **level-triggered**: it asks `origin` whether `refs/tags/vX` exists
+and never looks at what the push changed. A `HEAD^` diff is wrong here three
+ways over — checkout fetches one commit, a push can carry several and the bump
+need not be in the last one, and a re-run re-reads the same diff and tags twice.
+Asking about the tag converges from any history shape, so a cancelled or failed
+run is *completed* by the next push rather than duplicated or skipped.
+
+Four things are load-bearing and none of them is obvious:
+
+- **Tag and release are probed separately.** A run that tagged and then died
+  leaves a tag with no release, and a single "already released?" gate calls that
+  state finished forever. Two probes let the next push create only the missing
+  half.
+- **The version must match `\d+\.\d+\.\d+`.** Otherwise `0.2.0rc1` cuts a real,
+  published, *latest* release, and there is no prerelease practice here to fall
+  back on — the first rc would invent one by accident.
+- **It refuses to go backwards.** A revert of the bump, a cherry-pick or a
+  rewritten `main` can leave `pyproject.toml` below a version that already
+  shipped. A release is not a state you can take back; a tag that moves detaches
+  every clone.
+- **The tag is pinned to `github.sha`,** not to a branch name. Letting it resolve
+  to `main`'s head at API-call time points it at whatever landed since — a commit
+  nothing verified.
+
+`contents: write` is scoped to that job alone. The other three run `uv sync`,
+which executes build hooks from several hundred third-party packages, and none
+of them needs a writable token.
+
+**There is no PyPI step, and adding one is not a config change.** The name
+`travel-agent` is taken on PyPI by an unrelated project and `travel_agent`
+normalises to the same one, so upload 403s and a Trusted Publisher cannot even
+be created. Publishing would mean renaming the distribution — and the built
+wheel is `src/travel_agent` only, so it carries `ui.py` but not
+`streamlit_app.py`, `app_pages/`, `.streamlit/config.toml` or `langgraph.json`.
+An installed release cannot run the UI. Nothing is attached to the release for
+that reason.
+
+Keep tagging and releasing in **one job**. A tag pushed with `GITHUB_TOKEN` does
+not trigger `on: push: tags:`, so splitting this across two workflows gives you
+a green run, a tag on origin, and no release anywhere — with nothing red to
+notice.
 
 When working with Python, invoke the relevant `/astral:<skill>` (from the
 `astral-sh/astral` plugin) for `uv`, `ty`, and `ruff` to ensure best practices
