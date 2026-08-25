@@ -744,3 +744,54 @@ def test_the_outbound_leg_note_appears_only_for_a_round_trip(trip_page):
     trip_page.session_state["record"] = returning
     trip_page.run()
     assert any("outbound leg" in caption for caption in _captions(trip_page))
+
+
+def test_the_kpi_cards_name_the_currency_the_tables_name(trip_page):
+    """A money figure on this page must never render without its unit.
+
+    `summarize_budget` takes `currency` as a free-form `str` and only USD, EUR
+    and JPY have a Streamlit preset, so any other trip falls to the printf
+    branch. The cards and the tables beneath them spelled that fallback
+    separately, and the cards dropped the code — a Swedish trip read `3440.00`
+    above rows reading `1275.00 SEK`.
+
+    Asserted on `proto.format`, which is the only place it is observable: the
+    format is applied in the browser, so the proto body is `3440.0` either way
+    and a value-based assertion passes on both spellings. Same reason
+    `column_order` is read off the proto rather than the call site.
+    """
+    record = trip_page.session_state["record"]
+    record.record_tool(
+        _costing(
+            {"flights": 21000.0, "lodging": 13400.0},
+            currency="SEK",
+            remaining=1600.0,
+            budget_total=36000.0,
+            percent_of_budget_used=95.6,
+        )
+    )
+    record.record_tool(
+        _search("search_flights", [{**_flight_offer(21000.0, 640, 0), "currency": "SEK"}])
+    )
+    trip_page.run()
+
+    cards = {card.label: card.proto.format for card in trip_page.metric}
+    assert cards["Estimated total"] == "%,.2f SEK"
+    assert cards["Remaining"] == "%,.2f SEK"
+    # The table under them is the comparison that matters: one derivation, so
+    # the two cannot disagree about a currency neither of them presets.
+    _, columns = _table(trip_page)
+    assert columns["total_fare"]["type_config"]["format"] == "%,.2f SEK"
+    # Percent is a unit of its own and stays a percent.
+    assert cards["Budget used"] == "%.0f%%"
+
+    # And the spend bar's money axis, the third surface on this page carrying a
+    # figure in the trip's currency. Found by its encoding rather than by index
+    # because `horizontal=True` swaps them: the categorical column lands on `y`
+    # and the money column on `x`, which is also why the page passes `y_label`
+    # to title an axis Vega draws along the bottom. A later "fix" to `x_label`
+    # would title the categories instead and fail here.
+    spend_bar = next(
+        chart for chart in _charts(trip_page) if chart["encoding"]["y"].get("field") == "category"
+    )
+    assert spend_bar["encoding"]["x"]["title"] == "Amount (SEK)"

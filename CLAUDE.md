@@ -488,6 +488,19 @@ Other things that bite here:
   `element.proto.column_order`, never the call site: `column_config` alone
   passes either way. Any field the data-honesty invariant put there needs that
   assertion, because the failure renders perfectly and raises nothing.
+- **A number's `format` is a rendering directive, so a value assertion cannot
+  see it.** `st.metric` and `NumberColumn` hand it to the frontend untouched:
+  `proto.body` is `3440.0` whether or not the format names a currency, and only
+  `proto.format` differs. That is where two spellings of one fallback hid — the
+  KPI cards dropped the currency code the tables beneath them kept, so a Swedish
+  trip read `3440.00` above rows reading `1,275.00 SEK`. `money_format_for` is
+  the single derivation now, for the reason `source_column` is the single
+  derivation of provenance. Presets are not printf strings: `dollar`/`euro`/
+  `yen` route through `Intl.NumberFormat` and group thousands, so the fallback
+  spells `%,.2f` to match. The bundled sprintf puts that flag *before* the
+  precision — the transposed `%.2,f` matches no placeholder at all and throws in
+  the browser. `summarize_budget` takes `currency` as a free-form `str`, so
+  every code outside the three presets lands on that branch.
 - **Don't pass `icon=` to `st.expander`.** `st.status` *is* an expandable
   carrying an icon, so that is how AppTest tells them apart — `element_tree.py`
   routes any `expandable` with an icon to `Status` and everything else to
@@ -524,6 +537,15 @@ Other things that bite here:
   label with it and leaving a caption pointing at a line that was not drawn. A
   reference line placed past the data needs the scale widened too, or it is not a
   reference line.
+- **`horizontal=True` swaps a bar chart's encodings but not its labels.**
+  `x_label` and `y_label` stay bound to the columns `x=` and `y=` name, so
+  `y_label` titles the money axis on a horizontal bar even though Vega draws it
+  along the bottom. The plausible "fix" to `x_label` titles the categories
+  instead and leaves the money axis reading `amount` — a figure with no unit, on
+  a page whose `currency` is free-form. `test_pages.py` finds that chart by
+  `encoding.y.field == "category"` rather than by index, so the lookup is what
+  documents the swap. `x_label=""` is the only way to drop a redundant axis
+  title; `None` means "use the column name".
 
 An assistant bubble is rebuilt from `st.session_state.messages` on every rerun,
 so whatever the live run rendered has to be reconstructable from the stored

@@ -37,6 +37,7 @@ from travel_agent.ui import (
     costing_series,
     currency_code,
     money_format,
+    money_format_for,
     offers,
     search_label,
     source_column,
@@ -647,11 +648,35 @@ def test_money_format_falls_back_without_a_preset():
     assert currency_code([{"currency": "JPY"}]) == "JPY"
     assert money_format([{"currency": "JPY"}]) == "yen"
     # An unlisted code still has to render as money, with the code visible.
-    assert money_format([{"currency": "SEK"}]) == "%.2f SEK"
+    assert money_format([{"currency": "SEK"}]) == "%,.2f SEK"
     # A blank or missing code falls through to the next offer, then the default.
     assert money_format([{"currency": ""}, {"currency": "EUR"}]) == "euro"
     assert money_format([{}]) == "dollar"
     assert money_format([]) == "dollar"
+
+
+def test_one_money_format_serves_the_cards_and_the_tables():
+    """The KPI cards and the tables under them must name the same currency.
+
+    Both derive their format from `CURRENCY_PRESETS`, but the fallback used to
+    be spelled twice — `money_format` kept the code, the Trip page's cards
+    dropped it — so a Swedish trip showed `3440.00` directly above rows reading
+    `1275.00 SEK`. `summarize_budget` takes `currency` as a free-form `str`, so
+    every currency outside the three presets reaches that branch.
+
+    Pinned on the seam rather than the page because this is the only place the
+    two spellings can be compared at all: the format string is a rendering
+    directive, so both variants leave the same value in the proto body.
+    """
+    assert money_format_for("JPY") == "yen"
+    # The `,` is not decoration. A preset is not a printf string: Streamlit
+    # renders those through `Intl.NumberFormat`, which groups thousands, so
+    # `"dollar"` gives `$3,440.00`. Without the separator the fallback gives
+    # `3440.00 SEK` — the same figure on the same page under two conventions.
+    assert money_format_for("SEK") == "%,.2f SEK"
+    # The offer-list wrapper is the same derivation, not a second one.
+    assert money_format([{"currency": "SEK"}]) == money_format_for("SEK")
+    assert money_format([]) == money_format_for("USD")
 
 
 def test_source_column_keys_off_synthetic_never_the_provider():

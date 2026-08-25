@@ -337,6 +337,35 @@ def cancel_band(free: Any) -> str:
 CURRENCY_PRESETS = {"USD": "dollar", "EUR": "euro", "JPY": "yen"}
 
 
+def money_format_for(code: str) -> str:
+    """Number format for one currency code, preset or not.
+
+    The single derivation of how money is written, for the same reason
+    `source_column` is the single derivation of provenance: the fallback is
+    the half that has to agree, and it is the half that is easy to spell
+    twice. `summarize_budget` takes `currency` as a free-form `str` and only
+    three codes have a Streamlit preset, so every other currency lands here.
+
+    Dropping the code there renders a bare number whose unit the traveler has
+    to guess, and the Trip page did exactly that: the KPI cards spelled the
+    fallback as `"%.2f"` while the tables directly beneath them used
+    `money_format`, so a Swedish trip showed `3440.00` above rows reading
+    `1275.00 SEK`. Nothing raised — the format only ever reaches the browser.
+
+    The `,` is what keeps the two branches comparable rather than merely both
+    labelled. A preset is not a printf string at all: Streamlit renders those
+    through `Intl.NumberFormat` with `style: "currency"`, which groups
+    thousands, so `"dollar"` gives `$3,440.00`. A plain `"%.2f SEK"` beside it
+    gives `3440.00 SEK` — same page, same figure, two different conventions for
+    reading it. Streamlit's printf branch is a bundled sprintf whose placeholder
+    grammar puts the separator flag before the precision (`%[flags][,][width]
+    [.precision][type]`) and applies it to `[diefgu]`, so `%,.2f` is the spelling
+    that parses and groups. The transposed `%.2,f` is not a placeholder at all
+    and throws in the browser, where nothing here can catch it.
+    """
+    return CURRENCY_PRESETS.get(code, f"%,.2f {code}")
+
+
 def currency_code(items: list[dict[str, Any]], fallback: str = "USD") -> str:
     """Currency these offers are quoted in, for axis titles and number formats."""
     for item in items:
@@ -348,8 +377,7 @@ def currency_code(items: list[dict[str, Any]], fallback: str = "USD") -> str:
 
 def money_format(items: list[dict[str, Any]], fallback: str = "USD") -> str:
     """Number format for whatever currency these offers are quoted in."""
-    code = currency_code(items, fallback)
-    return CURRENCY_PRESETS.get(code, f"%.2f {code}")
+    return money_format_for(currency_code(items, fallback))
 
 
 def source_column(items: list[dict[str, Any]]) -> list[dict[str, Any]]:

@@ -19,7 +19,6 @@ import streamlit as st
 
 from travel_agent.ui import (
     CANCEL_BANDS,
-    CURRENCY_PRESETS,
     ITINERARY_PATH,
     STOP_BANDS,
     WORKSPACE_FILES,
@@ -27,6 +26,7 @@ from travel_agent.ui import (
     costing_series,
     currency_code,
     money_format,
+    money_format_for,
     offers,
     search_label,
     source_column,
@@ -364,7 +364,11 @@ if budget:
     ceiling = budget.get("budget_total")
     remaining = budget.get("remaining")
     used = budget.get("percent_of_budget_used")
-    money = CURRENCY_PRESETS.get(str(budget.get("currency", "USD")), "%.2f")
+    currency = str(budget.get("currency", "USD"))
+    # Same derivation the tables below use. Spelling the fallback here as
+    # `"%.2f"` is what dropped the code from these three cards while the rows
+    # beneath them kept it — a bare number the traveler has to guess the unit of.
+    money = money_format_for(currency)
 
     # Every costing so far, oldest first, so the cards can show where the
     # estimate has been rather than only where it landed.
@@ -460,6 +464,20 @@ if budget:
             [{"category": name, "amount": value} for name, value in by_category.items()],
             x="category",
             y="amount",
+            # Named for the same reason the scatters build `axis_money`: a money
+            # axis with no currency on it is a figure the traveler has to guess
+            # the unit of, and this one is drawn from a payload whose `currency`
+            # is a free-form string. The category axis is left untitled because
+            # its own tick labels already read "flights" and "lodging".
+            #
+            # `y_label` rather than `x_label`, which looks wrong and is not:
+            # `horizontal=True` swaps the *encodings* but leaves each label bound
+            # to the column it names, so `y_label` titles `y="amount"` wherever
+            # Vega ends up drawing it — here, along the bottom. Checked against
+            # the rendered spec rather than inferred from the argument name;
+            # `test_the_kpi_cards_name_the_currency_the_tables_name` pins it.
+            y_label=f"Amount ({currency})",
+            x_label="",
             horizontal=True,
             height=260,
         )
