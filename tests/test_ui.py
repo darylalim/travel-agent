@@ -278,6 +278,108 @@ def test_a_subagents_search_is_captured_while_its_prose_stays_out_of_the_bubble(
     assert activity == [("call-1", "Searching flights")]
 
 
+def test_a_new_message_id_starts_a_fresh_accumulator(monkeypatch):
+    """`subgraphs=True` interleaves two tiers' chunks, and merging is by index.
+
+    langchain's `merge_lists` joins two tool-call chunks whenever their `index`
+    matches and their ids are merely *not inconsistent* — and a continuation
+    chunk carries `id=None`, so it merges into whatever sits at that index
+    already. With both tiers streaming, index 0 belongs to the main agent's
+    `task` call and to the scout's search at the same time.
+
+    Folding the id check back into a plain `accumulated + message` therefore
+    does two things at once, neither of which raises: the continuation lands on
+    `task`, so `subagent_type` reads `availabFO` and the activity trail renames
+    a subagent that does not exist; and the scout's own call keeps the
+    truncated `{"origin": "S"}` it arrived with.
+
+    The split below is chosen so the corruption is visible. A continuation that
+    happened to complete the other call's JSON validly would hide it — which is
+    most of why this is worth pinning.
+    """
+    activity: list[tuple[str, str]] = []
+
+    def note(call_id: str, label: str) -> None:
+        activity.append((call_id, label))
+
+    _run(
+        monkeypatch,
+        [
+            # The main agent delegates; `task` args arrive as partial JSON.
+            (
+                _ROOT,
+                "messages",
+                (
+                    AIMessageChunk(
+                        content="",
+                        id="r1",
+                        tool_call_chunks=[
+                            {
+                                "name": "task",
+                                "args": '{"subagent_type": "availab',
+                                "id": "call-task",
+                                "index": 0,
+                                "type": "tool_call_chunk",
+                            }
+                        ],
+                    ),
+                    {},
+                ),
+            ),
+            # The scout's search — a different message, the same index.
+            (
+                _SCOUT,
+                "messages",
+                (
+                    AIMessageChunk(
+                        content="",
+                        id="s1",
+                        tool_call_chunks=[
+                            {
+                                "name": "search_flights",
+                                "args": '{"origin": "S',
+                                "id": "call-1",
+                                "index": 0,
+                                "type": "tool_call_chunk",
+                            }
+                        ],
+                    ),
+                    {},
+                ),
+            ),
+            # Its continuation, carrying no id — the chunk that goes astray.
+            (
+                _SCOUT,
+                "messages",
+                (
+                    AIMessageChunk(
+                        content="",
+                        id="s1",
+                        tool_call_chunks=[
+                            {
+                                "name": None,
+                                "args": 'FO"}',
+                                "id": None,
+                                "index": 0,
+                                "type": "tool_call_chunk",
+                            }
+                        ],
+                    ),
+                    {},
+                ),
+            ),
+        ],
+        note,
+    )
+
+    # Each tier announces its own call once. A third entry renaming `call-task`
+    # is the failure: the scout's continuation reached the main agent's call.
+    assert activity == [
+        ("call-task", "Delegating to availab"),
+        ("call-1", "Searching flights"),
+    ]
+
+
 def test_unpack_handles_namespaced_and_bare_stream_items():
     assert _unpack((("tools:1", "model:2"), "messages", "payload")) == (
         ("tools:1", "model:2"),

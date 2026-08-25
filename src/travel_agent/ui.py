@@ -45,21 +45,27 @@ from langchain_core.messages import AIMessageChunk, ToolMessage
 
 from travel_agent.config import DEFAULT_MODEL
 
-# Safe at module scope, unlike `travel_agent.agent`: this module only defines
-# tools, reading no environment and building no model client on import.
+# Safe at module scope, unlike `travel_agent.agent`: these modules define
+# constants and tools only, reading no environment and building no model
+# client on import.
+from travel_agent.prompts import WORKSPACE
 from travel_agent.tools.availability import DEFAULT_CABIN
 
 # The deliverable files the agent is prompted to write, in the order a reader
 # wants them: what was asked, what was found, what it costs, what to do.
+#
+# Built off WORKSPACE so they cannot drift from the path the prompt names.
+# The Trip page looks these up by exact key in `record.files`, so a renamed
+# workspace would render an empty page rather than raise.
 WORKSPACE_FILES: tuple[tuple[str, str, str], ...] = (
-    ("/trip/brief.md", "Brief", ":material/assignment:"),
-    ("/trip/research.md", "Research", ":material/travel_explore:"),
-    ("/trip/options.md", "Options", ":material/flight:"),
-    ("/trip/budget.md", "Budget", ":material/payments:"),
-    ("/trip/itinerary.md", "Itinerary", ":material/map:"),
+    (f"{WORKSPACE}/brief.md", "Brief", ":material/assignment:"),
+    (f"{WORKSPACE}/research.md", "Research", ":material/travel_explore:"),
+    (f"{WORKSPACE}/options.md", "Options", ":material/flight:"),
+    (f"{WORKSPACE}/budget.md", "Budget", ":material/payments:"),
+    (f"{WORKSPACE}/itinerary.md", "Itinerary", ":material/map:"),
 )
 
-ITINERARY_PATH = "/trip/itinerary.md"
+ITINERARY_PATH = f"{WORKSPACE}/itinerary.md"
 
 # Tools whose structured output the trip view renders directly.
 CAPTURED_TOOLS = ("search_flights", "search_stays", "summarize_budget")

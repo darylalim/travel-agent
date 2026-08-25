@@ -33,7 +33,12 @@ __all__ = ["DEFAULT_MODEL", "build_agent", "build_backend", "graph"]
 # Files under /memories/ route to the store and survive across conversations;
 # everything else lands in graph state and is scoped to one thread. Longest
 # prefix wins, so /memories/ takes precedence over the default backend.
-MEMORY_PREFIX = "/memories/"
+#
+# Derived from MEMORY_PATH rather than spelled out again: this is the route
+# key, so a prefix that stops matching sends the profile to `StateBackend`
+# instead. A memory file that isn't there is skipped silently, so the only
+# symptom would be an agent that has never met the traveler.
+MEMORY_PREFIX = MEMORY_PATH[: MEMORY_PATH.rindex("/") + 1]
 
 
 def _memories_namespace(_runtime: object = None) -> tuple[str, ...]:

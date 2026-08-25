@@ -252,13 +252,14 @@ live under the two-part key, a memory file that isn't there is skipped
 silently, and the only symptom is an agent that has never met the traveler.
 
 Both paths are string constants in `prompts.py` (`WORKSPACE`, `MEMORY_PATH`) and
-are interpolated into prompt text — but two uncoupled copies have to move with
-them, neither loudly. `MEMORY_PREFIX` in `agent.py` is the `CompositeBackend`
-route key: if it stops being a prefix of `MEMORY_PATH`, the profile falls through
-to `StateBackend` and traveler memory silently stops persisting. `ui.py`'s
-`WORKSPACE_FILES` and `ITINERARY_PATH` hardcode `/trip/...`, and the Trip page
-looks them up by exact path in `record.files`, so a renamed workspace renders an
-empty page. Nothing tests either agreement.
+are interpolated into prompt text — change them there, not inline. The two
+copies that used to sit outside `prompts.py` are now derived from them, and
+should stay derived: `MEMORY_PREFIX` in `agent.py` is the `CompositeBackend`
+route key, and `ui.py` builds `WORKSPACE_FILES` and `ITINERARY_PATH` with
+f-strings. Spelling either out again reopens a hazard that raises nothing — a
+route key that stops prefixing `MEMORY_PATH` sends the profile to `StateBackend`
+and traveler memory quietly stops persisting, and a workspace path the Trip page
+cannot find in `record.files` renders an empty page.
 
 ## Provider seam
 
@@ -435,8 +436,11 @@ Other things that bite here:
   tool-call chunks whenever the `index` matches and the ids are merely *not
   inconsistent* — a continuation chunk carries `id=None`, so the scout's index-0
   args concatenate onto the main agent's index-0 `task` args. Folding the branch
-  back into a plain `accumulated + message` corrupts `subagent_type`, mislabels
-  the activity trail, and raises nothing. Nothing in the suite covers it.
+  back into a plain `accumulated + message` does two things at once, neither of
+  which raises: the continuation lands on `task`, so the activity trail names a
+  subagent that does not exist, and the scout's own call keeps the truncated
+  args it arrived with. `test_a_new_message_id_starts_a_fresh_accumulator` pins
+  it.
 - `st.write_stream` returns a `str` only if **every** yielded item is one; one
   non-`str` yield silently makes it a list. Progress goes through the
   `on_activity` callback, never the yield channel.
