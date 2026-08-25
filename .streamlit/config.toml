@@ -8,8 +8,12 @@
 # toggle only appears to the user when both exist. A lone [theme] section
 # would pin the app to one mode.
 #
-# The ten keys below are valid ONLY at the top level; Streamlit silently
-# ignores them inside [theme.light] / [theme.dark] / [theme.sidebar].
+# Seven keys are valid ONLY at the top level — base, baseFontSize,
+# baseFontWeight, fontFaces, metricValueFontSize, metricValueFontWeight and
+# showSidebarBorder; Streamlit silently ignores those inside [theme.light] /
+# [theme.dark] / [theme.sidebar]. Everything else in this block,
+# chartCategoricalColors included, is accepted in those sections and inherits
+# from [theme] when unset.
 
 [theme]
 baseFontSize = 14
@@ -17,8 +21,9 @@ baseFontWeight = 400
 showSidebarBorder = true
 metricValueFontSize = "30px"
 metricValueFontWeight = 600
-# One palette serves both modes: this key is top-level only, so there is no
-# [theme.dark] override to fall back on. That makes the usable window the
+# One palette serves both modes by choice: this key *is* accepted in
+# [theme.dark], but only a top-level palette is configured here, so there is no
+# per-mode override to fall back on. That makes the usable window the
 # *intersection* of the two OKLCH lightness bands — light 0.43-0.77, dark
 # 0.48-0.67 — i.e. the dark band. The earlier hues were picked by eye at
 # Tailwind 400/500 and five of the seven sat above 0.67, too light to hold

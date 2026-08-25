@@ -20,12 +20,20 @@ uv run ruff check . && uv run ruff format . && uv run ty check
 bash .claude/hooks/test-hooks.sh         # 61 cases pinning the Claude Code hooks
 ```
 
-Two hooks remain in `.claude/`, and they survive for two different reasons.
-`protect-env.sh` guards the credentials file: reading it copies live tokens into
-the transcript, writing it can repoint the agent at real inventory with nothing
-in the diff, and because the file is gitignored **no later gate can see either**.
-`python-gate.sh` applies `ruff format` to the edited file, which is the one thing
-CI structurally cannot do — `ci.yml` runs `--check` and can only report.
+`ruff check --fix` is never run here, and `/astral:ruff` will suggest it. There
+is no `[tool.ruff.lint] select` in `pyproject.toml`, so the default rule set
+includes F401, whose "safe" fix deletes unused imports — including ones the edit
+in progress just wrote. `ci.yml` runs `--check` only; `python-gate.sh` applies
+`ruff format` and never `--fix`.
+
+Three hooks run from `.claude/`. Two survive the cull below, for two different
+reasons. `protect-env.sh` guards the credentials file: reading it copies live
+tokens into the transcript, writing it can repoint the agent at real inventory
+with nothing in the diff, and because the file is gitignored **no later gate can
+see either**. `python-gate.sh` applies `ruff format` to the edited file, which is
+the one thing CI structurally cannot do — `ci.yml` runs `--check` and can only
+report. `turn-gate.sh` is the whole-project half split out of `python-gate.sh` by
+the same commit; the split is described below.
 
 That is the test for whether a hook belongs here: it prevents something
 irreversible or invisible that no later gate catches. *Earlier* is not
@@ -37,21 +45,20 @@ supported Python range and for contributors not using Claude Code:
 |---|---|
 | `no-booking.sh` — regex over the edit text | `tests/test_no_booking.py` — AST walk over `src/` |
 | `provider-env-drift.sh` — regex over `tools/` | `tests/test_env_isolation.py` — AST walk plus the imported tuple |
-| `honesty-cochange.sh` — Stop hook | cut; see below |
+| `honesty-cochange.sh` — Stop hook | cut, not moved |
 
-The co-change hook blocked a turn that changed a provider without changing a
-test. Its predicate was satisfied by `864e44e` — the commit that actually
-shipped fictional Duffel fares labelled `source: "duffel"` with no warning. All
-seven provider commits in this repo's history touched `tests/`, so it has never
-fired on a real change and could not have caught the one that mattered. Its
-successor `b74bafc` says why: *"The test fixture had invented the top-level
-field, which is why the suite passed."* A proxy that the incident satisfies is
+The co-change hook demanded a test change alongside every provider change. Its
+predicate was satisfied by `864e44e` — the commit that actually shipped fictional
+Duffel fares labelled `source: "duffel"` with no warning — so it could not have
+caught the one incident it existed for. A proxy that the incident satisfies is
 not a guard.
 
-The two surviving hooks are shell regexes whose character classes and verb lists
-are load-bearing — an adversarial review of the first draft found thirteen real
-defects, one of which deleted imports Claude had just written. `test-hooks.sh`
-pins every fix, so run it after touching a hook.
+`protect-env.sh` is shell regexes whose character classes and verb lists are
+load-bearing; `python-gate.sh` matches with `case` globs, and its hazard is the
+one above — it must never run `ruff check --fix`. An adversarial review of the
+first draft found thirteen real defects across the five hooks, one of which
+deleted imports Claude had just written. `test-hooks.sh` pins every fix, so run
+it after touching a hook.
 
 The per-edit and per-turn gates split along one line: **per-file checks fire on
 the edit, whole-project checks fire at the turn boundary.** `python-gate.sh`
@@ -178,9 +185,12 @@ maintained in one place. Five enforcement points must stay in agreement:
 4. The `@tool` docstrings and `prompts.py` tell the model to key off
    `warning`/`synthetic` — **never the provider name**.
 5. The Streamlit UI reaches the traveler without the model in between, so it
-   keys off the same two fields directly: a per-row provenance column and a
-   standing notice on the Trip page. See the hazard under "Streamlit UI" —
-   the naive way to fetch those fields returns nothing, silently.
+   keys off the same two fields directly: a per-row provenance column, a
+   standing notice on the Trip page, and a per-chart caption
+   (`_provenance_note`) — a chart has no reachable tooltip on touch, so it
+   labels itself too, and a fourth chart is a fourth call site. See the hazard
+   under "Streamlit UI" — the naive way to fetch those fields returns nothing,
+   silently.
 
 Point 4 is the subtle one. `synthetic` is not a property of the provider:
 Duffel in *test mode* returns fictional fares for flights and routes lodging to
@@ -202,9 +212,9 @@ that contract, and prose in `prompts.py` may restate it.
 
 ## Import-time graph construction
 
-`langgraph.json` needs a module-level `graph`, so `agent.py:77` runs
-`build_agent()` **as an import side effect** — constructing a model client and
-the full tool stack. Two things exist solely because of this:
+`langgraph.json` needs a module-level `graph`, so the last line of `agent.py`
+runs `build_agent()` **as an import side effect** — constructing a model client
+and the full tool stack. Two things exist solely because of this:
 
 - `config.py` holds `DEFAULT_MODEL` / `DEFAULT_MAX_TOKENS` so callers wanting a
   constant don't build an agent. Put new shared constants here, not in `agent.py`.
@@ -242,7 +252,13 @@ live under the two-part key, a memory file that isn't there is skipped
 silently, and the only symptom is an agent that has never met the traveler.
 
 Both paths are string constants in `prompts.py` (`WORKSPACE`, `MEMORY_PATH`) and
-are interpolated into prompt text — change them there, not inline.
+are interpolated into prompt text — but two uncoupled copies have to move with
+them, neither loudly. `MEMORY_PREFIX` in `agent.py` is the `CompositeBackend`
+route key: if it stops being a prefix of `MEMORY_PATH`, the profile falls through
+to `StateBackend` and traveler memory silently stops persisting. `ui.py`'s
+`WORKSPACE_FILES` and `ITINERARY_PATH` hardcode `/trip/...`, and the Trip page
+looks them up by exact path in `record.files`, so a renamed workspace renders an
+empty page. Nothing tests either agreement.
 
 ## Provider seam
 
@@ -253,10 +269,10 @@ provider name.
 
 `duffel` is one entry serving both kinds. Flights live in `duffel.py`, lodging
 in `duffel_stays.py`, and `DuffelProvider` composes them — `duffel_stays.py`
-imports `API_BASE`, `DuffelError`, `describe_error` and `seconds_until` from
-`duffel.py` at module scope, so `duffel.py` imports `fetch_stays` **inside**
-`search_stays` or the two cycle. Same lazy-import trick `_load_duffel` uses one
-level up, for the same reason.
+imports `API_BASE`, `DUFFEL_SOURCE`, `DuffelError`, `parse_amount`,
+`raise_for_status` and `seconds_until` from `duffel.py` at module scope, so
+`duffel.py` imports `fetch_stays` **inside** `search_stays` or the two cycle.
+Same lazy-import trick `_load_duffel` uses one level up, for the same reason.
 
 - `_build_provider` is `@cache`d, so construction and its side effects (the
   live-token warning) happen once per process. Failed construction isn't cached,
@@ -375,9 +391,11 @@ names are unstable across releases and fight the theme rather than extend it.
 Charts split that rule along one line: **colour comes from the theme, geometry
 does not.** A Vega spec omits `color.scale.range` so `theme="streamlit"` fills it
 from `chartCategoricalColors`, and no hex is ever written in Python. Mark size,
-opacity, chart and card heights and legend padding *are* set in the spec, because
-`config.toml` has no vocabulary for them. Don't claim otherwise in a comment —
-an earlier draft said a spec "keeps every appearance value in config.toml" while
+opacity and legend padding are set in the spec; the chart height is a
+`st.vega_lite_chart` kwarg and the card height a `_CARD_HEIGHT` constant — all in
+Python, because `config.toml` has no vocabulary for them. Don't claim otherwise
+in a comment — an earlier draft said a spec "keeps every appearance value in
+config.toml" while
 hardcoding six of them, which sends the next editor looking in the TOML for a dot
 size that was never there.
 
@@ -411,6 +429,14 @@ Other things that bite here:
   falls through to a raw `st.write` and, with thinking on by default, renders
   reasoning as JSON in the chat. Yield `str(message.text)`; `.text` keeps text
   blocks only and returns `""` for thinking.
+- **The chunk accumulator resets on a message-id change** (`stream_turn`).
+  `subgraphs=True` interleaves the main agent's and the scout's
+  `AIMessageChunk`s in one stream, and langchain's `merge_lists` merges two
+  tool-call chunks whenever the `index` matches and the ids are merely *not
+  inconsistent* — a continuation chunk carries `id=None`, so the scout's index-0
+  args concatenate onto the main agent's index-0 `task` args. Folding the branch
+  back into a plain `accumulated + message` corrupts `subagent_type`, mislabels
+  the activity trail, and raises nothing. Nothing in the suite covers it.
 - `st.write_stream` returns a `str` only if **every** yielded item is one; one
   non-`str` yield silently makes it a list. Progress goes through the
   `on_activity` callback, never the yield channel.
@@ -465,11 +491,16 @@ Other things that bite here:
   and shows up in `at.status` with a meaningless `state`, which `test_pages.py`
   compares element for element. The browser renders it correctly either way;
   only the page's testability breaks. Prefix the icon into the label instead.
-- **`chartCategoricalColors` is top-level only**, like the other nine keys in
-  that block — Streamlit silently ignores it inside `[theme.light]` /
-  `[theme.dark]`. So one palette serves both modes, and a usable hue has to sit
-  in the *intersection* of the two OKLCH lightness bands (light 0.43–0.77, dark
-  0.48–0.67), i.e. inside the dark one. Eyeballing this is how the first palette
+- **One palette serves both modes by choice, not by constraint.** As of
+  Streamlit 1.62 `chartCategoricalColors` *is* accepted in `[theme.light]` /
+  `[theme.dark]` and their sidebar sections, inheriting from `[theme]` when
+  unset; only seven keys are genuinely top-level-only (`base`, `baseFontSize`,
+  `baseFontWeight`, `fontFaces`, `metricValueFontSize`, `metricValueFontWeight`,
+  `showSidebarBorder`). Because a single top-level palette is what is
+  configured, a usable hue has to sit in the *intersection* of the two OKLCH
+  lightness bands (light 0.43–0.77, dark 0.48–0.67), i.e. inside the dark one.
+  Splitting the palette per mode would lift that constraint — a real option, not
+  an impossibility. Eyeballing this is how the first palette
   ended up with five of seven slots too light to hold against the dark surface.
   Validate with the dataviz skill's `validate_palette.js` before changing a
   value, and run `--pairs all` for the first three slots — a scatter can put any
@@ -531,9 +562,11 @@ it treats any function that reads the environment through one of its own
 parameters as a wrapper, so `duffel.py` reaching `os.getenv` via `_env_int` is
 seen, and a future `_env_str` is covered the day it is written. It imports
 `_PROVIDER_ENV` directly, so deleting the tuple is an `ImportError` rather than
-a check that quietly passes. Two `test_the_scan_still_sees…` cases guard the
-guard — a static scan that stops matching reads green, which is the same failure
-class as the drift it looks for.
+a check that quietly passes. Two cases guard the guard —
+`test_the_scan_still_sees_the_reads_that_exist_today` and
+`test_a_new_wrapper_shape_is_detected_without_naming_it` — because a static scan
+that stops matching reads green, which is the same failure class as the drift it
+looks for.
 
 Note the direction that is actually dangerous. Adding a var and forgetting the
 tuple is loud on the machine where it matters: `test_tools.py` sets
