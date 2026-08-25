@@ -70,8 +70,8 @@ search results at all. The UI therefore captures them mid-stream, with
 
 ## How it works
 
-`create_deep_agent` supplies planning (`write_todos`), a filesystem, and
-delegation (`task`) out of the box. This project adds:
+`create_deep_agent` supplies a filesystem and delegation (`task`) out of the
+box. This project adds:
 
 | Piece | Where | What it does |
 |---|---|---|
@@ -215,7 +215,7 @@ CI runs the same checks on push and pull request, with tests across Python
 
 ## Stack
 
-`deepagents` 0.6.x · `langchain` 1.3+ · `langgraph` 1.2+ ·
+`deepagents` 0.7.x · `langchain` 1.3+ · `langgraph` 1.2+ ·
 `claude-opus-5` via `langchain-anthropic` · Duffel API `v2` over `httpx` ·
 `streamlit` 1.60+ for the browser UI. Requires Python 3.11+.
 

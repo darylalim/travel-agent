@@ -129,6 +129,15 @@ winning:
   `traveler_profile.md`, loaded into the system prompt via `memory=[MEMORY_PATH]`
   and safely skipped when absent on a first run.
 
+The store itself still resolves from the execution context, but its
+**namespace** does not: deepagents 0.7 made `StoreBackend(namespace=...)`
+required and deleted the fallback that used to infer it. `_memories_namespace`
+in `agent.py` reproduces that fallback exactly — `(assistant_id, "filesystem")`
+under `langgraph dev` and Platform, `("filesystem",)` in-process. Don't
+"simplify" it to the flat tuple: profiles already written under `langgraph dev`
+live under the two-part key, a memory file that isn't there is skipped
+silently, and the only symptom is an agent that has never met the traveler.
+
 Both paths are string constants in `prompts.py` (`WORKSPACE`, `MEMORY_PATH`) and
 are interpolated into prompt text — change them there, not inline.
 
@@ -409,6 +418,16 @@ set sends real requests to `api.duffel.com`. **Add any new provider env var to
 self-verifies unasked, and expands scope. The prompts counter those tendencies —
 no "double-check your work" scaffolding, explicit conciseness and scope
 discipline. Don't add verification scaffolding back in.
+
+From deepagents 0.7 the library contributes **no** base prompt: it passes `""`,
+and no `HarnessProfile` matches `anthropic:claude-opus-5`. `MAIN_AGENT_PROMPT`
+is therefore the entire system prompt, and `TASK_SYSTEM_PROMPT` is gone too, so
+`subagents.py`'s `description` fields are the only surviving statement of the
+delegation contract. Write prompts as the whole thing, not as a complement to
+something upstream. The no-preamble and parallel-tool-call rules under "Working
+style" were part of that deleted base and are restated here on purpose — but
+don't restore the rest of it wholesale: it contained "your first attempt is
+rarely correct — iterate", which is exactly what this file exists to counter.
 
 Subagent `description` fields in `subagents.py` are what the main agent reads
 when deciding to delegate, so they carry the "brief me completely in one call"

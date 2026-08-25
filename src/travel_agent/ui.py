@@ -73,7 +73,7 @@ _TOOL_LABELS = {
     "edit_file": "Revising the workspace",
     "read_file": "Reading the workspace",
     "ls": "Listing the workspace",
-    "write_todos": "Planning",
+    "delete": "Deleting from the workspace",
     "task": "Delegating to a subagent",
 }
 

@@ -10,11 +10,16 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.11,<4.0"
 dependencies = [
-    # Ceiling, not caprice: 0.7.0 removes `StoreBackend()` without an explicit
-    # `namespace`, which `agent.py:build_backend` relies on. Without the bound,
-    # the day 0.7.0 ships an unrelated re-lock silently breaks `/memories/`.
-    # Lift it together with that call, not before.
-    "deepagents>=0.6.12,<0.7",
+    # Floor, not caprice: 0.7.0 made `StoreBackend`'s `namespace` required and
+    # deleted the legacy `assistant_id` fallback that decided where /memories/
+    # actually lived. `agent.py:_memories_namespace` restates that fallback, so
+    # the two move together — a namespace that looks reasonable but differs
+    # orphans existing traveler profiles, and a missing profile is skipped
+    # silently rather than raised. The `<0.8` bound is because 0.7 also dropped
+    # `TodoListMiddleware` and the library's base prompt from the default
+    # stack: prompt surface is part of this dependency, and `prompts.py` is
+    # tuned against whatever it leaves behind. Read the diff before lifting.
+    "deepagents>=0.7.8,<0.8",
     "langchain>=1.3.14,<2.0",
     # 1.5.2 cannot complete a turn on Claude Opus 5: streaming rebuilds the
     # assistant message from chunks and drops the thinking block's text, so
