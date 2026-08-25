@@ -13,26 +13,59 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
-uv run pytest                            # 167 tests, ~3s, no network, no model calls
+uv run pytest                            # 172 tests, ~4s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
-bash .claude/hooks/test-hooks.sh         # 88 cases pinning the Claude Code hooks
+bash .claude/hooks/test-hooks.sh         # 61 cases pinning the Claude Code hooks
 ```
 
-The hooks in `.claude/` enforce parts of this file mechanically: the data-honesty
-co-change rule, Duffel's read-only constraint, `_PROVIDER_ENV` coverage, and the
-`.env` credentials. They are shell regexes whose character classes and verb lists
+Two hooks remain in `.claude/`, and they survive for two different reasons.
+`protect-env.sh` guards the credentials file: reading it copies live tokens into
+the transcript, writing it can repoint the agent at real inventory with nothing
+in the diff, and because the file is gitignored **no later gate can see either**.
+`python-gate.sh` applies `ruff format` to the edited file, which is the one thing
+CI structurally cannot do — `ci.yml` runs `--check` and can only report.
+
+That is the test for whether a hook belongs here: it prevents something
+irreversible or invisible that no later gate catches. *Earlier* is not
+*essential*. Three hooks that failed that test were removed, and the properties
+they guarded moved into pytest, where they also run in CI on three Python
+versions and for contributors not using Claude Code:
+
+| Was | Is now |
+|---|---|
+| `no-booking.sh` — regex over the edit text | `tests/test_no_booking.py` — AST walk over `src/` |
+| `provider-env-drift.sh` — regex over `tools/` | `tests/test_env_isolation.py` — AST walk plus the imported tuple |
+| `honesty-cochange.sh` — Stop hook | cut; see below |
+
+The co-change hook blocked a turn that changed a provider without changing a
+test. Its predicate was satisfied by `864e44e` — the commit that actually
+shipped fictional Duffel fares labelled `source: "duffel"` with no warning. All
+seven provider commits in this repo's history touched `tests/`, so it has never
+fired on a real change and could not have caught the one that mattered. Its
+successor `b74bafc` says why: *"The test fixture had invented the top-level
+field, which is why the suite passed."* A proxy that the incident satisfies is
+not a guard.
+
+The two surviving hooks are shell regexes whose character classes and verb lists
 are load-bearing — an adversarial review of the first draft found thirteen real
 defects, one of which deleted imports Claude had just written. `test-hooks.sh`
 pins every fix, so run it after touching a hook.
 
-Two of them generalise differently, which is easy to get backwards:
-`provider-env-drift.sh` **globs** `src/travel_agent/tools/*.py`, so a new
-provider file is covered automatically; `honesty-cochange.sh` **hardcodes** its
-file list in two places that must agree (`PROVIDERS=` and the regex below it).
-Add a provider module and only the second needs editing — miss it and the file
-is silently unguarded.
+The per-edit and per-turn gates split along one line: **per-file checks fire on
+the edit, whole-project checks fire at the turn boundary.** `python-gate.sh`
+runs `ruff format`, `ruff check` and `ty check` on the one file that changed
+(~0.1s); `turn-gate.sh` runs project-wide `ty check` and the suite on `Stop` and
+`SubagentStop` (~5s, and skipped entirely when no Python changed). Do not move
+the suite back onto the edit. A change spanning `availability.py`, `duffel.py`
+and `tests/` — the shape this file mandates for the data-honesty invariant — is
+red at every intermediate edit, and a per-edit `exit 2` there says "fix this
+before continuing" about a state that is merely unfinished. The cheapest way to
+comply mid-refactor is to weaken the assertion.
+
+`SubagentStop` is not optional: `Stop` does not fire for Task subagents, so
+Python edited inside `availability-scout` would end its turn ungated.
 
 `.github/workflows/ci.yml` runs the same commands on push and PR, plus two
 checks with no local equivalent: it asserts the three-way 3.11 pin below, and
@@ -171,9 +204,20 @@ level up, for the same reason.
 **Duffel is read-only** — searches and reads, never `POST /air/orders` or
 `POST /stays/bookings`, and never a quote. Adding booking means putting order
 creation behind Deep Agents' `interrupt_on` human-approval gate; that is a
-deliberate design decision, not a config change. `no-booking.sh` enforces this
-by **path, not verb** — `/stays/search` is itself a POST — and only on URL
-*construction*, so prose and test assertions naming the path still pass.
+deliberate design decision, not a config change. `tests/test_no_booking.py`
+enforces this by **path, not verb** — `/stays/search` is itself a POST, and is
+the one call the lodging path is built to make.
+
+It walks the AST of every file under `src/` and fails on any booking, quote,
+payment or cancellation path appearing in a string literal that is not a
+docstring. That shape matters. The hook this replaced matched the edit text, so
+it only recognised a path sitting immediately after a `}` — `path =
+"/air/orders"` followed by `f"{API_BASE}{path}"` walked straight through, in a
+file that already hoists `API_BASE`. It also denied the accurate sentence this
+document asks you to write into a tool docstring. Both go away here: a request
+cannot reach an endpoint whose path is not a literal somewhere, comments never
+enter the tree, and docstrings are exempt by construction. Covering a new
+provider is a row in `BOOKING_PATHS`.
 
 Duffel v2 Air response shape, easy to get wrong: `live_mode` is top level;
 `duration` sits on each **slice** (covering layovers — summing segments
@@ -411,6 +455,22 @@ clears the `_build_provider` cache around every test. Without it the suite picks
 up whatever a developer exported — and the combination the README tells you to
 set sends real requests to `api.duffel.com`. **Add any new provider env var to
 `_PROVIDER_ENV`.**
+
+`test_env_isolation.py` enforces that mechanically, by AST rather than by name:
+it treats any function that reads the environment through one of its own
+parameters as a wrapper, so `duffel.py` reaching `os.getenv` via `_env_int` is
+seen, and a future `_env_str` is covered the day it is written. It imports
+`_PROVIDER_ENV` directly, so deleting the tuple is an `ImportError` rather than
+a check that quietly passes. Two `test_the_scan_still_sees…` cases guard the
+guard — a static scan that stops matching reads green, which is the same failure
+class as the drift it looks for.
+
+Note the direction that is actually dangerous. Adding a var and forgetting the
+tuple is loud on the machine where it matters: `test_tools.py` sets
+`TRAVEL_AGENT_PROVIDER` itself and would go red. **Emptying `_PROVIDER_ENV` is
+the silent one** — a CI runner has nothing exported, so it stays green forever.
+That is the direction only this test covers, and the reason it is a test rather
+than the hook it replaced, which never ran in CI at all.
 
 ## Prompts
 

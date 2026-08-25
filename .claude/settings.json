@@ -2,24 +2,13 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/no-booking.sh\"",
-            "timeout": 15,
-            "statusMessage": "Checking for Duffel booking calls"
-          }
-        ]
-      },
-      {
         "matcher": "Read|Edit|Write|Grep|Bash",
         "hooks": [
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/protect-env.sh\"",
             "timeout": 15,
-            "statusMessage": "Checking .env access"
+            "statusMessage": "Checking credential access"
           }
         ]
       }
@@ -31,14 +20,8 @@
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/python-gate.sh\"",
-            "timeout": 120,
-            "statusMessage": "ruff / ty / pytest"
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/provider-env-drift.sh\"",
-            "timeout": 15,
-            "statusMessage": "Checking _PROVIDER_ENV coverage"
+            "timeout": 30,
+            "statusMessage": "ruff format / ruff check / ty"
           }
         ]
       }
@@ -48,9 +31,21 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/honesty-cochange.sh\"",
-            "timeout": 15,
-            "statusMessage": "Checking provider/test co-change"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/turn-gate.sh\"",
+            "timeout": 120,
+            "statusMessage": "ty check / pytest"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/turn-gate.sh\"",
+            "timeout": 120,
+            "statusMessage": "ty check / pytest"
           }
         ]
       }

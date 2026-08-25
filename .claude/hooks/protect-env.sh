@@ -63,10 +63,33 @@ cmd=$(jq -r '.tool_input.command // empty' <<<"$input" 2>/dev/null)
 # .env as a real path token. The trailing class excludes "." so .env.example
 # and .environment never match; the leading class excludes "\" so a regex
 # literal such as grep "\.env" does not either.
-token='(^|[[:space:]"'\''=/`({])\.env([[:space:]"'\'';|&)`}<>]|$)'
+#
+# ":" is in the leading class because git revision syntax puts one there:
+# `git show :.env` prints the staged copy, and without ":" the token never
+# matched, so the segment was skipped before the verb was ever inspected — the
+# fail-closed rule below cannot help with a segment it is never handed. It sits
+# before the quotes rather than beside the "]" so it cannot be read as the start
+# of a POSIX character class.
+token='(^|[[:space:]]|[:"'\''=/`({])\.env([[:space:]"'\'';|&)`}<>]|$)'
 
 # Commands that cannot print or alter file contents. Everything else is denied.
-safe='test|\[|find|ls|stat|file|wc|touch|mkdir|rmdir|basename|dirname|realpath|git'
+# `echo` and `printf` are here because neither can read a file: the only way to
+# reach one is a substitution or a redirect, and both are split points below, so
+# `echo $(cat .env)` and `echo K=v >> .env` are judged on the segment that
+# actually touches the file. Without them, merely narrating the filename denies.
+safe='test|\[|find|ls|stat|file|wc|touch|mkdir|rmdir|basename|dirname|realpath|git|echo|printf'
+
+# Two of those verbs are safe only in shape, and a verb list cannot say so —
+# the danger sits in an argument, not in the command name:
+#   git   `git commit -m "... .env ..."` names the file in a message, but
+#         `git diff --no-index .env .env.example` prints it in full and
+#         `git add -f .env` publishes a gitignored secret to the remote.
+#   find  metadata-only until -exec/-ok/-delete turns it into an arbitrary
+#         command: `find . -name .env -exec cat {} +` rode the safe verb.
+# So each is narrowed to the shapes that genuinely cannot disclose. Anything
+# unrecognised falls through to deny, matching the fail-closed rule above.
+git_safe='(^|[[:space:]])(commit|status|log|check-ignore|rev-parse|ls-files)([[:space:]]|$)'
+find_unsafe='(^|[[:space:]])-(exec|execdir|ok|okdir|delete|fprint|fprintf)([[:space:]]|$)'
 
 # Split on every construct that can start a fresh command, so `test -f .env &&
 # cat .env` is judged on the segment that actually reads the file, not on the
@@ -91,6 +114,10 @@ while IFS= read -r seg; do
     verdict=deny
     break
   fi
+  case "$verb" in
+    git)  grep -qE "$git_safe" <<<"$seg"   || { verdict=deny; break; } ;;
+    find) grep -qE "$find_unsafe" <<<"$seg" && { verdict=deny; break; } ;;
+  esac
 done <<<"$segments"
 
 [ "$verdict" = deny ] && deny

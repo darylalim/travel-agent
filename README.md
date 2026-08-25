@@ -145,10 +145,17 @@ Deep Agents' `interrupt_on` human-approval gate — a deliberate decision, not a
 config change.
 
 The verb is not the discriminator: `/stays/search` is itself a `POST`, and it is
-the one call the lodging path is built to make. So `.claude/hooks/no-booking.sh`
-matches on the **path**, and only where one actually constructs a request URL —
-a bare `"/stays/bookings"` in a docstring or a test assertion stays allowed,
-because the hook must never block testing the invariant it protects.
+the one call the lodging path is built to make. So `tests/test_no_booking.py`
+matches on the **path**, walking the AST of every file under `src/` and failing
+on any booking, quote, payment or cancellation path that appears in a string
+literal outside a docstring.
+
+Working on the AST rather than on source text is what makes that precise in both
+directions. A request cannot reach an endpoint whose path is not a literal
+somewhere, so hoisting the path into a variable does not hide it — while
+comments never enter the tree at all and docstrings are excluded by
+construction, so prose and test assertions naming the endpoint stay allowed. A
+check on this invariant must never block writing about it.
 
 A few things worth knowing:
 

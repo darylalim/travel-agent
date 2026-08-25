@@ -151,14 +151,14 @@ jobs:
           enable-cache: true
           python-version: "3.11"
 
-      # python-gate.sh runs `uv run ruff/ty/pytest` over the whole project, and
-      # exits 0 silently when uv is absent — which would turn its "deny" cases
-      # into false passes. So the environment has to be real and synced.
+      # python-gate.sh and turn-gate.sh shell out to `uv run`, and both exit 0
+      # silently when uv is absent — which would turn their failing cases into
+      # false passes. So the environment has to be real and synced.
       - run: uv sync --locked
 
       - name: test-hooks.sh
         run: |
-          # Every assertion parses hook JSON with jq. Without it all 77 cases
+          # Every assertion parses hook JSON with jq. Without it all 61 cases
           # fail at once, which reads as a hook regression rather than a
           # missing tool. Both runner images ship jq; say so plainly if not.
           command -v jq >/dev/null || { echo "::error::jq is required by the hook tests"; exit 1; }

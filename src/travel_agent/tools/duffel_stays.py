@@ -2,8 +2,9 @@
 
 Read-only, exactly like the flight side. This module runs one search and reads
 the results back; it never creates a quote or a booking, so nothing is reserved
-and no payment is taken. `.claude/hooks/no-booking.sh` denies the URL shapes for
-`/stays/quotes` and `/stays/bookings` the same way it denies `/air/orders`.
+and no payment is taken. `tests/test_no_booking.py` fails on `/stays/quotes` and
+`/stays/bookings` appearing in executable string data the same way it fails on
+`/air/orders` — this sentence is a docstring, so it is exempt.
 
 Contract, taken from Duffel's v2 Stays reference:
 
