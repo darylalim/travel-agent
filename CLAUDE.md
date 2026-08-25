@@ -89,6 +89,14 @@ is the point; cancelling a run on `main` is not, because each commit there is a
 permanent point in history and nothing recomputes a verdict it never got. The
 `release` job below is the reason that stopped being merely untidy.
 
+`astral-sh/setup-uv` is pinned to a **full version**, in all three jobs that use
+it. It is not a style choice and `@v10` is not a shorter spelling of it: from v8
+the action stopped publishing floating major tags altogether — a response to the
+tj-actions supply-chain attack — so a major-only ref fails to resolve. Releases
+from v8 on are immutable, which is what makes a version tag as firm as a commit
+sha here. `actions/checkout@v5` still publishes a major tag and still runs on
+node24, so it is left as it is.
+
 ### Releasing
 
 A fourth job tags and publishes when `[project] version` changes on `main`. It
