@@ -337,33 +337,79 @@ def cancel_band(free: Any) -> str:
 CURRENCY_PRESETS = {"USD": "dollar", "EUR": "euro", "JPY": "yen"}
 
 
-def money_format_for(code: str) -> str:
+def currency_label(code: str, fallback: str = "USD") -> str:
+    """Normalise a currency code for display.
+
+    `summarize_budget` takes `currency` as a free-form `str`, so what arrives
+    is whatever the model wrote — `"usd"`, `" USD"`, or `""`. Blank falls back
+    the way `currency_code` does for an offer list naming none: those two are
+    the page's only sources of a currency, and they should not disagree about
+    the empty case.
+    """
+    return (code or "").strip().upper() or fallback
+
+
+def money_format_for(code: str, fallback: str = "USD") -> str:
     """Number format for one currency code, preset or not.
 
     The single derivation of how money is written, for the same reason
     `source_column` is the single derivation of provenance: the fallback is
     the half that has to agree, and it is the half that is easy to spell
-    twice. `summarize_budget` takes `currency` as a free-form `str` and only
-    three codes have a Streamlit preset, so every other currency lands here.
+    twice. The KPI cards once spelled it `"%.2f"` while the tables beneath
+    them used `money_format`, so a Swedish trip showed `3440.00` above rows
+    reading `1275.00 SEK`.
 
-    Dropping the code there renders a bare number whose unit the traveler has
-    to guess, and the Trip page did exactly that: the KPI cards spelled the
-    fallback as `"%.2f"` while the tables directly beneath them used
-    `money_format`, so a Swedish trip showed `3440.00` above rows reading
-    `1275.00 SEK`. Nothing raised — the format only ever reaches the browser.
+    Three things the free-form input forces, none of which raises here:
 
-    The `,` is what keeps the two branches comparable rather than merely both
-    labelled. A preset is not a printf string at all: Streamlit renders those
-    through `Intl.NumberFormat` with `style: "currency"`, which groups
-    thousands, so `"dollar"` gives `$3,440.00`. A plain `"%.2f SEK"` beside it
-    gives `3440.00 SEK` — same page, same figure, two different conventions for
-    reading it. Streamlit's printf branch is a bundled sprintf whose placeholder
-    grammar puts the separator flag before the precision (`%[flags][,][width]
-    [.precision][type]`) and applies it to `[diefgu]`, so `%,.2f` is the spelling
-    that parses and groups. The transposed `%.2,f` is not a placeholder at all
-    and throws in the browser, where nothing here can catch it.
+    - **Blank falls back**, rather than yielding `"%,.2f "` — a grouped number
+      with no unit at all, which is the defect this function exists to close.
+    - **The code is upper-cased**, so `"usd"` reaches the preset instead of
+      rendering `3,440.00 usd` beside a table reading `$1,275.00`.
+    - **`%` is escaped to `%%`.** The code is interpolated into a printf
+      string that the *frontend* parses, and nothing upstream constrains it:
+      `"%,.2f US%D"` matches no placeholder and throws in the browser, where
+      no `except` here can see it. `%%` is the escape that same grammar
+      defines.
+
+    Presets are not printf strings at all — `dollar`/`euro`/`yen` route
+    through `Intl.NumberFormat` and group thousands — so the fallback spells
+    `%,.2f` to match. That flag sits *before* the precision in the bundled
+    sprintf's grammar; the transposed `%.2,f` is not a placeholder.
     """
-    return CURRENCY_PRESETS.get(code, f"%,.2f {code}")
+    label = currency_label(code, fallback)
+    if label in CURRENCY_PRESETS:
+        return CURRENCY_PRESETS[label]
+    return f"%,.2f {label.replace('%', '%%')}"
+
+
+def money_axis_title(prefix: str, code: str, fallback: str = "USD") -> str:
+    """Axis title naming what is plotted and the currency it is quoted in.
+
+    Both money axes on the Trip page build one, off different sources — the
+    scatters from `currency_code(offers)`, the spend bar from the budget
+    payload — so what is shared is the convention, not the value. Routing both
+    through `currency_label` is what stops them disagreeing: `currency_code`
+    does not normalise, so an offer list quoting `"usd"` titled its axis
+    `Total fare (usd)` beside a table `money_format_for` renders as
+    `$1,275.00`.
+    """
+    return f"{prefix} ({currency_label(code, fallback)})"
+
+
+def money_text(amount: Any, code: str, fallback: str = "USD") -> str:
+    """One amount as finished prose, or `""` when it is not a number.
+
+    `st.error` and `st.caption` take a completed string, so the grouping the
+    cards get from `%,.2f` has to happen in Python rather than being handed
+    to the frontend as a directive. The ISO code is spelled out rather than
+    symbolised: replicating `Intl.NumberFormat`'s symbol table here to print
+    `$` would be a second derivation of exactly the thing this module just
+    finished consolidating, and a sentence naming the code is unambiguous
+    where a bare glyph is not.
+    """
+    if not isinstance(amount, (int, float)):
+        return ""
+    return f"{amount:,.2f} {currency_label(code, fallback)}"
 
 
 def currency_code(items: list[dict[str, Any]], fallback: str = "USD") -> str:

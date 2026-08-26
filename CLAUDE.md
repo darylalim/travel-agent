@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
-uv run pytest                            # 172 tests, ~4s, no network, no model calls
+uv run pytest                            # 177 tests, ~4s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -493,14 +493,17 @@ Other things that bite here:
   `proto.body` is `3440.0` whether or not the format names a currency, and only
   `proto.format` differs. That is where two spellings of one fallback hid — the
   KPI cards dropped the currency code the tables beneath them kept, so a Swedish
-  trip read `3440.00` above rows reading `1,275.00 SEK`. `money_format_for` is
+  trip read `3440.00` above rows reading `1275.00 SEK`. `money_format_for` is
   the single derivation now, for the reason `source_column` is the single
   derivation of provenance. Presets are not printf strings: `dollar`/`euro`/
   `yen` route through `Intl.NumberFormat` and group thousands, so the fallback
   spells `%,.2f` to match. The bundled sprintf puts that flag *before* the
   precision — the transposed `%.2,f` matches no placeholder at all and throws in
   the browser. `summarize_budget` takes `currency` as a free-form `str`, so
-  every code outside the three presets lands on that branch.
+  every code outside the three presets lands on that branch — which is also why
+  `money_format_for` normalises and escapes rather than interpolating what it
+  is given: blank renders a grouped number with no unit, `"usd"` misses the
+  preset, and a `%` in the code is parsed as a second placeholder and throws.
 - **Don't pass `icon=` to `st.expander`.** `st.status` *is* an expandable
   carrying an icon, so that is how AppTest tells them apart — `element_tree.py`
   routes any `expandable` with an icon to `Status` and everything else to

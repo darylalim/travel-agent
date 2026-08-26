@@ -25,8 +25,11 @@ from travel_agent.ui import (
     cancel_band,
     costing_series,
     currency_code,
+    currency_label,
+    money_axis_title,
     money_format,
     money_format_for,
+    money_text,
     offers,
     search_label,
     source_column,
@@ -198,7 +201,7 @@ def _tradeoff_chart(items: list[dict[str, Any]], cfg: _Tradeoff) -> list[dict[st
     if len(plotted) < 3:
         return []
 
-    axis_money = f"{cfg.y_prefix} ({currency_code([offer for offer, _ in plotted])})"
+    axis_money = money_axis_title(cfg.y_prefix, currency_code([o for o, _ in plotted]))
     st.vega_lite_chart(
         [
             {
@@ -364,7 +367,12 @@ if budget:
     ceiling = budget.get("budget_total")
     remaining = budget.get("remaining")
     used = budget.get("percent_of_budget_used")
-    currency = str(budget.get("currency", "USD"))
+    # Normalised once, here, because three surfaces below spell it: the cards'
+    # number format, the spend bar's axis title, and the over-budget notice.
+    # `summarize_budget` takes `currency` as a free-form `str`, so an unnormalised
+    # "" renders `3,440.00` with no unit and an axis reading "Amount ()" — the
+    # defect this section exists to close, reached by a different route.
+    currency = currency_label(str(budget.get("currency", "USD")))
     # Same derivation the tables below use. Spelling the fallback here as
     # `"%.2f"` is what dropped the code from these three cards while the rows
     # beneath them kept it — a bare number the traveler has to guess the unit of.
@@ -430,8 +438,14 @@ if budget:
                 st.progress(min(max(used / 100, 0.0), 1.0))
 
     if budget.get("over_budget"):
+        # The fourth money figure on this page, and the one that cannot carry a
+        # `format`: `st.error` takes finished text. Interpolating the raw float
+        # printed `Over budget by 560.0 SEK.` directly beneath cards reading
+        # `3,440.00 SEK`, and a blank currency left `560.0 .` — the trailing
+        # `.strip()` could not reach a space with a period after it.
+        overage = money_text(budget.get("overage"), currency)
         st.error(
-            f"Over budget by {budget.get('overage')} {budget.get('currency', '')}.".strip(),
+            f"Over budget by {overage}." if overage else "The plan is over budget.",
             icon=":material/trending_up:",
         )
 
@@ -476,7 +490,7 @@ if budget:
             # Vega ends up drawing it — here, along the bottom. Checked against
             # the rendered spec rather than inferred from the argument name;
             # `test_the_kpi_cards_name_the_currency_the_tables_name` pins it.
-            y_label=f"Amount ({currency})",
+            y_label=money_axis_title("Amount", currency),
             x_label="",
             horizontal=True,
             height=260,

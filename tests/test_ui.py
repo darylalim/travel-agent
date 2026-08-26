@@ -36,8 +36,10 @@ from travel_agent.ui import (
     cancel_band,
     costing_series,
     currency_code,
+    currency_label,
     money_format,
     money_format_for,
+    money_text,
     offers,
     search_label,
     source_column,
@@ -656,17 +658,18 @@ def test_money_format_falls_back_without_a_preset():
 
 
 def test_one_money_format_serves_the_cards_and_the_tables():
-    """The KPI cards and the tables under them must name the same currency.
+    """Both entry points into the fallback format resolve to one derivation.
 
-    Both derive their format from `CURRENCY_PRESETS`, but the fallback used to
-    be spelled twice — `money_format` kept the code, the Trip page's cards
-    dropped it — so a Swedish trip showed `3440.00` directly above rows reading
-    `1275.00 SEK`. `summarize_budget` takes `currency` as a free-form `str`, so
-    every currency outside the three presets reaches that branch.
+    Not that the cards and the tables show the same *currency* — they read
+    independent sources and may legitimately differ; see the page test. What
+    is pinned is that `money_format` cannot spell the fallback differently
+    from `money_format_for`. `money_format_for`'s docstring carries why.
 
-    Pinned on the seam rather than the page because this is the only place the
-    two spellings can be compared at all: the format string is a rendering
-    directive, so both variants leave the same value in the proto body.
+    Pinned here as well as on the page: `test_pages.py` compares the rendered
+    card against the rendered table, this compares the two entry points into
+    the one derivation. Neither is redundant — a page test cannot reach
+    `money_format_for` directly, and this cannot see a call site that stops
+    using it.
     """
     assert money_format_for("JPY") == "yen"
     # The `,` is not decoration. A preset is not a printf string: Streamlit
@@ -677,6 +680,42 @@ def test_one_money_format_serves_the_cards_and_the_tables():
     # The offer-list wrapper is the same derivation, not a second one.
     assert money_format([{"currency": "SEK"}]) == money_format_for("SEK")
     assert money_format([]) == money_format_for("USD")
+
+
+def test_a_free_form_currency_cannot_break_or_unlabel_the_format():
+    """`summarize_budget` takes `currency` as a free-form `str`.
+
+    Whatever the model writes reaches a printf string the *frontend* parses,
+    so this guards the three inputs that get there and misbehave — each in a
+    way nothing in Python can catch.
+    """
+    # Blank would otherwise yield "%,.2f ": a grouped number with no unit,
+    # which is the defect the single derivation exists to close.
+    assert money_format_for("") == "dollar"
+    assert currency_label("") == "USD"
+    # Case and padding, or the cards read "3,440.00 usd" beside "$1,275.00".
+    assert money_format_for("usd") == "dollar"
+    assert money_format_for(" sek ") == "%,.2f SEK"
+    # A `%` in the code is a second placeholder to the bundled sprintf, whose
+    # parser throws rather than degrading; `%%` is its escape for a literal.
+    assert money_format_for("US%D") == "%,.2f US%%D"
+    assert "%%" in money_format_for("100%")
+
+
+def test_money_text_renders_prose_the_frontend_never_formats():
+    """`st.error` takes finished text, so the grouping happens in Python.
+
+    The over-budget notice sits directly beneath the KPI cards, so it has to
+    group the way `%,.2f` makes them group rather than printing a float repr.
+    """
+    assert money_text(560.0, "SEK") == "560.00 SEK"
+    assert money_text(21000.5, "usd") == "21,000.50 USD"
+    # Blank falls back rather than leaving a dangling space before the period
+    # the caller appends.
+    assert money_text(560.0, "") == "560.00 USD"
+    # Not a number is empty, so the caller can choose a different sentence
+    # instead of rendering "Over budget by ."
+    assert money_text(None, "USD") == ""
 
 
 def test_source_column_keys_off_synthetic_never_the_provider():

@@ -746,14 +746,22 @@ def test_the_outbound_leg_note_appears_only_for_a_round_trip(trip_page):
     assert any("outbound leg" in caption for caption in _captions(trip_page))
 
 
-def test_the_kpi_cards_name_the_currency_the_tables_name(trip_page):
+def test_one_fallback_format_reaches_every_money_surface(trip_page):
     """A money figure on this page must never render without its unit.
 
     `summarize_budget` takes `currency` as a free-form `str` and only USD, EUR
     and JPY have a Streamlit preset, so any other trip falls to the printf
-    branch. The cards and the tables beneath them spelled that fallback
-    separately, and the cards dropped the code — a Swedish trip read `3440.00`
-    above rows reading `1275.00 SEK`.
+    branch, which the four surfaces below once spelled separately.
+
+    What is pinned is that one derivation reaches all four surfaces, **not**
+    that the cards and the table agree about which currency. They read
+    independent sources — the cards `budget["currency"]`, which the model
+    supplies, and the table `currency_code(offers)`, which the provider does —
+    so a plan budgeted in USD against JPY fares is correct and must keep
+    rendering `$3,440.00` above `¥185,000`. Making either read the other would
+    relabel real fares with a currency they are not quoted in, which is the
+    misrepresentation the data-honesty invariant exists to prevent. The
+    fixture sets both to SEK only so the *format* can be compared.
 
     Asserted on `proto.format`, which is the only place it is observable: the
     format is applied in the browser, so the proto body is `3440.0` either way
@@ -765,9 +773,11 @@ def test_the_kpi_cards_name_the_currency_the_tables_name(trip_page):
         _costing(
             {"flights": 21000.0, "lodging": 13400.0},
             currency="SEK",
-            remaining=1600.0,
-            budget_total=36000.0,
-            percent_of_budget_used=95.6,
+            remaining=-1600.0,
+            budget_total=32800.0,
+            percent_of_budget_used=104.9,
+            over_budget=True,
+            overage=1600.0,
         )
     )
     record.record_tool(
@@ -795,3 +805,8 @@ def test_the_kpi_cards_name_the_currency_the_tables_name(trip_page):
         chart for chart in _charts(trip_page) if chart["encoding"]["y"].get("field") == "category"
     )
     assert spend_bar["encoding"]["x"]["title"] == "Amount (SEK)"
+
+    # The fourth surface, and the only one whose figure is formatted in Python:
+    # `st.error` takes finished text, so a raw interpolation printed the float
+    # repr `1600.0` beneath cards the same payload renders as `1,600.00 SEK`.
+    assert trip_page.error[0].value == "Over budget by 1,600.00 SEK."
