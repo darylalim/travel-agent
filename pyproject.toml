@@ -1,6 +1,6 @@
 [project]
 name = "travel-agent"
-version = "0.1.0"
+version = "0.2.0"
 description = "Travel planning agent on Deep Agents. Research destinations and search flight and lodging inventory via Duffel."
 readme = "README.md"
 # PEP 639: an SPDX expression plus the file it resolves to, so the built wheel
