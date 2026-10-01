@@ -8,7 +8,10 @@ carries the "brief me completely" contract.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from deepagents import SubAgent
+from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import BaseTool
 
 from travel_agent.prompts import AVAILABILITY_PROMPT, BUDGET_PROMPT, RESEARCHER_PROMPT, WORKSPACE
@@ -17,17 +20,23 @@ from travel_agent.tools.budget import summarize_budget
 from travel_agent.tools.search import build_search_tools
 
 
-def build_subagents(search_tools: list[BaseTool] | None = None) -> list[SubAgent]:
+def build_subagents(
+    search_tools: list[BaseTool] | None = None,
+    models: Mapping[str, BaseChatModel] | None = None,
+) -> list[SubAgent]:
     """Assemble the subagent roster for the main travel agent.
 
     Args:
         search_tools: Web search tools to give the researcher. Pass the same
             list the main agent got so the tools are constructed once.
+        models: Chat models keyed by subagent name. A subagent absent from the
+            mapping inherits the main agent's model. Pass built clients, not
+            id strings: deepagents resolves a string with no `max_tokens`.
     """
     if search_tools is None:
         search_tools = build_search_tools()
 
-    return [
+    roster = [
         SubAgent(
             name="destination-researcher",
             description=(
@@ -64,3 +73,7 @@ def build_subagents(search_tools: list[BaseTool] | None = None) -> list[SubAgent
             tools=[summarize_budget],
         ),
     ]
+    for subagent in roster:
+        if models and subagent["name"] in models:
+            subagent["model"] = models[subagent["name"]]
+    return roster

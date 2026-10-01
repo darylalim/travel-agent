@@ -237,7 +237,7 @@ that already shipped.
 ## Stack
 
 `deepagents` 0.7.x · `langchain` 1.3+ · `langgraph` 1.2+ ·
-`claude-opus-5` via `langchain-anthropic` · Duffel API `v2` over `httpx` ·
+`claude-opus-5-5` (main agent), `claude-sonnet-5-5` and `claude-haiku-4-5` (subagents) via `langchain-anthropic` · Duffel API `v2` over `httpx` ·
 `streamlit` 1.60+ for the browser UI. Requires Python 3.11+.
 
 ## License

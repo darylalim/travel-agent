@@ -12,7 +12,7 @@ import sys
 
 from dotenv import load_dotenv
 
-from travel_agent.config import DEFAULT_MODEL
+from travel_agent.config import DEFAULT_EFFORT, DEFAULT_MODEL
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -37,7 +37,12 @@ def main(argv: list[str] | None = None) -> int:
 
     from travel_agent.agent import build_agent
 
-    agent = build_agent(args.model, checkpointer=MemorySaver(), store=InMemoryStore())
+    # DEFAULT_EFFORT is tuned for DEFAULT_MODEL; any other model runs at its
+    # own default, since not every model accepts effort (Haiku 4.5 rejects it).
+    effort = DEFAULT_EFFORT if args.model == DEFAULT_MODEL else None
+    agent = build_agent(
+        args.model, effort=effort, checkpointer=MemorySaver(), store=InMemoryStore()
+    )
     config = {"configurable": {"thread_id": args.thread}}
 
     print("Traveler memory is in-process only here; use `langgraph dev` to persist it.\n")

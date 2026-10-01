@@ -17,11 +17,18 @@ from __future__ import annotations
 from deepagents import create_deep_agent
 from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
 from langchain.chat_models import init_chat_model
+from langchain_core.language_models import BaseChatModel
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.config import get_config
 from langgraph.store.base import BaseStore
 
-from travel_agent.config import DEFAULT_MAX_TOKENS, DEFAULT_MODEL
+from travel_agent.config import (
+    DEFAULT_EFFORT,
+    DEFAULT_MAX_TOKENS,
+    DEFAULT_MODEL,
+    SUBAGENT_MODELS,
+    Effort,
+)
 from travel_agent.prompts import MAIN_AGENT_PROMPT, MEMORY_PATH
 from travel_agent.subagents import build_subagents
 from travel_agent.tools.availability import date_offset
@@ -73,9 +80,20 @@ def build_backend() -> CompositeBackend:
     )
 
 
+def _chat_model(model: str, effort: Effort | None, max_tokens: int) -> BaseChatModel:
+    """Build a chat client, sending `effort` only when one is given.
+
+    Omitting the kwarg rather than passing `None` keeps a model that rejects
+    effort (Haiku 4.5) on a request shape it accepts.
+    """
+    kwargs = {"reasoning_effort": effort} if effort else {}
+    return init_chat_model(model, max_tokens=max_tokens, **kwargs)
+
+
 def build_agent(
     model: str = DEFAULT_MODEL,
     *,
+    effort: Effort | None = DEFAULT_EFFORT,
     checkpointer: BaseCheckpointSaver | None = None,
     store: BaseStore | None = None,
     max_tokens: int = DEFAULT_MAX_TOKENS,
@@ -83,20 +101,27 @@ def build_agent(
     """Build the travel agent.
 
     Args:
-        model: Provider-prefixed model id passed to `init_chat_model`.
+        model: Provider-prefixed model id for the main agent, passed to
+            `init_chat_model`. Subagents take theirs from `SUBAGENT_MODELS`.
+        effort: Main agent's effort, or `None` for the model's own default.
+            Pass `None` with a model that rejects the parameter.
         checkpointer: Conversation persistence. Leave `None` under
             `langgraph dev` / LangGraph Platform — the server provides it.
         store: Cross-thread store backing `/memories/`. Leave `None` under
             `langgraph dev` / LangGraph Platform — the server provides it.
-        max_tokens: Output ceiling. On Claude Opus 5 thinking is on by
-            default and counts against this, so keep it generous.
+        max_tokens: Output ceiling for every agent. On Opus 5.5 thinking is
+            always on and counts against this, so keep it generous.
     """
     search_tools = build_search_tools()
+    subagent_models = {
+        name: _chat_model(spec.model, spec.effort, max_tokens)
+        for name, spec in SUBAGENT_MODELS.items()
+    }
     return create_deep_agent(
-        model=init_chat_model(model, max_tokens=max_tokens),
+        model=_chat_model(model, effort, max_tokens),
         tools=[*search_tools, summarize_budget, date_offset],
         system_prompt=MAIN_AGENT_PROMPT,
-        subagents=build_subagents(search_tools),
+        subagents=build_subagents(search_tools, subagent_models),
         backend=build_backend(),
         memory=[MEMORY_PATH],
         checkpointer=checkpointer,

@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
-uv run pytest                            # 177 tests, ~4s, no network, no model calls
+uv run pytest                            # 181 tests, ~4s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -216,8 +216,8 @@ that contract, and prose in `prompts.py` may restate it.
 runs `build_agent()` **as an import side effect** — constructing a model client
 and the full tool stack. Two things exist solely because of this:
 
-- `config.py` holds `DEFAULT_MODEL` / `DEFAULT_MAX_TOKENS` so callers wanting a
-  constant don't build an agent. Put new shared constants here, not in `agent.py`.
+- `config.py` holds `DEFAULT_MODEL` / `DEFAULT_EFFORT` / `SUBAGENT_MODELS` /
+  `DEFAULT_MAX_TOKENS` so callers wanting a constant don't build an agent. Put new shared constants here, not in `agent.py`.
 - `main.py` defers importing `travel_agent.agent` until **after** `load_dotenv()`
   (see its inline comment), because graph construction reads `TAVILY_API_KEY` to
   decide whether search exists. Hoisting that import to module scope builds the
@@ -606,13 +606,13 @@ than the hook it replaced, which never ran in CI at all.
 
 ## Prompts
 
-`prompts.py` is tuned for Claude Opus 5, which by default writes long responses,
+`prompts.py` was tuned for Claude Opus 5, which by default writes long responses,
 self-verifies unasked, and expands scope. The prompts counter those tendencies —
 no "double-check your work" scaffolding, explicit conciseness and scope
 discipline. Don't add verification scaffolding back in.
 
 From deepagents 0.7 the library contributes **no** base prompt: it passes `""`,
-and no `HarnessProfile` matches `anthropic:claude-opus-5`. `MAIN_AGENT_PROMPT`
+and no `HarnessProfile` matches `anthropic:claude-opus-5-5`. `MAIN_AGENT_PROMPT`
 is therefore the entire system prompt, and `TASK_SYSTEM_PROMPT` is gone too, so
 `subagents.py`'s `description` fields are the only surviving statement of the
 delegation contract. Write prompts as the whole thing, not as a complement to
@@ -625,5 +625,43 @@ Subagent `description` fields in `subagents.py` are what the main agent reads
 when deciding to delegate, so they carry the "brief me completely in one call"
 contract — subagents are stateless and cannot ask follow-up questions.
 
-`DEFAULT_MAX_TOKENS` is generous (16k) because thinking is on by default on Opus 5
+`DEFAULT_MAX_TOKENS` is generous (16k) because thinking is always on for Opus 5.5
 and counts against the ceiling.
+
+### Per-agent models
+
+The main agent runs `DEFAULT_MODEL` (Opus 5.5) at an **explicit** `DEFAULT_EFFORT`
+of `medium`. That is also Opus 5.5's own default, one level below the `high` Opus
+5 ran at. It is written out anyway so that a change of model or default shows up
+in the diff instead of shifting effort silently. The level was chosen, not
+measured: the main agent mostly delegates and synthesises, and `prompts.py`
+already counters over-thinking. If itineraries degrade, compare against `high` on
+a few real trips before raising it. Subagents take theirs from
+`SUBAGENT_MODELS` — Sonnet 5.5 for the researcher and the scout, Haiku 4.5 for
+the budget analyst.
+
+- `agent.py` builds the clients and hands them to `build_subagents`. Don't pass
+  model-id strings in the `SubAgent` spec instead: deepagents resolves a string
+  with a bare `init_chat_model`, which drops `DEFAULT_MAX_TOKENS`.
+- A subagent missing from `SUBAGENT_MODELS` silently inherits the main model.
+  `test_models.py` pins the keys to the roster, so renaming a subagent is a red
+  test rather than a quiet upgrade to Opus.
+- Haiku 4.5 rejects `effort`, so its spec carries `None` and `_chat_model` omits
+  the kwarg. For the same reason the CLI only applies `DEFAULT_EFFORT` when
+  `--model` is left at its default.
+- Haiku 4.5 is the one model here that **does** match a built-in `HarnessProfile`,
+  so the budget analyst's prompt gets deepagents' generic Claude suffix appended
+  (parallel tool calls, "investigate before answering", post-tool-result
+  reflection). That last one is a mild version of the verification scaffolding
+  this section warns against. It is accepted because the analyst has one tool
+  and short turns. Move the analyst off Haiku, or opt out of the profile, if it
+  starts over-iterating.
+- The scout stays at `high`, Sonnet 5.5's own default, and lowering it buys
+  little. Its cost is mostly input (offer payloads, up to 20 per search), which
+  effort does not change. Lower effort also means fewer, more consolidated
+  calls, and the queries it would drop are the alternate airports and shifted
+  dates that surface a nonstop or a cheaper day. Don't cite the data-honesty
+  invariant as the reason, though. Carrying `warning` through is
+  instruction-following, which the tool docstrings and `AVAILABILITY_PROMPT`
+  govern, not thinking depth. The Trip page doesn't depend on the scout's prose
+  at all; only the chat path does.
