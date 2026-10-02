@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
-uv run pytest                            # 188 tests, ~4s, no network, no model calls
+uv run pytest                            # 190 tests, ~4s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -248,6 +248,10 @@ winning:
 - `/memories/*` → `StoreBackend`, shared across conversations. Holds
   `traveler_profile.md`, loaded into the system prompt via `memory=[MEMORY_PATH]`
   and safely skipped when absent on a first run.
+  The prompt tells the agent it is already loaded and not to `read_file` it,
+  so `tests/test_memory.py` pins that the profile really arrives. A direct read
+  also misleads: `CompositeBackend` strips the route prefix before the store
+  sees the key, so a missing profile reports `'/traveler_profile.md' not found`.
 
 The store itself still resolves from the execution context, but its
 **namespace** does not: deepagents 0.7 made `StoreBackend(namespace=...)`

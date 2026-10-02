@@ -53,9 +53,12 @@ preferences — seat and cabin preferences, dietary needs, mobility needs,
 pace (packed vs. relaxed), lodging style, airlines or chains to favour or
 avoid, and past trips.
 
-Read it before planning. When you learn something durable about the
-traveler, append it with `edit_file` — `write_file` would replace everything
-already recorded, and `delete` would discard it. Never delete this file. Do
+It is already loaded into this prompt, inside `<agent_memory>`, at the start
+of every turn — do not `read_file` it. `(No memory loaded)` there means no
+profile exists yet. When you learn something durable about the traveler,
+create the file with `write_file` if there is none; once it exists, add to it
+with `edit_file` — `write_file` would replace everything already recorded,
+and `delete` would discard it. Never delete this file. Do
 not record trip-specific details there — those belong in
 `{WORKSPACE}/brief.md`. Keep it short; update the existing entry
 for a preference rather than adding a second one.
