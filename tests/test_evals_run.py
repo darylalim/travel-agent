@@ -10,6 +10,7 @@ no model calls.
 from __future__ import annotations
 
 from collections.abc import Iterator
+from typing import Any
 
 import pytest
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
@@ -93,6 +94,25 @@ def test_the_run_sums_the_subagents_token_usage(scripted_subagent):
         "cache_creation": 3200,
         "output_tokens": 210,
     }
+
+
+def test_cache_writes_reported_by_ttl_are_counted(scripted_subagent):
+    # The shape langchain-anthropic produces when the API itemises writes by
+    # TTL: `cache_creation` is 0 and the real count sits under the TTL key.
+    # Built untyped because langchain-core's `InputTokenDetails` does not
+    # declare the TTL keys, which is how reading only `cache_creation` looked
+    # complete.
+    reply = _billed(AIMessage("Nothing to cost."), 5000, 0, 0, 50)
+    assert reply.usage_metadata is not None
+    details: Any = {
+        "cache_read": 0,
+        "cache_creation": 0,
+        "ephemeral_5m_input_tokens": 4300,
+        "ephemeral_1h_input_tokens": 0,
+    }
+    reply.usage_metadata["input_token_details"] = details
+    scripted_subagent(reply)
+    assert harness.run_subagent("budget-analyst", BRIEF)["usage"]["cache_creation"] == 4300
 
 
 def test_the_summary_prints_scores_and_tokens_and_survives_a_failed_run():

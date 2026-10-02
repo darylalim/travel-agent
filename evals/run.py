@@ -112,7 +112,13 @@ def _add_usage(totals: dict, message: AIMessage) -> None:
     totals["model_calls"] += 1
     totals["input_tokens"] += usage["input_tokens"]
     totals["cache_read"] += details.get("cache_read") or 0
-    totals["cache_creation"] += details.get("cache_creation") or 0
+    # When the API breaks cache writes down by TTL, langchain-anthropic reports
+    # them under these keys and sets `cache_creation` to 0. Reading
+    # `cache_creation` alone reported no writes on every real run.
+    totals["cache_creation"] += sum(
+        details.get(key) or 0
+        for key in ("cache_creation", "ephemeral_5m_input_tokens", "ephemeral_1h_input_tokens")
+    )
     totals["output_tokens"] += usage["output_tokens"]
 
 
