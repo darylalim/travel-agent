@@ -56,7 +56,12 @@ pages = [
     st.Page("app_pages/chat.py", title="Plan", icon=":material/forum:", default=True),
     st.Page("app_pages/trip.py", title="Trip", icon=":material/map:"),
 ]
-page = st.navigation(pages, position="top")
+# ty >= 0.0.82 false positive: streamlit/__init__.py binds `navigation` to the
+# function, then imports from the `streamlit.navigation` subpackage on the next
+# line, and ty takes the submodule as the final binding. At runtime the function
+# wins. Drop the ignore once ty stops reporting it — it is scoped to one rule so
+# it cannot mask anything else on this line.
+page = st.navigation(pages, position="top")  # ty: ignore[call-non-callable]
 
 with st.sidebar:
     # No heading above this: one button does not need a section label, and an
