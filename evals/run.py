@@ -410,7 +410,9 @@ def summarize(rows: Iterable[Any]) -> list[str]:
     """Per-example scores and token usage, for the terminal.
 
     The experiment page has the same scores, but token counts are what turn a
-    cost estimate into a measurement, so they are printed alongside.
+    cost estimate into a measurement, so they are printed alongside. Any score
+    below 1 prints its comment too: a bare 0.5 cannot tell a wrong agent from a
+    reference no run could meet, and telling those apart is the point.
     """
     lines = []
     for row in rows:
@@ -426,6 +428,9 @@ def summarize(rows: Iterable[Any]) -> list[str]:
         usage = run.outputs.get("usage", {})
         tokens = " ".join(f"{field}={usage.get(field, 0)}" for field in USAGE_FIELDS)
         lines.append(f"  {key}: {scores}\n    {tokens}")
+        for r in row["evaluation_results"]["results"]:
+            if r.score is not None and r.score < 1 and r.comment:
+                lines.append(f"    {r.key}: " + r.comment.replace("\n", "\n      "))
     return lines
 
 

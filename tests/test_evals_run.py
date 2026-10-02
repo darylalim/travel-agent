@@ -126,8 +126,9 @@ def test_the_summary_prints_scores_and_tokens_and_survives_a_failed_run():
         "run": NS(error=None, outputs={"usage": usage}),
         "evaluation_results": {
             "results": [
-                EvaluationResult(key="budget_total", score=1),
+                EvaluationResult(key="budget_total", score=1, comment="total 1610"),
                 EvaluationResult(key="due_at_accommodation_excluded", score=None),
+                EvaluationResult(key="rubric", score=0.5, comment="✗ a: why\n✗ b: why"),
             ]
         },
     }
@@ -137,9 +138,12 @@ def test_the_summary_prints_scores_and_tokens_and_survives_a_failed_run():
         "evaluation_results": {"results": []},
     }
     lines = harness.summarize([ok, failed])
-    assert "kyoto-fits: budget_total=1, due_at_accommodation_excluded=n/a" in lines[0]
+    assert "kyoto-fits: budget_total=1, due_at_accommodation_excluded=n/a, rubric=0.5" in lines[0]
     assert "model_calls=3" in lines[0] and "output_tokens=500" in lines[0]
-    assert lines[1] == "  lisbon-over: run failed: RateLimitError"
+    # Only the imperfect score explains itself; a passing comment is noise.
+    assert lines[1] == "    rubric: ✗ a: why\n      ✗ b: why"
+    assert lines[2] == "  lisbon-over: run failed: RateLimitError"
+    assert not any("total 1610" in line for line in lines)
 
 
 def test_the_run_leaves_the_examples_inputs_untouched(scripted_subagent):
