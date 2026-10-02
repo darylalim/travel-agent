@@ -68,6 +68,60 @@ def test_the_run_captures_the_subagents_calls_reply_and_files(scripted_subagent)
     assert outputs["files"] == {"/trip/budget.md": "# Budget\n20 of 100"}
 
 
+def _billed(message: AIMessage, total: int, read: int, written: int, out: int) -> AIMessage:
+    message.usage_metadata = {
+        "input_tokens": total,
+        "output_tokens": out,
+        "total_tokens": total + out,
+        "input_token_details": {"cache_read": read, "cache_creation": written},
+    }
+    return message
+
+
+def test_the_run_sums_the_subagents_token_usage(scripted_subagent):
+    items = [{"label": "Food", "category": "food", "amount": 10, "quantity": 2}]
+    scripted_subagent(
+        _billed(_call("summarize_budget", items=items, budget_total=100), 3000, 0, 2800, 120),
+        _billed(AIMessage("Total $20, fits."), 3400, 2800, 400, 90),
+    )
+    usage = harness.run_subagent("budget-analyst", BRIEF)["usage"]
+    # The dispatcher is scripted and reports nothing, so only the subagent counts.
+    assert usage == {
+        "model_calls": 2,
+        "input_tokens": 6400,
+        "cache_read": 2800,
+        "cache_creation": 3200,
+        "output_tokens": 210,
+    }
+
+
+def test_the_summary_prints_scores_and_tokens_and_survives_a_failed_run():
+    from types import SimpleNamespace as NS
+
+    from langsmith.evaluation import EvaluationResult
+
+    usage = dict.fromkeys(harness.USAGE_FIELDS, 0) | {"model_calls": 3, "output_tokens": 500}
+    ok = {
+        "example": NS(metadata={"key": "kyoto-fits"}, id="e1"),
+        "run": NS(error=None, outputs={"usage": usage}),
+        "evaluation_results": {
+            "results": [
+                EvaluationResult(key="budget_total", score=1),
+                EvaluationResult(key="due_at_accommodation_excluded", score=None),
+            ]
+        },
+    }
+    failed = {
+        "example": NS(metadata={"key": "lisbon-over"}, id="e2"),
+        "run": NS(error="RateLimitError", outputs=None),
+        "evaluation_results": {"results": []},
+    }
+    lines = harness.summarize([ok, failed])
+    assert "kyoto-fits: budget_total=1, due_at_accommodation_excluded=n/a" in lines[0]
+    assert "model_calls=3" in lines[0] and "output_tokens=500" in lines[0]
+    assert lines[1] == "  lisbon-over: run failed: RateLimitError"
+
+
 def test_the_run_leaves_the_examples_inputs_untouched(scripted_subagent):
     # `evaluate()` hands this same object to every evaluator after the run.
     # The graph coerces message dicts to message objects in place, which made

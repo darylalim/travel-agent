@@ -27,6 +27,7 @@ import json
 import os
 import sys
 import uuid
+from collections.abc import Iterable
 from functools import cache
 from typing import Any
 
@@ -98,12 +99,31 @@ class Dispatcher(BaseChatModel):
         return ChatResult(generations=[ChatGeneration(message=reply)])
 
 
+# langchain-anthropic's `input_tokens` already includes both cache counts, so
+# uncached input is `input_tokens - cache_read - cache_creation`.
+USAGE_FIELDS = ("model_calls", "input_tokens", "cache_read", "cache_creation", "output_tokens")
+
+
+def _add_usage(totals: dict, message: AIMessage) -> None:
+    usage = message.usage_metadata
+    if not usage:  # scripted models report none
+        return
+    details = usage.get("input_token_details") or {}
+    totals["model_calls"] += 1
+    totals["input_tokens"] += usage["input_tokens"]
+    totals["cache_read"] += details.get("cache_read") or 0
+    totals["cache_creation"] += details.get("cache_creation") or 0
+    totals["output_tokens"] += usage["output_tokens"]
+
+
 def run_subagent(subagent: str, inputs: dict) -> dict:
     """Run one subagent on a brief and return what the evaluators read.
 
     Returns `response` (the subagent's closing text, which is what the main
     agent would receive), `tool_calls` (every call the subagent made, in
-    order) and `files` (the workspace it left behind).
+    order), `files` (the workspace it left behind) and `usage` (the
+    subagent's summed token counts, for pricing a run from measurement rather
+    than from assumed reply lengths).
     """
     # Deferred like main.py and ui.py: building the agent reads the environment.
     from travel_agent.agent import build_agent
@@ -114,6 +134,7 @@ def run_subagent(subagent: str, inputs: dict) -> dict:
     config = {"configurable": {"thread_id": f"eval-{uuid.uuid4().hex}"}}
     tool_calls: list[dict] = []
     response = ""
+    usage = dict.fromkeys(USAGE_FIELDS, 0)
     # A deep copy, because the graph coerces message dicts into message objects
     # in place, and `evaluate()` passes this same `inputs` on to every
     # evaluator. Without it, `rubric` reads a `HumanMessage` where it expects
@@ -127,6 +148,7 @@ def run_subagent(subagent: str, inputs: dict) -> dict:
                     tool_calls += [
                         {"name": c["name"], "args": c["args"]} for c in message.tool_calls
                     ]
+                    _add_usage(usage, message)
                 elif not namespace and isinstance(message, ToolMessage):
                     response = message.text
     files = agent.get_state(config).values.get("files", {})
@@ -134,6 +156,7 @@ def run_subagent(subagent: str, inputs: dict) -> dict:
         "response": response,
         "tool_calls": tool_calls,
         "files": {path: file_data_to_string(data) for path, data in files.items()},
+        "usage": usage,
     }
 
 
@@ -377,6 +400,29 @@ EVALUATORS = {
 }
 
 
+def summarize(rows: Iterable[Any]) -> list[str]:
+    """Per-example scores and token usage, for the terminal.
+
+    The experiment page has the same scores, but token counts are what turn a
+    cost estimate into a measurement, so they are printed alongside.
+    """
+    lines = []
+    for row in rows:
+        key = (row["example"].metadata or {}).get("key", row["example"].id)
+        run = row["run"]
+        if run.error or not run.outputs:
+            lines.append(f"  {key}: run failed: {run.error}")
+            continue
+        scores = ", ".join(
+            f"{r.key}={'n/a' if r.score is None else round(r.score, 2)}"
+            for r in row["evaluation_results"]["results"]
+        )
+        usage = run.outputs.get("usage", {})
+        tokens = " ".join(f"{field}={usage.get(field, 0)}" for field in USAGE_FIELDS)
+        lines.append(f"  {key}: {scores}\n    {tokens}")
+    return lines
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("datasets", nargs="+", choices=sorted(SUBAGENT_FOR))
@@ -420,6 +466,7 @@ def main(argv: list[str] | None = None) -> int:
             },
         )
         print(f"  experiment: {results.experiment_name}")
+        print(*summarize(results), sep="\n")
     return 0
 
 
