@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
-uv run pytest                            # 284 tests, ~4s, no network, no model calls
+uv run pytest                            # 285 tests, ~4s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -659,7 +659,7 @@ ran on. Upload a changed dataset under a new name instead.
 in the main agent's seat and makes one `task` call with the brief. That is why
 `build_agent` accepts a built model as well as an id string: the subagent then
 runs on its real model through deepagents' own middleware stack. A subagent
-rebuilt by hand would score a stack nobody runs. Three things in it fail
+rebuilt by hand would score a stack nobody runs. Four things in it fail
 silently:
 
 - **Tool calls are captured mid-stream with `subgraphs=True`,** for the same
@@ -673,6 +673,16 @@ silently:
   structured output forces `tool_choice`, which Sonnet 5.5 rejects with a 400.
   `test_the_judge_request_never_forces_a_tool` checks the built request payload,
   not the call site.
+- **The judge must see the tool results, not just the calls.** Without them it
+  cannot check a claim against the data behind it. It failed a scout for
+  correctly calling a stay non-refundable, because it could not see that
+  `free_cancellation` was false.
+
+A low score is a claim about the agent only once a real run has shown the
+reference is reachable. The first full scout run scored three examples below 1,
+and all three were the harness's fault: two criteria no run could meet, and an
+evaluator that read only the first search. Read the comments the summary prints
+before reading anything into a score.
 
 `main()` sets `TRAVEL_AGENT_PROVIDER=sample-data` over `.env`, because every
 rubric expects the sample-data label. `pytest` imports `evals` through

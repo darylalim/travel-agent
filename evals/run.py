@@ -139,6 +139,7 @@ def run_subagent(subagent: str, inputs: dict) -> dict:
     )
     config = {"configurable": {"thread_id": f"eval-{uuid.uuid4().hex}"}}
     tool_calls: list[dict] = []
+    tool_results: list[dict] = []
     response = ""
     usage = dict.fromkeys(USAGE_FIELDS, 0)
     # A deep copy, because the graph coerces message dicts into message objects
@@ -155,12 +156,18 @@ def run_subagent(subagent: str, inputs: dict) -> dict:
                         {"name": c["name"], "args": c["args"]} for c in message.tool_calls
                     ]
                     _add_usage(usage, message)
+                elif namespace and isinstance(message, ToolMessage):
+                    tool_results.append({"name": message.name, "content": message.text})
                 elif not namespace and isinstance(message, ToolMessage):
                     response = message.text
     files = agent.get_state(config).values.get("files", {})
     return {
         "response": response,
         "tool_calls": tool_calls,
+        # What the tools returned, so the judge can check a claim against the
+        # data behind it. Without these it saw a stay called non-refundable,
+        # could not see `free_cancellation: false`, and failed a correct run.
+        "tool_results": tool_results,
         "files": {path: file_data_to_string(data) for path, data in files.items()},
         "usage": usage,
     }
@@ -210,18 +217,31 @@ def _with_defaults(name: str, args: dict) -> dict:
 
 
 def search_arguments(outputs: dict, reference_outputs: dict) -> dict:
-    """Share of expected searches whose first call carried the briefed arguments."""
+    """Share of expected searches that some call made with every briefed argument.
+
+    Any call, not the first: the scout is told to vary its searches, and the
+    order is its own. A real run searched lodging from the arrival day first,
+    since a flight that crosses the date line lands the next day, and only
+    then searched the briefed dates. Reading only the first call failed it for
+    being more careful than the brief.
+    """
     expected_calls = reference_outputs["expected_calls"]
     misses = []
     for name, expected in expected_calls.items():
-        first = next((c for c in outputs["tool_calls"] if c["name"] == name), None)
-        if first is None:
+        calls = [
+            _with_defaults(name, c["args"]) for c in outputs["tool_calls"] if c["name"] == name
+        ]
+        if not calls:
             misses.append(f"{name} never called")
             continue
-        actual = _with_defaults(name, first["args"])
-        wrong = [f for f, value in expected.items() if not _same(f, value, actual.get(f))]
-        if wrong:
-            misses.append(f"{name}: {', '.join(f'{f}={actual.get(f)!r}' for f in wrong)}")
+        wrong_per_call = [
+            [f for f, value in expected.items() if not _same(f, value, actual.get(f))]
+            for actual in calls
+        ]
+        if all(wrong_per_call):  # no call matched; report the nearest miss
+            nearest, actual = min(zip(wrong_per_call, calls, strict=True), key=lambda p: len(p[0]))
+            fields = ", ".join(f"{f}={actual.get(f)!r}" for f in nearest)
+            misses.append(f"{name}: no call matched the brief; nearest had {fields}")
     score = (len(expected_calls) - len(misses)) / len(expected_calls)
     return {"score": score, "comment": "; ".join(misses) or "all briefed arguments sent"}
 
@@ -229,8 +249,9 @@ def search_arguments(outputs: dict, reference_outputs: dict) -> dict:
 def cabin_as_briefed(outputs: dict, reference_outputs: dict) -> dict:
     """Every flight search used the briefed cabin, including the varied retries.
 
-    Separate from `search_arguments`, which only reads the first call: the
-    prompt lets the scout vary airports and dates, never the cabin.
+    Separate from `search_arguments`, which passes once any call matches the
+    brief: the prompt lets the scout vary airports and dates, never the cabin,
+    so here a single off-brief cabin fails.
     """
     expected = reference_outputs["expected_calls"].get("search_flights")
     if expected is None:
@@ -337,8 +358,11 @@ You are grading one run of a travel-planning subagent against a rubric.
 
 Judge each criterion independently and only on the evidence below. A criterion
 about something the subagent said is met only if its response says it; a
-criterion about a tool call is met only if the tool calls show it. Do not give
-credit for intent. When the evidence is silent, the criterion is not met.
+criterion about a tool call is met only if the tool calls show it. Check what
+the subagent claims about the data against the tool results it was given: a
+claim the results support is correct, even if a criterion warns against making
+it without support. Do not give credit for intent. When the evidence is silent,
+the criterion is not met.
 
 <brief>
 {brief}
@@ -347,6 +371,10 @@ credit for intent. When the evidence is silent, the criterion is not met.
 <tool_calls>
 {tool_calls}
 </tool_calls>
+
+<tool_results>
+{tool_results}
+</tool_results>
 
 <files_written>
 {files}
@@ -388,6 +416,10 @@ def rubric(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
     prompt = JUDGE_PROMPT.format(
         brief=inputs["messages"][-1]["content"],
         tool_calls=json.dumps(outputs["tool_calls"], indent=1, default=str),
+        tool_results="\n\n".join(
+            f"## {r['name']}\n{r['content']}" for r in outputs.get("tool_results", [])
+        )
+        or "(none)",
         files="\n\n".join(f"## {p}\n{t}" for p, t in outputs["files"].items()) or "(none)",
         response=outputs["response"] or "(empty)",
         criteria="\n".join(f"{i}. {c}" for i, c in enumerate(criteria, 1)),

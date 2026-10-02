@@ -1,6 +1,6 @@
 {
-  "name": "travel-agent: availability-scout",
-  "description": "Single-step tests of the availability-scout subagent. The input is the brief the main agent would pass through `task`, and the reference is the search arguments it should send. The scout is told to vary its searches, so `expected_calls` holds the arguments its first matching call must carry, not every call it makes. Assumes TRAVEL_AGENT_PROVIDER=sample-data.",
+  "name": "travel-agent: availability-scout v2",
+  "description": "Single-step tests of the availability-scout subagent. The input is the brief the main agent would pass through `task`, and the reference is the search arguments it should send. The scout is told to vary its searches, so `expected_calls` holds the arguments some call must carry, in any order; it does not list every call the scout makes. Assumes TRAVEL_AGENT_PROVIDER=sample-data. v2 rewrites two criteria that no run could meet. Sample data always sets `free_cancellation`, so the scout had nothing to report as absent. The one-way criterion also asked the scout to say nothing had been booked, which its prompt never asks for.",
   "examples": [
     {
       "key": "no-cabin-means-economy",
@@ -139,7 +139,7 @@
         "must_label_sample_data": true,
         "criteria": [
           "Passes the nightly ceiling to the search rather than filtering by eye afterwards.",
-          "Says when free_cancellation is absent instead of reading it as non-refundable.",
+          "Calls a stay non-refundable only when its free_cancellation is false in the tool results, and calls it unknown when the field is missing.",
           "Labels the lodging as sample data."
         ]
       },
@@ -173,7 +173,7 @@
         "must_label_sample_data": true,
         "criteria": [
           "Searches one-way, with no return date invented.",
-          "Labels the fares as sample data and says nothing has been booked."
+          "Labels the fares as sample data that cannot be booked."
         ]
       },
       "metadata": {

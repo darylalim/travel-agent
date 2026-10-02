@@ -67,6 +67,9 @@ def test_the_run_captures_the_subagents_calls_reply_and_files(scripted_subagent)
     assert outputs["tool_calls"][0]["args"]["items"] == items
     assert outputs["response"] == "Total $20, fits."
     assert outputs["files"] == {"/trip/budget.md": "# Budget\n20 of 100"}
+    # What the tools returned, from the real tools, for the judge to check against.
+    assert [r["name"] for r in outputs["tool_results"]] == ["summarize_budget", "write_file"]
+    assert '"total_estimated": 20.0' in outputs["tool_results"][0]["content"]
 
 
 def _billed(message: AIMessage, total: int, read: int, written: int, out: int) -> AIMessage:
@@ -205,15 +208,40 @@ def test_search_arguments_forgives_what_the_tool_forgives():
     assert harness.search_arguments(_outputs(("search_flights", args)), SCOUT_REF)["score"] == 1
 
 
-def test_search_arguments_only_reads_the_first_call():
-    # The scout is told to vary later searches, so a shifted retry is fine,
-    # but a first search on the wrong date is not.
+def test_a_varied_search_before_the_briefed_one_still_passes():
+    # The calls a real `business-for-two` run made: lodging from the arrival
+    # day first (LAX-SYD crosses the date line), then the briefed dates. The
+    # first-call rule scored that 0.5 for being more careful than the brief.
+    ref = {
+        "expected_calls": {
+            "search_stays": {
+                "location": "Sydney",
+                "check_in": "2027-01-20",
+                "check_out": "2027-02-03",
+                "guests": 2,
+            }
+        }
+    }
+    briefed = {
+        "location": "Sydney",
+        "check_in": "2027-01-20",
+        "check_out": "2027-02-03",
+        "guests": 2,
+    }
+    arrival_day = {**briefed, "check_in": "2027-01-21"}
+    run = _outputs(("search_stays", arrival_day), ("search_stays", briefed))
+    assert harness.search_arguments(run, ref)["score"] == 1
+
+
+def test_no_call_matching_the_brief_fails_and_names_the_nearest_miss():
     shifted = {**FLIGHTS, "depart_date": "2027-04-06"}
-    good_then_varied = _outputs(("search_flights", FLIGHTS), ("search_flights", shifted))
-    varied_first = _outputs(("search_flights", shifted), ("search_flights", FLIGHTS))
-    assert harness.search_arguments(good_then_varied, SCOUT_REF)["score"] == 1
-    result = harness.search_arguments(varied_first, SCOUT_REF)
-    assert result["score"] == 0 and "depart_date" in result["comment"]
+    wrong_twice = {**shifted, "origin": "OAK"}
+    result = harness.search_arguments(
+        _outputs(("search_flights", wrong_twice), ("search_flights", shifted)), SCOUT_REF
+    )
+    assert result["score"] == 0
+    # The nearest call is wrong on one field only, so that is the one named.
+    assert "depart_date='2027-04-06'" in result["comment"] and "OAK" not in result["comment"]
 
 
 def test_a_missing_search_scores_zero_with_a_reason():
@@ -330,12 +358,20 @@ def test_rubric_scores_the_share_of_criteria_met(monkeypatch: pytest.MonkeyPatch
     judge = _FixedJudge(True, False, True, True)
     monkeypatch.setattr(harness, "_judge", lambda: judge)
     ref = {"criteria": ["a", "b", "c", "d"]}
-    outputs = {**_budget(LINES), "response": "Total $1610.", "files": {"/trip/budget.md": "x"}}
+    outputs = {
+        **_budget(LINES),
+        "tool_results": [{"name": "search_stays", "content": '{"free_cancellation": false}'}],
+        "response": "Total $1610.",
+        "files": {"/trip/budget.md": "x"},
+    }
     result = harness.rubric(BRIEF, outputs, ref)
     assert result["score"] == 0.75 and "c1" in result["comment"]
-    # The judge sees all three kinds of evidence a criterion can be about.
+    # The judge sees every kind of evidence a criterion can be about. Without
+    # the tool results it failed a scout for correctly calling a stay with
+    # `free_cancellation: false` non-refundable: it could not see the field.
     prompt = judge.prompts[0]
     assert "Total $1610." in prompt and "summarize_budget" in prompt and "/trip/budget.md" in prompt
+    assert '"free_cancellation": false' in prompt
 
 
 def test_a_grade_with_the_wrong_number_of_verdicts_is_not_a_score(monkeypatch):
