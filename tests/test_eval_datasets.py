@@ -117,6 +117,40 @@ def test_trajectory_names_only_real_main_agent_tools(example, main_agent_tools):
 
 
 @pytest.mark.parametrize("example", _examples("trajectory"), ids=_ids("trajectory"))
+def test_every_alternative_in_required_any_of_is_reachable(example, main_agent_tools):
+    # An alternative naming a forbidden or nonexistent path still reads as
+    # "either is fine" while only one of them can ever pass.
+    outputs = example["outputs"]
+    for group in outputs["required_any_of"]:
+        assert set(group) <= {"subagents", "tools", "after_subagent"}, group
+        subagents, tools = set(group.get("subagents", [])), set(group.get("tools", []))
+        assert subagents or tools, group
+        assert subagents <= set(ROSTER) and tools <= main_agent_tools
+        assert not subagents & set(outputs["forbidden_subagents"])
+        assert not tools & set(outputs["forbidden_tools"])
+        if subagents:
+            assert "task" not in outputs["forbidden_tools"]
+        # "After" a delegation that need not happen is no ordering at all.
+        if after := group.get("after_subagent"):
+            assert after in outputs["required_subagents"]
+
+
+def test_a_full_trip_may_be_costed_without_the_analyst():
+    # A real run costed the Kyoto trip with `summarize_budget` directly, as the
+    # main prompt allows. v1 required `budget-analyst` and failed that run.
+    full_trip = next(
+        e for e in _examples("trajectory") if e["key"] == "full-trip-costs-after-scouting"
+    )
+    outputs = full_trip["outputs"]
+    assert "budget-analyst" not in outputs["required_subagents"]
+    assert {
+        "subagents": ["budget-analyst"],
+        "tools": ["summarize_budget"],
+        "after_subagent": "availability-scout",
+    } in outputs["required_any_of"]
+
+
+@pytest.mark.parametrize("example", _examples("trajectory"), ids=_ids("trajectory"))
 def test_trajectory_file_paths_follow_the_prompt_constants(example):
     outputs = example["outputs"]
     for path in outputs["required_file_writes"] + outputs["forbidden_file_reads"]:

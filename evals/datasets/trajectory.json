@@ -1,9 +1,9 @@
 {
-  "name": "travel-agent: trajectory",
-  "description": "What the main agent should call, and in what order, judged against constraints rather than a single exact sequence, since a planner has many valid paths. Only main-agent tool calls count; a subagent's own calls are scored by the subagent datasets. Subagents are named by `task`'s `subagent_type` argument. `ordered_subagents` is a subsequence that must appear in that order, not the full trajectory.",
+  "name": "travel-agent: trajectory v2",
+  "description": "What the main agent should call, and in what order, judged against constraints rather than a single exact sequence, since a planner has many valid paths. Only main-agent tool calls count; a subagent's own calls are scored by the subagent datasets. Subagents are named by `task`'s `subagent_type` argument. `ordered_subagents` is a subsequence that must appear in that order, not the full trajectory. Each `required_any_of` entry is met by delegating to any listed subagent or calling any listed tool directly, after the `after_subagent` delegation when one is named. v2: a full trip no longer requires `budget-analyst`; costing the plan directly with `summarize_budget` also passes, as a real run did.",
   "examples": [
     {
-      "key": "full-trip-delegates-in-order",
+      "key": "full-trip-costs-after-scouting",
       "inputs": {
         "messages": [
           {
@@ -13,16 +13,23 @@
         ]
       },
       "outputs": {
-        "required_subagents": ["availability-scout", "budget-analyst"],
+        "required_subagents": ["availability-scout"],
         "forbidden_subagents": [],
-        "ordered_subagents": ["availability-scout", "budget-analyst"],
+        "ordered_subagents": [],
+        "required_any_of": [
+          {
+            "subagents": ["budget-analyst"],
+            "tools": ["summarize_budget"],
+            "after_subagent": "availability-scout"
+          }
+        ],
         "required_tools": ["task"],
         "forbidden_tools": [],
         "required_file_writes": ["/trip/itinerary.md"],
         "forbidden_file_reads": ["/memories/traveler_profile.md"]
       },
       "metadata": {
-        "rationale": "The analyst can only cost a plan once the scout has priced it. The itinerary file is the deliverable, and the profile is already in the prompt.",
+        "rationale": "A plan can only be costed once the scout has priced it, but who does the arithmetic is the main agent's call: its prompt says to work directly when a step is a couple of tool calls, and a real run costed this trip with summarize_budget rather than delegating. The itinerary file is the deliverable, and the profile is already in the prompt.",
         "requires_web_search": false,
         "dates_intentionally_past": false
       }
@@ -41,6 +48,7 @@
         "required_subagents": [],
         "forbidden_subagents": ["availability-scout", "destination-researcher", "budget-analyst"],
         "ordered_subagents": [],
+        "required_any_of": [],
         "required_tools": ["summarize_budget"],
         "forbidden_tools": ["task"],
         "required_file_writes": [],
@@ -66,6 +74,7 @@
         "required_subagents": ["availability-scout"],
         "forbidden_subagents": ["destination-researcher", "budget-analyst"],
         "ordered_subagents": [],
+        "required_any_of": [],
         "required_tools": ["task"],
         "forbidden_tools": [],
         "required_file_writes": [],
@@ -91,6 +100,7 @@
         "required_subagents": ["destination-researcher"],
         "forbidden_subagents": ["availability-scout", "budget-analyst"],
         "ordered_subagents": [],
+        "required_any_of": [],
         "required_tools": ["task"],
         "forbidden_tools": [],
         "required_file_writes": [],
@@ -116,6 +126,7 @@
         "required_subagents": ["availability-scout"],
         "forbidden_subagents": [],
         "ordered_subagents": [],
+        "required_any_of": [],
         "required_tools": ["task"],
         "forbidden_tools": ["delete"],
         "required_file_writes": ["/memories/traveler_profile.md"],
@@ -141,6 +152,7 @@
         "required_subagents": [],
         "forbidden_subagents": ["availability-scout"],
         "ordered_subagents": [],
+        "required_any_of": [],
         "required_tools": [],
         "forbidden_tools": [],
         "required_file_writes": [],
