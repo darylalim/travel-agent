@@ -1,0 +1,185 @@
+{
+  "name": "travel-agent: availability-scout",
+  "description": "Single-step tests of the availability-scout subagent. The input is the brief the main agent would pass through `task`, and the reference is the search arguments it should send. The scout is told to vary its searches, so `expected_calls` holds the arguments its first matching call must carry, not every call it makes. Assumes TRAVEL_AGENT_PROVIDER=sample-data.",
+  "examples": [
+    {
+      "key": "no-cabin-means-economy",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Find flights and lodging for 2 travelers, SFO to Kyoto via KIX, 2027-04-05 returning 2027-04-10. Budget ceiling $4000 total. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "expected_calls": {
+          "search_flights": {
+            "origin": "SFO",
+            "destination": "KIX",
+            "depart_date": "2027-04-05",
+            "return_date": "2027-04-10",
+            "travelers": 2,
+            "cabin": "economy"
+          },
+          "search_stays": {
+            "location": "Kyoto",
+            "check_in": "2027-04-05",
+            "check_out": "2027-04-10",
+            "guests": 2
+          }
+        },
+        "forbidden_tools": [],
+        "must_label_sample_data": true,
+        "criteria": [
+          "Searches economy, because no cabin was briefed. It must not upgrade on its own initiative.",
+          "Labels both flights and lodging as sample data in its summary.",
+          "Returns the cheapest option, the most convenient option, and the tradeoff between them."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["cabin", "data-honesty"],
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "premium-economy-spelled-loosely",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One traveler, Premium Economy, LHR to JFK on 2027-02-14, back 2027-02-21. Flights only, no lodging needed. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "expected_calls": {
+          "search_flights": {
+            "origin": "LHR",
+            "destination": "JFK",
+            "depart_date": "2027-02-14",
+            "return_date": "2027-02-21",
+            "travelers": 1,
+            "cabin": "premium_economy"
+          }
+        },
+        "forbidden_tools": ["search_stays"],
+        "must_label_sample_data": true,
+        "criteria": [
+          "Searches premium economy rather than falling back to economy.",
+          "Describes each offer by the cabin it came back in, and repeats any cabin_note.",
+          "Labels the fares as sample data."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["cabin", "scope-discipline", "data-honesty"],
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "business-for-two",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Two travelers, business class, LAX to SYD, depart 2027-01-20, return 2027-02-03. Also lodging in Sydney for those dates for 2 guests. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "expected_calls": {
+          "search_flights": {
+            "origin": "LAX",
+            "destination": "SYD",
+            "depart_date": "2027-01-20",
+            "return_date": "2027-02-03",
+            "travelers": 2,
+            "cabin": "business"
+          },
+          "search_stays": {
+            "location": "Sydney",
+            "check_in": "2027-01-20",
+            "check_out": "2027-02-03",
+            "guests": 2
+          }
+        },
+        "forbidden_tools": [],
+        "must_label_sample_data": true,
+        "criteria": [
+          "Searches business class and quotes each fare by the cabin it actually came back in.",
+          "Labels flights and lodging separately as sample data."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["cabin", "data-honesty"],
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "lodging-only-with-ceiling",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Lodging only, the traveler already has flights. Barcelona, check in 2027-06-12, check out 2027-06-15, 2 guests, maximum $200 per night. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "expected_calls": {
+          "search_stays": {
+            "location": "Barcelona",
+            "check_in": "2027-06-12",
+            "check_out": "2027-06-15",
+            "guests": 2,
+            "max_nightly_rate": 200
+          }
+        },
+        "forbidden_tools": ["search_flights"],
+        "must_label_sample_data": true,
+        "criteria": [
+          "Passes the nightly ceiling to the search rather than filtering by eye afterwards.",
+          "Says when free_cancellation is absent instead of reading it as non-refundable.",
+          "Labels the lodging as sample data."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["lodging", "scope-discipline", "data-honesty"],
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "one-way",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One-way flight for one adult, SFO to NRT, 2027-02-10, economy. No lodging. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "expected_calls": {
+          "search_flights": {
+            "origin": "SFO",
+            "destination": "NRT",
+            "depart_date": "2027-02-10",
+            "return_date": null,
+            "travelers": 1,
+            "cabin": "economy"
+          }
+        },
+        "forbidden_tools": ["search_stays"],
+        "must_label_sample_data": true,
+        "criteria": [
+          "Searches one-way, with no return date invented.",
+          "Labels the fares as sample data and says nothing has been booked."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["one-way", "data-honesty"],
+        "dates_intentionally_past": false
+      }
+    }
+  ]
+}

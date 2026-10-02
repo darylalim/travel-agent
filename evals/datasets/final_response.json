@@ -1,0 +1,259 @@
+{
+  "name": "travel-agent: final response",
+  "description": "Whole-trip requests to the main agent, graded against rubric criteria rather than a reference answer: an itinerary has no single right text. Assumes TRAVEL_AGENT_PROVIDER=sample-data, so every flight and lodging figure is synthetic and must be labelled as such.",
+  "examples": [
+    {
+      "key": "kyoto-classic",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Plan 5 days in Kyoto for 2 people flying from SFO, 2027-04-05 to 2027-04-10. Total budget $4000."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": 4000,
+        "currency": "USD",
+        "criteria": [
+          "Gives a day-by-day plan covering every day from 2027-04-05 to 2027-04-10.",
+          "States the estimated total and whether it fits the $4000 budget.",
+          "Describes flight and lodging prices as illustrative sample figures, not real availability or bookable prices.",
+          "Does not claim to have booked or reserved anything.",
+          "Leads with the outcome rather than restating the request or opening with filler."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["itinerary", "budget", "data-honesty"],
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "lisbon-over-budget",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Two adults, JFK to Lisbon, 2027-05-10 to 2027-05-17. We can spend $1500 all in. Plan it."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": 1500,
+        "currency": "USD",
+        "criteria": [
+          "Says plainly whether the plan exceeds $1500, with the overage if it does.",
+          "If over budget, proposes two or three specific cuts, each with its saving.",
+          "Does not silently drop cost lines (such as food or local transport) to make the total fit.",
+          "Labels flight and lodging prices as sample data rather than real fares.",
+          "Still delivers a plan for the trip that was asked for, rather than refusing or only asking questions."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["budget", "over-budget", "data-honesty"],
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "singapore-business-gbp",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Business class please, London Heathrow to Singapore, out 2027-03-01 and back 2027-03-08, just me. Budget is £9000 including a hotel."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": 9000,
+        "currency": "GBP",
+        "requested_cabin": "business",
+        "criteria": [
+          "Quotes flights in business class, describing each fare by the cabin it actually came back in.",
+          "Does not compare USD prices against the GBP budget as if they were the same currency. It either converts with a stated rate or says the currencies differ.",
+          "Labels flight and lodging prices as sample data rather than real fares.",
+          "Includes lodging for the nights in Singapore."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["cabin", "currency", "data-honesty"],
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "barcelona-hotel-only",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "I've already booked flights. Just find me a hotel in Barcelona, 2027-06-12 to 2027-06-15, 2 guests, under $200 a night."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": null,
+        "currency": "USD",
+        "criteria": [
+          "Returns lodging options for Barcelona for the requested nights and guest count.",
+          "Respects the $200 nightly ceiling, or says which options exceed it.",
+          "Does not search for or quote flights, since the traveler already has them.",
+          "Does not expand into a full day-by-day itinerary nobody asked for.",
+          "Labels lodging prices as sample data rather than real availability."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["scope-discipline", "lodging", "data-honesty"],
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "tokyo-no-origin",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Plan a week in Tokyo for my partner and me, 2027-11-08 to 2027-11-15, about $6000."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": 6000,
+        "currency": "USD",
+        "criteria": [
+          "Does not invent a departure airport and present flight prices from it as if the traveler had given one.",
+          "Either asks one concise question about the origin, or states the assumption it made and keeps flights clearly provisional.",
+          "Still makes progress on the parts that do not depend on the origin, such as lodging and the day-by-day plan.",
+          "Labels any lodging or flight prices as sample data."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["ambiguity", "data-honesty"],
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "rome-past-dates",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Plan 3 days in Rome for one person from 2025-12-01 to 2025-12-04, flying from Boston."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": null,
+        "currency": "USD",
+        "criteria": [
+          "Points out that the requested dates have already passed.",
+          "Does not quote flight or lodging prices for dates in the past.",
+          "Asks for new dates or proposes equivalent future dates and labels them as a substitution."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["dates", "data-honesty"],
+        "dates_intentionally_past": true
+      }
+    },
+    {
+      "key": "booking-request",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Book me the cheapest flight from SFO to Tokyo Narita on 2027-02-10, one way, one adult."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": null,
+        "currency": "USD",
+        "criteria": [
+          "States that it cannot make bookings; searching is read-only.",
+          "Still reports the cheapest option it found for SFO to NRT on 2027-02-10.",
+          "Labels that option as sample data, not a fare the traveler can book.",
+          "Does not say or imply that a reservation, hold, or payment happened."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["read-only", "data-honesty"],
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "paris-rome-multi-city",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "10 days, Paris then Rome, solo, flying out of Chicago O'Hare. 2027-09-03 to 2027-09-13. $5000 budget."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": 5000,
+        "currency": "USD",
+        "criteria": [
+          "Covers both Paris and Rome, in that order, across the 10 days.",
+          "Accounts for getting from Paris to Rome as well as the flights to and from Chicago.",
+          "Includes lodging in both cities.",
+          "States the estimated total against the $5000 budget.",
+          "Labels flight and lodging prices as sample data."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["multi-city", "itinerary", "budget", "data-honesty"],
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "amsterdam-accessibility",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "I'm vegetarian and I use a wheelchair. Plan 4 days in Amsterdam, 2027-08-02 to 2027-08-06, flying from Dublin, budget €2500."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": 2500,
+        "currency": "EUR",
+        "criteria": [
+          "Takes wheelchair access into account when choosing activities, getting around, and lodging.",
+          "Suggests food that suits a vegetarian.",
+          "Does not compare USD sample prices against the EUR budget as if they were the same currency.",
+          "Labels flight and lodging prices as sample data."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["preferences", "currency", "data-honesty"],
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "stockholm-sek",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Amsterdam to Stockholm, 2027-07-01 to 2027-07-05, one person. My budget is 15000 SEK."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": 15000,
+        "currency": "SEK",
+        "criteria": [
+          "Reports the budget comparison in SEK, or states the conversion rate it used.",
+          "Does not treat a USD figure as if it were SEK.",
+          "Labels flight and lodging prices as sample data."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["currency", "budget", "data-honesty"],
+        "dates_intentionally_past": false
+      }
+    }
+  ]
+}

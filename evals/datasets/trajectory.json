@@ -1,0 +1,156 @@
+{
+  "name": "travel-agent: trajectory",
+  "description": "What the main agent should call, and in what order, judged against constraints rather than a single exact sequence, since a planner has many valid paths. Only main-agent tool calls count; a subagent's own calls are scored by the subagent datasets. Subagents are named by `task`'s `subagent_type` argument. `ordered_subagents` is a subsequence that must appear in that order, not the full trajectory.",
+  "examples": [
+    {
+      "key": "full-trip-delegates-in-order",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Plan 5 days in Kyoto for 2 people flying from SFO, 2027-04-05 to 2027-04-10. Total budget $4000."
+          }
+        ]
+      },
+      "outputs": {
+        "required_subagents": ["availability-scout", "budget-analyst"],
+        "forbidden_subagents": [],
+        "ordered_subagents": ["availability-scout", "budget-analyst"],
+        "required_tools": ["task"],
+        "forbidden_tools": [],
+        "required_file_writes": ["/trip/itinerary.md"],
+        "forbidden_file_reads": ["/memories/traveler_profile.md"]
+      },
+      "metadata": {
+        "rationale": "The analyst can only cost a plan once the scout has priced it. The itinerary file is the deliverable, and the profile is already in the prompt.",
+        "requires_web_search": false,
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "small-sum-done-directly",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Do these fit in $2000? Flights $780, hotel 4 nights at $165 a night, food $60 a day for 5 days."
+          }
+        ]
+      },
+      "outputs": {
+        "required_subagents": [],
+        "forbidden_subagents": ["availability-scout", "destination-researcher", "budget-analyst"],
+        "ordered_subagents": [],
+        "required_tools": ["summarize_budget"],
+        "forbidden_tools": ["task"],
+        "required_file_writes": [],
+        "forbidden_file_reads": ["/memories/traveler_profile.md"]
+      },
+      "metadata": {
+        "rationale": "One summarize_budget call answers this, and the main agent has that tool itself. The prompt says delegation costs more than it saves on a couple of tool calls.",
+        "requires_web_search": false,
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "hotel-only-skips-research",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "I've already booked flights. Just find me a hotel in Barcelona, 2027-06-12 to 2027-06-15, 2 guests, under $200 a night."
+          }
+        ]
+      },
+      "outputs": {
+        "required_subagents": ["availability-scout"],
+        "forbidden_subagents": ["destination-researcher", "budget-analyst"],
+        "ordered_subagents": [],
+        "required_tools": ["task"],
+        "forbidden_tools": [],
+        "required_file_writes": [],
+        "forbidden_file_reads": ["/memories/traveler_profile.md"]
+      },
+      "metadata": {
+        "rationale": "Lodging search is bound only to availability-scout. Researching or costing a trip nobody asked for is scope creep.",
+        "requires_web_search": false,
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "entry-requirements-go-to-research",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Do US citizens need a visa for Vietnam, and what is the weather usually like in Hanoi in March?"
+          }
+        ]
+      },
+      "outputs": {
+        "required_subagents": ["destination-researcher"],
+        "forbidden_subagents": ["availability-scout", "budget-analyst"],
+        "ordered_subagents": [],
+        "required_tools": ["task"],
+        "forbidden_tools": [],
+        "required_file_writes": [],
+        "forbidden_file_reads": ["/memories/traveler_profile.md"]
+      },
+      "metadata": {
+        "rationale": "Entry rules go stale and are web research. No dates or prices were asked for.",
+        "requires_web_search": true,
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "durable-preferences-are-remembered",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "I'm vegetarian and I use a wheelchair. Plan 4 days in Amsterdam, 2027-08-02 to 2027-08-06, flying from Dublin, budget €2500."
+          }
+        ]
+      },
+      "outputs": {
+        "required_subagents": ["availability-scout"],
+        "forbidden_subagents": [],
+        "ordered_subagents": [],
+        "required_tools": ["task"],
+        "forbidden_tools": ["delete"],
+        "required_file_writes": ["/memories/traveler_profile.md"],
+        "forbidden_file_reads": ["/memories/traveler_profile.md"]
+      },
+      "metadata": {
+        "rationale": "Diet and mobility needs are durable preferences, so they belong in the traveler profile. The profile is already in the prompt, so the agent should not read it back, and it must never delete it.",
+        "requires_web_search": false,
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "past-dates-not-searched",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Plan 3 days in Rome for one person from 2025-12-01 to 2025-12-04, flying from Boston."
+          }
+        ]
+      },
+      "outputs": {
+        "required_subagents": [],
+        "forbidden_subagents": ["availability-scout"],
+        "ordered_subagents": [],
+        "required_tools": [],
+        "forbidden_tools": [],
+        "required_file_writes": [],
+        "forbidden_file_reads": ["/memories/traveler_profile.md"]
+      },
+      "metadata": {
+        "rationale": "The system prompt states today's date, and these dates are behind it. Sending the scout off to search them only buys an error from the search tool.",
+        "requires_web_search": false,
+        "dates_intentionally_past": true
+      }
+    }
+  ]
+}

@@ -13,11 +13,14 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
-uv run pytest                            # 194 tests, ~4s, no network, no model calls
+uv run pytest                            # 252 tests, ~4s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
 bash .claude/hooks/test-hooks.sh         # 61 cases pinning the Claude Code hooks
+
+uv run python evals/upload.py --dry-run  # validate the LangSmith eval datasets
+uv run python evals/upload.py            # upload any not already in LangSmith
 ```
 
 `ruff check --fix` is never run here, and `/astral:ruff` will suggest it. There
@@ -627,6 +630,28 @@ really would trace before asserting that no tracer is attached.
 literal in the suite. The search tools reject a date before today, so an
 unpinned clock turns each fixture date into a failure on the day it passes.
 A test about the past-date check sets its own `today` on top.
+
+### Evaluation datasets
+
+`evals/datasets/` holds four LangSmith datasets: final responses graded by
+rubric, main-agent trajectories, and single-step references for
+`availability-scout` and `budget-analyst`. They assume
+`TRAVEL_AGENT_PROVIDER=sample-data`, so every rubric expects the sample-data
+label. Against a live token that expectation is wrong, not the agent.
+
+A broken reference raises nothing. It scores every run wrong, and a low score
+reads as a worse agent. `tests/test_eval_datasets.py` therefore checks each
+reference against the live code: subagent names against the roster, main-agent
+tool names against the built graph's `ToolNode`, scout arguments by invoking
+the real tools, and budget totals by running `summarize_budget`. Renaming a
+subagent or a tool argument turns the datasets red in the same commit.
+
+Dates are literals and go stale. The upload refuses any example dated before
+today unless it is marked `dates_intentionally_past`, and outputs count as well
+as inputs, because a reference search dated in the past is a call the tool
+rejects. When they pass, move them forward. The upload never overwrites an
+existing dataset, because past experiments are scored against the examples they
+ran on. Upload a changed dataset under a new name instead.
 
 ## Prompts
 

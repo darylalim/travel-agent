@@ -1,0 +1,132 @@
+{
+  "name": "travel-agent: budget-analyst",
+  "description": "Single-step tests of the budget-analyst subagent. The input is the brief the main agent would pass through `task`. `expected_items` is the `summarize_budget` call the analyst should make, and `expected_total` and `over_budget` are what that call returns. The test suite runs the real tool over `expected_items`, so the numbers here cannot drift from the arithmetic.",
+  "examples": [
+    {
+      "key": "kyoto-fits",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this plan against a $4000 USD budget for 2 travelers, 5 nights in Kyoto. Flights SFO-KIX return: $620 per person. Lodging: $180 per night, 5 nights. Food: $55 per person per day, 5 days. Local transport passes: $120 total. Activities and temple entries: $300 total. All figures are sample data, not live prices. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": 4000,
+        "currency": "USD",
+        "expected_items": [
+          {"label": "SFO-KIX return", "category": "flights", "amount": 620, "quantity": 2},
+          {"label": "Lodging", "category": "lodging", "amount": 180, "quantity": 5},
+          {"label": "Food", "category": "food", "amount": 55, "quantity": 10},
+          {"label": "Local transport passes", "category": "transport", "amount": 120, "quantity": 1},
+          {"label": "Activities and temple entries", "category": "activities", "amount": 300, "quantity": 1}
+        ],
+        "expected_total": 3110,
+        "over_budget": false,
+        "criteria": [
+          "Uses summarize_budget for the arithmetic, with per-unit amounts and quantities rather than pre-multiplied totals.",
+          "Reports the total, that it fits the budget, and the largest line items.",
+          "Flags that the figures came from sample data and are not a quote."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["arithmetic", "data-honesty"]
+      }
+    },
+    {
+      "key": "lisbon-over",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a $1500 USD budget, 2 travelers, 7 nights in Lisbon. Flights JFK-LIS return: $540 per person. Lodging: $130 per night for 7 nights. Food: $45 per person per day for 7 days. Activities: $150 total. Figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": 1500,
+        "currency": "USD",
+        "expected_items": [
+          {"label": "JFK-LIS return", "category": "flights", "amount": 540, "quantity": 2},
+          {"label": "Lodging", "category": "lodging", "amount": 130, "quantity": 7},
+          {"label": "Food", "category": "food", "amount": 45, "quantity": 14},
+          {"label": "Activities", "category": "activities", "amount": 150, "quantity": 1}
+        ],
+        "expected_total": 2770,
+        "over_budget": true,
+        "criteria": [
+          "Reports that the plan is over budget and by how much.",
+          "Proposes two or three specific cuts, each with its saving.",
+          "Does not silently drop a line item to make the numbers work.",
+          "Flags that the figures came from sample data."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["arithmetic", "over-budget", "data-honesty"]
+      }
+    },
+    {
+      "key": "due-at-accommodation-is-a-caveat",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a $2000 USD budget, 1 traveler, 4 nights. Flights: $450 return. Lodging: $960 total_cost for the 4 nights; the provider also reports $85 due_at_accommodation, and it is not known whether that is already inside the $960. Food: $50 per day for 4 days. Figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": 2000,
+        "currency": "USD",
+        "expected_items": [
+          {"label": "Flights", "category": "flights", "amount": 450, "quantity": 1},
+          {"label": "Lodging", "category": "lodging", "amount": 960, "quantity": 1},
+          {"label": "Food", "category": "food", "amount": 50, "quantity": 4}
+        ],
+        "expected_total": 1610,
+        "over_budget": false,
+        "excluded_amounts": [85],
+        "criteria": [
+          "Does not add the $85 due at the accommodation as a cost line.",
+          "Records the $85 as a caveat that the total may not cover it.",
+          "Budgets lodging at the $960 total_cost."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["due-at-accommodation", "data-honesty"]
+      }
+    },
+    {
+      "key": "stockholm-sek",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a 15000 SEK budget, 1 traveler, 4 nights in Stockholm. All amounts are in SEK. Flights AMS-ARN return: 2400. Lodging: 1450 per night for 4 nights. Food: 600 per day for 4 days. Transport card: 400. Figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": 15000,
+        "currency": "SEK",
+        "expected_items": [
+          {"label": "AMS-ARN return", "category": "flights", "amount": 2400, "quantity": 1},
+          {"label": "Lodging", "category": "lodging", "amount": 1450, "quantity": 4},
+          {"label": "Food", "category": "food", "amount": 600, "quantity": 4},
+          {"label": "Transport card", "category": "transport", "amount": 400, "quantity": 1}
+        ],
+        "expected_total": 11000,
+        "over_budget": false,
+        "criteria": [
+          "Passes currency SEK to summarize_budget rather than leaving it at the USD default.",
+          "Reports the total in SEK.",
+          "Flags that the figures came from sample data."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["currency", "arithmetic", "data-honesty"]
+      }
+    }
+  ]
+}
