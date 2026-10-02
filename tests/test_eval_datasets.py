@@ -9,25 +9,18 @@ here against the live roster, tool schemas and `summarize_budget` itself.
 
 from __future__ import annotations
 
-import importlib.util
 from datetime import date
-from pathlib import Path
 
 import pytest
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.tools import BaseTool
 
 import travel_agent.agent as agent_module
+from evals import upload
 from travel_agent.prompts import MEMORY_PATH, WORKSPACE
 from travel_agent.subagents import build_subagents
 from travel_agent.tools.availability import _normalize_cabin
 from travel_agent.tools.budget import summarize_budget
-
-_UPLOAD = Path(__file__).parents[1] / "evals" / "upload.py"
-_spec = importlib.util.spec_from_file_location("evals_upload", _UPLOAD)
-assert _spec and _spec.loader
-upload = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(upload)
 
 DATASETS = upload.load_datasets()
 ROSTER = {subagent["name"]: subagent for subagent in build_subagents([])}

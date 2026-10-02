@@ -60,3 +60,8 @@ target-version = "py311"
 
 [tool.ty.environment]
 python-version = "3.11"
+
+[tool.pytest.ini_options]
+# The repo root, so tests can import `evals` — the eval harness is not part of
+# the installed package (the wheel is `src/travel_agent` only).
+pythonpath = ["."]

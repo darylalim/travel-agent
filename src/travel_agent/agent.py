@@ -92,7 +92,7 @@ def _chat_model(model: str, effort: Effort | None, max_tokens: int) -> BaseChatM
 
 
 def build_agent(
-    model: str = DEFAULT_MODEL,
+    model: str | BaseChatModel = DEFAULT_MODEL,
     *,
     effort: Effort | None = DEFAULT_EFFORT,
     checkpointer: BaseCheckpointSaver | None = None,
@@ -103,9 +103,13 @@ def build_agent(
 
     Args:
         model: Provider-prefixed model id for the main agent, passed to
-            `init_chat_model`. Subagents take theirs from `SUBAGENT_MODELS`.
+            `init_chat_model`, or an already-built chat model, used as is.
+            Subagents take theirs from `SUBAGENT_MODELS` either way, which is
+            what lets `evals/run.py` put a scripted dispatcher in the main
+            seat and still run each subagent on its real model.
         effort: Main agent's effort, or `None` for the model's own default.
-            Pass `None` with a model that rejects the parameter.
+            Pass `None` with a model that rejects the parameter. Ignored when
+            `model` is already built.
         checkpointer: Conversation persistence. Leave `None` under
             `langgraph dev` / LangGraph Platform — the server provides it.
         store: Cross-thread store backing `/memories/`. Leave `None` under
@@ -118,8 +122,10 @@ def build_agent(
         name: _chat_model(spec.model, spec.effort, max_tokens)
         for name, spec in SUBAGENT_MODELS.items()
     }
+    if isinstance(model, str):
+        model = _chat_model(model, effort, max_tokens)
     return create_deep_agent(
-        model=_chat_model(model, effort, max_tokens),
+        model=model,
         tools=[*search_tools, summarize_budget, date_offset],
         system_prompt=MAIN_AGENT_PROMPT,
         middleware=[CurrentDateMiddleware()],

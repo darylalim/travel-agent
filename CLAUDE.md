@@ -13,14 +13,16 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
-uv run pytest                            # 252 tests, ~4s, no network, no model calls
+uv run pytest                            # 274 tests, ~4s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
 bash .claude/hooks/test-hooks.sh         # 61 cases pinning the Claude Code hooks
 
-uv run python evals/upload.py --dry-run  # validate the LangSmith eval datasets
-uv run python evals/upload.py            # upload any not already in LangSmith
+uv run python -m evals.upload --dry-run  # validate the LangSmith eval datasets
+uv run python -m evals.upload            # upload any not already in LangSmith
+uv run python -m evals.run budget_analyst --limit 1 --no-judge   # cheapest real run
+uv run python -m evals.run budget_analyst availability_scout     # spends real tokens
 ```
 
 `ruff check --fix` is never run here, and `/astral:ruff` will suggest it. There
@@ -652,6 +654,29 @@ as inputs, because a reference search dated in the past is a call the tool
 rejects. When they pass, move them forward. The upload never overwrites an
 existing dataset, because past experiments are scored against the examples they
 ran on. Upload a changed dataset under a new name instead.
+
+`evals/run.py` scores the two subagent datasets. A scripted `Dispatcher` sits
+in the main agent's seat and makes one `task` call with the brief. That is why
+`build_agent` accepts a built model as well as an id string: the subagent then
+runs on its real model through deepagents' own middleware stack. A subagent
+rebuilt by hand would score a stack nobody runs. Three things in it fail
+silently:
+
+- **Tool calls are captured mid-stream with `subgraphs=True`,** for the same
+  reason as in `ui.py`: a subagent's messages are gone from state once it
+  returns.
+- **The graph mutates its input in place,** turning message dicts into message
+  objects, and `evaluate()` hands that same `inputs` object to every evaluator.
+  `run_subagent` passes a deep copy. Without it, `rubric` crashes on every
+  example.
+- **The judge (Sonnet 5.5) uses `method="json_schema"`.** LangChain's default
+  structured output forces `tool_choice`, which Sonnet 5.5 rejects with a 400.
+  `test_the_judge_request_never_forces_a_tool` checks the built request payload,
+  not the call site.
+
+`main()` sets `TRAVEL_AGENT_PROVIDER=sample-data` over `.env`, because every
+rubric expects the sample-data label. `pytest` imports `evals` through
+`pythonpath = ["."]` in `pyproject.toml`. The harness is not part of the wheel.
 
 ## Prompts
 

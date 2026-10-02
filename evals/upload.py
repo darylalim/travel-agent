@@ -1,8 +1,8 @@
 """Upload the evaluation datasets in `evals/datasets/` to LangSmith.
 
-    uv run python evals/upload.py              # create every dataset not already there
-    uv run python evals/upload.py --dry-run    # validate only; no network, no key
-    uv run python evals/upload.py --only trajectory
+    uv run python -m evals.upload              # create every dataset not already there
+    uv run python -m evals.upload --dry-run    # validate only; no network, no key
+    uv run python -m evals.upload --only trajectory
 
 Each JSON file holds one dataset: `name`, `description` and `examples`, where
 an example is `key`, `inputs`, `outputs` and `metadata`. Every `inputs` is the
