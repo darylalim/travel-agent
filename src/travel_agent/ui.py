@@ -43,7 +43,7 @@ from typing import Any, cast
 import streamlit as st
 from langchain_core.messages import AIMessageChunk, ToolMessage
 
-from travel_agent.config import DEFAULT_MODEL
+from travel_agent.config import DEFAULT_MODEL, TRACE_NAME
 
 # Safe at module scope, unlike `travel_agent.agent`: these modules define
 # constants and tools only, reading no environment and building no model
@@ -115,8 +115,16 @@ def thread_config(thread_id: str) -> dict[str, Any]:
     The thread id scopes the checkpointer, and with it `/trip/*` — a new
     thread is a new trip. `/memories/` is keyed by the store instead, so the
     traveler profile deliberately crosses threads.
+
+    The run name and tag only label the LangSmith trace when tracing is on.
+    LangGraph already copies `thread_id` into run metadata, which is what
+    groups a trip's turns into one LangSmith thread.
     """
-    return {"configurable": {"thread_id": thread_id}}
+    return {
+        "configurable": {"thread_id": thread_id},
+        "run_name": TRACE_NAME,
+        "tags": ["streamlit"],
+    }
 
 
 def _decode(message: ToolMessage) -> dict[str, Any] | None:

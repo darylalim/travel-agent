@@ -12,7 +12,7 @@ import sys
 
 from dotenv import load_dotenv
 
-from travel_agent.config import DEFAULT_EFFORT, DEFAULT_MODEL
+from travel_agent.config import DEFAULT_EFFORT, DEFAULT_MODEL, TRACE_NAME
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -43,7 +43,11 @@ def main(argv: list[str] | None = None) -> int:
     agent = build_agent(
         args.model, effort=effort, checkpointer=MemorySaver(), store=InMemoryStore()
     )
-    config = {"configurable": {"thread_id": args.thread}}
+    config = {
+        "configurable": {"thread_id": args.thread},
+        "run_name": TRACE_NAME,
+        "tags": ["cli"],
+    }
 
     print("Traveler memory is in-process only here; use `langgraph dev` to persist it.\n")
 

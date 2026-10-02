@@ -38,6 +38,10 @@ dependencies = [
 [dependency-groups]
 dev = [
     "langgraph-cli[inmem]>=0.4.31",
+    # Already installed via langchain-core, but tests/conftest.py relies on two
+    # langsmith details directly: `tracing_context(enabled=False)` outranking
+    # the environment, and env reads going through an `lru_cache`.
+    "langsmith>=0.14",
     "pytest>=8.0",
     "ruff>=0.9",
     "ty>=0.0.64",

@@ -9,6 +9,11 @@ Tests must not depend on ambient configuration or touch the network.
 The wall clock is ambient too. The search tools reject a date before
 `clock.today()`, and the suite's fixture dates are literals, so each one would
 start failing the day it passes — on a schedule, with no change to the code.
+
+LangSmith tracing is the third. `.env.example` sets `LANGSMITH_TRACING=true`,
+and anything that exports it makes every graph and tool invocation here POST
+runs to the LangSmith API — and the tracer's own callbacks shift the scripted
+fake model in `test_memory.py` enough to fail it.
 """
 
 from __future__ import annotations
@@ -16,6 +21,7 @@ from __future__ import annotations
 from datetime import date
 
 import pytest
+from langsmith import tracing_context
 
 from travel_agent import clock
 from travel_agent.tools.availability import _build_provider
@@ -29,6 +35,18 @@ PINNED_TODAY = date(2026, 1, 1)
 def pin_today(monkeypatch: pytest.MonkeyPatch):
     """Freeze `clock.today()` so fixture dates never fall into the past."""
     monkeypatch.setattr(clock, "today", lambda: PINNED_TODAY)
+
+
+@pytest.fixture(autouse=True)
+def disable_tracing():
+    """Turn LangSmith tracing off, whatever the environment says.
+
+    A context override rather than `delenv`: langsmith reads its env vars
+    through an `lru_cache`, so a value seen once outlives the variable, while
+    `tracing_context` is consulted before the environment on every check.
+    """
+    with tracing_context(enabled=False):
+        yield
 
 
 _PROVIDER_ENV = ("TRAVEL_AGENT_PROVIDER", "DUFFEL_API_TOKEN", "DUFFEL_SUPPLIER_TIMEOUT_MS")

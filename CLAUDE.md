@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
-uv run pytest                            # 190 tests, ~4s, no network, no model calls
+uv run pytest                            # 194 tests, ~4s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -614,6 +614,14 @@ tuple is loud on the machine where it matters: `test_tools.py` sets
 the silent one** — a CI runner has nothing exported, so it stays green forever.
 That is the direction only this test covers, and the reason it is a test rather
 than the hook it replaced, which never ran in CI at all.
+
+Another autouse fixture turns LangSmith tracing off with
+`tracing_context(enabled=False)`. `.env.example` sets `LANGSMITH_TRACING=true`,
+and anything exporting it made the suite POST runs to LangSmith and failed
+`test_memory.py`, whose scripted fake model the tracer's callbacks disturb. It
+is a context override rather than `delenv` because langsmith reads env vars
+through an `lru_cache`. `test_tracing.py` checks that an exported variable
+really would trace before asserting that no tracer is attached.
 
 `conftest.py` also pins `clock.today()` to a fixed date earlier than every
 literal in the suite. The search tools reject a date before today, so an

@@ -3136,6 +3136,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "langgraph-cli", extra = ["inmem"] },
+    { name = "langsmith" },
     { name = "pytest" },
     { name = "ruff" },
     { name = "ty" },
@@ -3156,6 +3157,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "langgraph-cli", extras = ["inmem"], specifier = ">=0.4.31" },
+    { name = "langsmith", specifier = ">=0.14" },
     { name = "pytest", specifier = ">=8.0" },
     { name = "ruff", specifier = ">=0.9" },
     { name = "ty", specifier = ">=0.0.64" },

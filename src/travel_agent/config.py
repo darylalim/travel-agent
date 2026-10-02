@@ -54,3 +54,9 @@ SUBAGENT_MODELS: dict[str, ModelSpec] = {
 # Thinking is always on for Opus 5.5 and counts against this ceiling, so keep
 # it generous. It applies to every subagent too.
 DEFAULT_MAX_TOKENS = 16_000
+
+# Root run name for LangSmith traces from the in-process entry points. It
+# matches the graph id in `langgraph.json`, so CLI and Streamlit traces sit
+# under the same name as the ones Studio produces. Each entry point adds its
+# own tag (`cli`, `streamlit`) so they can still be told apart.
+TRACE_NAME = "travel_agent"

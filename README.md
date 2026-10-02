@@ -68,6 +68,26 @@ search results at all. The UI therefore captures them mid-stream, with
 `subgraphs=True` so nested messages are emitted in the first place.
 `tests/test_ui.py` pins the behaviour.
 
+### Tracing
+
+Set `LANGSMITH_API_KEY` in `.env` and every entry point traces to LangSmith —
+`.env.example` already sets `LANGSMITH_TRACING=true` and
+`LANGSMITH_PROJECT=travel-agent`. No code is involved: LangChain attaches its
+tracer whenever those variables are present, and each subagent call appears as
+a nested run under the main agent's.
+
+Runs from the CLI and the Streamlit UI are named `travel_agent`, the graph id
+in `langgraph.json`, and tagged `cli` or `streamlit` so they can be filtered
+apart. The thread id lands in run metadata, which groups a trip's turns into
+one LangSmith thread.
+
+A trace records full inputs and outputs: the traveler profile, the prompts,
+and every offer payload, including live Duffel fares. Set `LANGSMITH_TRACING=false`
+if that should not leave the machine.
+
+The test suite never traces, even with tracing exported — `tests/conftest.py`
+overrides it for every test.
+
 ## How it works
 
 `create_deep_agent` supplies a filesystem and delegation (`task`) out of the
