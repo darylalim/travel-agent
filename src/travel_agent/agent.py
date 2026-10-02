@@ -22,6 +22,7 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.config import get_config
 from langgraph.store.base import BaseStore
 
+from travel_agent.clock import CurrentDateMiddleware
 from travel_agent.config import (
     DEFAULT_EFFORT,
     DEFAULT_MAX_TOKENS,
@@ -121,6 +122,7 @@ def build_agent(
         model=_chat_model(model, effort, max_tokens),
         tools=[*search_tools, summarize_budget, date_offset],
         system_prompt=MAIN_AGENT_PROMPT,
+        middleware=[CurrentDateMiddleware()],
         subagents=build_subagents(search_tools, subagent_models),
         backend=build_backend(),
         memory=[MEMORY_PATH],

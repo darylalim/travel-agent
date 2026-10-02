@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from datetime import date
+
 import pytest
 
+from travel_agent import clock
 from travel_agent.tools.availability import (
     CABIN_CLASSES,
     SAMPLE_SOURCE,
@@ -198,6 +201,47 @@ def test_invalid_dates_return_errors_not_exceptions():
             "return_date": "2026-09-12",
         }
     )
+
+
+def test_a_past_date_is_an_error_on_both_searches(monkeypatch):
+    """The sample provider would price the past; the tool layer must not let it.
+
+    A real run asked for "early December" and the model picked one that had
+    gone: Duffel refused every flight while the sample provider returned
+    plausible lodging for the same dates.
+    """
+    monkeypatch.setattr(clock, "today", lambda: date(2026, 10, 2))
+
+    flights = search_flights.invoke(
+        {"origin": "SFO", "destination": "KIX", "depart_date": "2025-12-02"}
+    )
+    stays = search_stays.invoke(
+        {"location": "Kyoto", "check_in": "2025-12-03", "check_out": "2025-12-08"}
+    )
+    for result in (flights, stays):
+        assert "offers" not in result
+        assert "today is 2026-10-02" in result["error"]
+
+
+def test_today_itself_is_still_searchable(monkeypatch):
+    monkeypatch.setattr(clock, "today", lambda: date(2026, 10, 2))
+
+    result = search_stays.invoke(
+        {"location": "Kyoto", "check_in": "2026-10-02", "check_out": "2026-10-03"}
+    )
+    assert "error" not in result
+
+
+def test_a_past_date_never_reaches_the_provider(monkeypatch):
+    # Duffel with no token fails on construction; the date check fires first.
+    monkeypatch.setattr(clock, "today", lambda: date(2026, 10, 2))
+    monkeypatch.setenv("TRAVEL_AGENT_PROVIDER", "duffel")
+
+    result = search_flights.invoke(
+        {"origin": "SFO", "destination": "KIX", "depart_date": "2025-12-02"}
+    )
+    assert "in the past" in result["error"]
+    assert "DUFFEL_API_TOKEN" not in result["error"]
 
 
 def test_unknown_provider_is_reported_as_a_tool_error(monkeypatch):

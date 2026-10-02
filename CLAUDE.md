@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
-uv run pytest                            # 181 tests, ~4s, no network, no model calls
+uv run pytest                            # 188 tests, ~4s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -226,6 +226,13 @@ and the full tool stack. Two things exist solely because of this:
   `streamlit_app.py` can import `ui` at module scope after `load_dotenv()`.
   Third site of one rule: anything reaching `travel_agent.agent` must do so
   after the environment is loaded.
+
+Today's date is the same hazard in time rather than environment. A date written
+into `prompts.py` is frozen when `graph` is built, and `langgraph dev` can keep
+that process up for days, so `CurrentDateMiddleware` in `clock.py` appends it
+on every model call — to the main agent and to each subagent, which do not
+inherit the main agent's middleware. Without it the model supplies the year
+from training: a real run searched a December that had already passed.
 
 The module-level `graph` deliberately passes **no** checkpointer or store —
 `StateBackend`/`StoreBackend` resolve them from the LangGraph execution context
@@ -603,6 +610,11 @@ tuple is loud on the machine where it matters: `test_tools.py` sets
 the silent one** — a CI runner has nothing exported, so it stays green forever.
 That is the direction only this test covers, and the reason it is a test rather
 than the hook it replaced, which never ran in CI at all.
+
+`conftest.py` also pins `clock.today()` to a fixed date earlier than every
+literal in the suite. The search tools reject a date before today, so an
+unpinned clock turns each fixture date into a failure on the day it passes.
+A test about the past-date check sets its own `today` on top.
 
 ## Prompts
 

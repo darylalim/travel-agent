@@ -31,6 +31,8 @@ from typing import ClassVar, Literal, Protocol
 
 from langchain_core.tools import tool
 
+from travel_agent import clock
+
 SAMPLE_SOURCE = "sample-data"
 SearchKind = Literal["flights", "stays"]
 
@@ -196,6 +198,25 @@ def _parse_date(value: str, field: str) -> date:
         return date.fromisoformat(value)
     except ValueError as exc:
         raise ValueError(f"{field} must be an ISO date (YYYY-MM-DD), got {value!r}") from exc
+
+
+def _parse_future_date(value: str, field: str) -> date:
+    """Parse a search date and reject one before today.
+
+    Checked here rather than left to each provider: Duffel refuses a past date
+    itself, but the sample provider prices one happily, so without this the
+    same mistake fails on one provider and returns plausible offers on the
+    other.
+    """
+    day = _parse_date(value, field)
+    today = clock.today()
+    if day < today:
+        raise ValueError(
+            f"{field} {day.isoformat()} is in the past (today is {today.isoformat()}). "
+            "No provider can search it. If the traveler gave no year, they mean the "
+            "next occurrence."
+        )
+    return day
 
 
 def _normalize_cabin(value: str) -> CabinClass:
@@ -503,7 +524,8 @@ def search_flights(
     Args:
         origin: Origin airport IATA code, e.g. "SFO".
         destination: Destination airport IATA code, e.g. "NRT".
-        depart_date: Outbound date as YYYY-MM-DD.
+        depart_date: Outbound date as YYYY-MM-DD. A date before today is an
+            error; the system prompt states today's date.
         return_date: Return date as YYYY-MM-DD. Omit for one-way.
         travelers: Number of travelers on the booking.
         cabin: One of economy, premium_economy, business, first. Case and
@@ -515,7 +537,7 @@ def search_flights(
     try:
         # Validated here rather than per provider, so the tool behaves the
         # same way whichever provider is configured.
-        depart = _parse_date(depart_date, "depart_date")
+        depart = _parse_future_date(depart_date, "depart_date")
         if return_date is not None and _parse_date(return_date, "return_date") < depart:
             return {"error": "return_date cannot fall before depart_date."}
         wanted = _normalize_cabin(cabin)
@@ -569,7 +591,8 @@ def search_stays(
         location: City to search, e.g. "Kyoto". Sample data accepts any
             free-text place; live lodging search covers a fixed list of cities
             and the error names them when it does not recognise one.
-        check_in: Arrival date as YYYY-MM-DD.
+        check_in: Arrival date as YYYY-MM-DD. A date before today is an
+            error; the system prompt states today's date.
         check_out: Departure date as YYYY-MM-DD.
         guests: Number of guests.
         max_nightly_rate: Optional ceiling on nightly rate, in USD. Applied
@@ -580,7 +603,7 @@ def search_stays(
     if guests < 1:
         return {"error": "guests must be at least 1."}
     try:
-        if _parse_date(check_out, "check_out") <= _parse_date(check_in, "check_in"):
+        if _parse_date(check_out, "check_out") <= _parse_future_date(check_in, "check_in"):
             return {"error": "check_out must be at least one day after check_in."}
         provider = get_provider()
         found = provider.search_stays(location, check_in, check_out, guests, max_nightly_rate)

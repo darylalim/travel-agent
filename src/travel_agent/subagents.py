@@ -14,6 +14,7 @@ from deepagents import SubAgent
 from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import BaseTool
 
+from travel_agent.clock import CurrentDateMiddleware
 from travel_agent.prompts import AVAILABILITY_PROMPT, BUDGET_PROMPT, RESEARCHER_PROMPT, WORKSPACE
 from travel_agent.tools.availability import date_offset, search_flights, search_stays
 from travel_agent.tools.budget import summarize_budget
@@ -74,6 +75,10 @@ def build_subagents(
         ),
     ]
     for subagent in roster:
+        # Subagents do not inherit the main agent's middleware, and each one
+        # reasons about dates: the scout searches them, the researcher judges
+        # what is "current", the analyst costs a trip that has not happened.
+        subagent["middleware"] = [CurrentDateMiddleware()]
         if models and subagent["name"] in models:
             subagent["model"] = models[subagent["name"]]
     return roster
