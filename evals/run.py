@@ -5,6 +5,13 @@
     uv run python -m evals.run trajectory --limit 1                  # one full trip
     uv run python -m evals.run trajectory final_response
     uv run python -m evals.run budget_analyst_hard --repetitions 3   # a pass rate per example
+    uv run python -m evals.run final_response --keys lisbon-over-budget --repetitions 3
+    uv run python -m evals.run trajectory --no-web-search            # Tavily out of credits
+
+`--no-web-search` matters more than it looks. A Tavily key with no credits left
+still builds the search tool, which then answers every call with an error the
+agent quietly works around, so a run would measure a broken search while its
+metadata said search was on.
 
 The `_hard` datasets hold examples a plausible agent gets wrong, so their scores
 can move; the others are a regression set expected to stay at 1. Run the hard
@@ -863,6 +870,35 @@ def agent_target(repetitions: int) -> Callable[[dict], dict]:
     return run_agent_shared if repetitions == 1 else run_agent
 
 
+def _key(example: Any) -> str:
+    return (example.metadata or {}).get("key", str(example.id))
+
+
+def unknown_keys(stems: list[str], keys: list[str]) -> list[str]:
+    """Requested example keys that no selected dataset holds.
+
+    Checked against the local files, before anything runs: a typo would
+    otherwise evaluate zero examples, or every dataset but the one meant.
+    """
+    datasets = load_datasets()
+    known = {example["key"] for stem in stems for example in datasets[stem]["examples"]}
+    return sorted(set(keys) - known)
+
+
+def apply_run_environment(*, no_web_search: bool) -> bool:
+    """Pin the provider and, if asked, drop web search; return whether search is on.
+
+    Called once the dotenv file has loaded. Dropping the key rather than
+    leaving it set is the point: with no Tavily credits the tool returns an
+    error the agent quietly works around, so a run would measure a broken
+    search while its metadata said search was on.
+    """
+    os.environ["TRAVEL_AGENT_PROVIDER"] = "sample-data"
+    if no_web_search:
+        os.environ.pop("TAVILY_API_KEY", None)
+    return bool(os.getenv("TAVILY_API_KEY"))
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("datasets", nargs="+", choices=sorted([*SUBAGENT_FOR, *AGENT_DATASETS]))
@@ -872,16 +908,25 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--repetitions", type=int, default=1, help="Run each example N times, for pass rates."
     )
+    parser.add_argument(
+        "--keys", nargs="+", metavar="KEY", help="Run only the examples with these keys."
+    )
+    parser.add_argument(
+        "--no-web-search",
+        action="store_true",
+        help="Run without Tavily even if its key is set; research examples are skipped.",
+    )
     args = parser.parse_args(argv)
     if args.no_judge and "final_response" in args.datasets:
         # The judge is its only evaluator: every trip would be paid for and none scored.
         parser.error("final_response is scored only by the judge; drop --no-judge")
+    if args.keys and (unknown := unknown_keys(args.datasets, args.keys)):
+        parser.error(f"no example {unknown} in {args.datasets}")
 
     from dotenv import load_dotenv
 
     load_dotenv()
-    os.environ["TRAVEL_AGENT_PROVIDER"] = "sample-data"
-    has_web_search = bool(os.getenv("TAVILY_API_KEY"))
+    has_web_search = apply_run_environment(no_web_search=args.no_web_search)
 
     from langsmith import Client, evaluate
 
@@ -893,6 +938,11 @@ def main(argv: list[str] | None = None) -> int:
         name = datasets[stem]["name"]
         evaluators = [e for e in EVALUATORS[stem] if not (args.no_judge and e is rubric)]
         examples = list(client.list_examples(dataset_name=name, limit=args.limit))
+        if args.keys:
+            examples = [e for e in examples if _key(e) in args.keys]
+            if not examples:
+                print(f"{name}: none of {args.keys} here; skipped")
+                continue
         metadata: dict[str, Any] = {
             "judge": None if args.no_judge else JUDGE_MODEL,
             "provider": "sample-data",
@@ -916,8 +966,7 @@ def main(argv: list[str] | None = None) -> int:
             if not has_web_search:
                 needs = [e for e in examples if (e.metadata or {}).get("requires_web_search")]
                 if needs:
-                    keys = [(e.metadata or {}).get("key", e.id) for e in needs]
-                    print(f"{name}: skipping {keys}: TAVILY_API_KEY is not set")
+                    print(f"{name}: skipping {[_key(e) for e in needs]}: web search is off")
                     examples = [e for e in examples if e not in needs]
             print(f"{name}: {len(examples)} examples on the whole agent ({DEFAULT_MODEL})")
             metadata |= {

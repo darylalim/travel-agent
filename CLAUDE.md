@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
-uv run pytest                            # 378 tests, ~4s, no network, no model calls
+uv run pytest                            # 380 tests, ~4s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -25,7 +25,12 @@ uv run python -m evals.run budget_analyst --limit 1 --no-judge   # cheapest real
 uv run python -m evals.run budget_analyst availability_scout     # spends real tokens
 uv run python -m evals.run trajectory --limit 1                  # one full trip, ~$1
 uv run python -m evals.run budget_analyst_hard --repetitions 3   # a pass rate, ~$0.50
+uv run python -m evals.run final_response --keys lisbon-over-budget --no-web-search
 ```
+
+Pass `--no-web-search` whenever Tavily is out of credits. The key alone still
+builds the tool, which then answers every search with an error the agent works
+around, and the run would be recorded as having had search.
 
 `ruff check --fix` is never run here, and `/astral:ruff` will suggest it. There
 is no `[tool.ruff.lint] select` in `pyproject.toml`, so the default rule set

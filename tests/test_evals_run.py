@@ -10,6 +10,7 @@ no model calls.
 from __future__ import annotations
 
 import copy
+import os
 from collections.abc import Iterator
 from typing import Any
 
@@ -839,6 +840,28 @@ def test_pass_rates_average_each_check_across_repetitions():
         "    yen-ceiling over 3 runs: forbidden_arguments=0.67 (3), rubric=0.75 (2)",
     ]
     assert harness.pass_rates(rows[:1]) == []
+
+
+def test_an_unknown_key_is_refused_before_anything_runs(capsys):
+    # Checked against the local files: a typo must not reach LangSmith and
+    # evaluate zero examples, or every dataset but the one meant.
+    assert harness.unknown_keys(["final_response"], ["lisbon-over-budget"]) == []
+    assert harness.unknown_keys(["trajectory"], ["lisbon-over-budget"]) == ["lisbon-over-budget"]
+    with pytest.raises(SystemExit):
+        harness.main(["final_response", "--keys", "lisbon-over-budgte"])
+    assert "lisbon-over-budgte" in capsys.readouterr().err
+
+
+def test_no_web_search_drops_the_key_even_when_one_is_set(monkeypatch: pytest.MonkeyPatch):
+    # With no credits the key is still set, and the tool answers with an error
+    # the agent works around: search would be broken while reported as on.
+    monkeypatch.setenv("TAVILY_API_KEY", "placeholder-not-a-key")
+    # Registered with monkeypatch so the function's own writes are undone.
+    monkeypatch.setenv("TRAVEL_AGENT_PROVIDER", "duffel")
+    assert harness.apply_run_environment(no_web_search=False) is True
+    assert harness.apply_run_environment(no_web_search=True) is False
+    assert "TAVILY_API_KEY" not in os.environ
+    assert os.environ["TRAVEL_AGENT_PROVIDER"] == "sample-data"
 
 
 def test_repeated_runs_never_share_a_transcript():
