@@ -163,6 +163,10 @@ class ScriptedProvider(SampleProvider):
         if not offer["synthetic"] and kind == "flights":
             offer |= {"live_mode": True, "offer_id": f"off_scripted_{index}"}
         offer |= patch
+        # Derived like a real provider derives them, so a patch cannot leave a
+        # total that disagrees with its own per-traveler fare.
+        if "fare_per_traveler" in patch and "total_fare" not in patch:
+            offer["total_fare"] = round(patch["fare_per_traveler"] * offer["travelers"], 2)
         if "expires_in_seconds" in patch and "expires_at" not in patch:
             offer["expires_at"] = _seconds_from_now(patch["expires_in_seconds"])
         return offer

@@ -505,3 +505,18 @@ def test_the_amsterdam_script_answers_only_what_it_means_to(query, answered):
     finally:
         scripted._SCRIPTS.clear()
     assert ("error" not in result) is answered, query
+
+
+@pytest.mark.parametrize("example", SCRIPTED)
+def test_a_scripted_live_flight_looks_like_a_live_flight(example):
+    # v1 kept the sample carriers, a six-hour transpacific nonstop and $238
+    # fares on "live" offers, and the main agent rightly doubted them: the
+    # example measured whether it notices fake data, not how it labels real.
+    flights = example["metadata"]["scripted_tools"].get("flights")
+    if not flights or flights.get("synthetic", True):
+        return
+    for rule in flights["rules"]:
+        for response in rule.get("responses") or [{"offers": rule["offers"]}]:
+            for patch in response["offers"]:
+                assert {"carrier", "stops", "duration_minutes", "fare_per_traveler"} <= set(patch)
+                assert patch["carrier"] not in SampleProvider._CARRIERS, patch["carrier"]

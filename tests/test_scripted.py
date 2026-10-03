@@ -218,3 +218,16 @@ def test_concurrent_runs_each_see_only_their_own_script(monkeypatch):
     for cabin, future in runs.items():
         result = next(r for r in future.result()["tool_results"] if r["name"] == "search_flights")
         assert f'"cabin": "{cabin}"' in result["content"], cabin
+
+
+def test_a_patched_fare_carries_a_total_that_agrees_with_it():
+    script = {
+        "flights": {
+            "source": "duffel",
+            "synthetic": False,
+            "rules": [{"match": {"origin": "LHR"}, "offers": [{"fare_per_traveler": 1184.6}]}],
+        }
+    }
+    with scripted.active(_register("brief", script)):
+        offer = scripted.ScriptedProvider().search_flights(**{**FLIGHT, "travelers": 2})[0]
+    assert offer["fare_per_traveler"] == 1184.6 and offer["total_fare"] == 2369.2

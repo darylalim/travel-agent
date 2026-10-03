@@ -1,6 +1,6 @@
 {
-  "name": "travel-agent: availability-scout scripted",
-  "description": "Inventory sample data never produces, served by scripted tools (evals/scripted.py): a business search answered in premium economy, a round trip in mixed cabins, an offer seconds from expiry, and live flights beside sample lodging. Each example's `scripted_tools` metadata says what the searches return; a search it does not script gets sample data. Same reference shape as the scout hard set, plus `expiring_search`, a search that must be run at least twice. Run with --repetitions for a pass rate.",
+  "name": "travel-agent: availability-scout scripted v2",
+  "description": "Inventory sample data never produces, served by scripted tools (evals/scripted.py): a business search answered in premium economy, a round trip in mixed cabins, an offer seconds from expiry, and live flights beside sample lodging. Each example's `scripted_tools` metadata says what the searches return; a search it does not script gets sample data. Same reference shape as the scout hard set, plus `expiring_search`, a search that must be run at least twice. Run with --repetitions for a pass rate. v2 gives every scripted live flight a real carrier, a realistic duration and a realistic fare. v1 kept the sample data's fictional carriers, six-hour transpacific nonstops and $238 fares, and the main agent rightly doubted 'live' offers that looked like that, so the example measured whether it notices fake data rather than how it labels real data.",
   "examples": [
     {
       "key": "business-comes-back-premium",
@@ -42,9 +42,9 @@
               {
                 "match": {"origin": "LHR", "destination": "SIN"},
                 "offers": [
-                  {"cabin": "premium_economy", "expires_in_seconds": 1800},
-                  {"cabin": "premium_economy", "expires_in_seconds": 1800},
-                  {"cabin": "premium_economy", "expires_in_seconds": 1800}
+                  {"carrier": "Singapore Airlines", "stops": 0, "duration_minutes": 790, "fare_per_traveler": 2380.0, "cabin": "premium_economy", "expires_in_seconds": 1800},
+                  {"carrier": "British Airways", "stops": 0, "duration_minutes": 805, "fare_per_traveler": 2215.0, "cabin": "premium_economy", "expires_in_seconds": 1800},
+                  {"carrier": "Qantas", "stops": 0, "duration_minutes": 800, "fare_per_traveler": 2140.0, "cabin": "premium_economy", "expires_in_seconds": 1800}
                 ]
               }
             ]
@@ -92,9 +92,9 @@
               {
                 "match": {"origin": "JFK", "destination": "CDG"},
                 "offers": [
-                  {"cabin": "mixed", "expires_in_seconds": 1800},
-                  {"cabin": "business", "expires_in_seconds": 1800},
-                  {"cabin": "mixed", "expires_in_seconds": 1800}
+                  {"carrier": "Delta Air Lines", "stops": 0, "duration_minutes": 445, "fare_per_traveler": 3650.0, "cabin": "mixed", "expires_in_seconds": 1800},
+                  {"carrier": "Air France", "stops": 0, "duration_minutes": 440, "fare_per_traveler": 5120.0, "cabin": "business", "expires_in_seconds": 1800},
+                  {"carrier": "American Airlines", "stops": 0, "duration_minutes": 450, "fare_per_traveler": 3480.0, "cabin": "mixed", "expires_in_seconds": 1800}
                 ]
               }
             ]
@@ -147,16 +147,16 @@
                 "responses": [
                   {
                     "offers": [
-                      {"expires_in_seconds": 12},
-                      {"expires_in_seconds": 12},
-                      {"expires_in_seconds": 12}
+                      {"carrier": "Korean Air", "stops": 0, "duration_minutes": 690, "fare_per_traveler": 820.0, "expires_in_seconds": 12},
+                      {"carrier": "Asiana Airlines", "stops": 0, "duration_minutes": 700, "fare_per_traveler": 790.0, "expires_in_seconds": 12},
+                      {"carrier": "Delta Air Lines", "stops": 0, "duration_minutes": 695, "fare_per_traveler": 860.0, "expires_in_seconds": 12}
                     ]
                   },
                   {
                     "offers": [
-                      {"expires_in_seconds": 1700},
-                      {"expires_in_seconds": 1700},
-                      {"expires_in_seconds": 1700}
+                      {"carrier": "Korean Air", "stops": 0, "duration_minutes": 690, "fare_per_traveler": 835.0, "expires_in_seconds": 1700},
+                      {"carrier": "Asiana Airlines", "stops": 0, "duration_minutes": 700, "fare_per_traveler": 805.0, "expires_in_seconds": 1700},
+                      {"carrier": "Delta Air Lines", "stops": 0, "duration_minutes": 695, "fare_per_traveler": 860.0, "expires_in_seconds": 1700}
                     ]
                   }
                 ]
@@ -212,9 +212,9 @@
               {
                 "match": {"origin": "SFO", "destination": "KIX"},
                 "offers": [
-                  {"expires_in_seconds": 1800},
-                  {"expires_in_seconds": 1800},
-                  {"expires_in_seconds": 1800}
+                  {"carrier": "United Airlines", "stops": 0, "duration_minutes": 700, "fare_per_traveler": 1184.6, "expires_in_seconds": 1800},
+                  {"carrier": "Japan Airlines", "stops": 1, "duration_minutes": 905, "fare_per_traveler": 968.3, "expires_in_seconds": 1800},
+                  {"carrier": "ANA", "stops": 1, "duration_minutes": 960, "fare_per_traveler": 1032.75, "expires_in_seconds": 1800}
                 ]
               }
             ]

@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
-uv run pytest                            # 443 tests, ~4s, no network, no model calls
+uv run pytest                            # 451 tests, ~4s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -753,7 +753,7 @@ seconds from expiry, live flights beside sample lodging, or research that
 partly fails, and Duffel and Tavily cannot be told to. An example's
 `scripted_tools` metadata scripts flights, stays or web search. A
 `ScriptedProvider` registered as `scripted` serves it, and
-`build_agent(search_tools=…)` takes a `ScriptedSearch`. Five things there are
+`build_agent(search_tools=…)` takes a `ScriptedSearch`. Six things there are
 easy to undo:
 
 - **A script reaches its run through a `ContextVar`,** set around the stream in
@@ -777,6 +777,12 @@ easy to undo:
   same offer keys" hazard from gaining a third place to drift. `TAVILY_432`
   reproduces the real outage error, but only its first 97 characters were
   captured, and the rest is reconstructed.
+- **A scripted live offer has to look live.** v1 left the sample carriers on
+  "live" fares ("Anser Airways", a six-hour transpacific nonstop, $238), and
+  Opus doubted them in every run, rightly. The example then measured whether
+  the agent notices fake data, not how it labels real data. A live flight patch
+  sets a real carrier, duration and fare, and `total_fare` is derived from the
+  fare so the two cannot disagree.
 
 `main()` sets `TRAVEL_AGENT_PROVIDER=sample-data` over `.env`, because every
 rubric expects the sample-data label, except on a `_scripted` set, which runs
