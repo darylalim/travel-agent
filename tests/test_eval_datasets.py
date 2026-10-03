@@ -356,10 +356,10 @@ def test_confirmed_categories_are_confirmed_in_the_reference(example):
         assert lines and all(i.get("estimated") is False for i in lines), category
 
 
-def test_an_example_with_no_budget_is_marked_as_a_known_gap():
-    # Both no-budget references expect a call with no budget, which today's
-    # tool rejects. When the tool accepts one, this goes red: drop the
-    # `known_gap` markers, since those examples can now pass on merit.
+def test_the_no_budget_references_are_calls_the_tool_accepts():
+    # Both were written while `summarize_budget` required a budget, so they
+    # could only fail. Pinned against the real tool now that it can total a
+    # plan with none, so a required budget coming back fails here first.
     no_budget = [
         example
         for stem in ("budget_analyst_hard", "final_response_hard")
@@ -367,9 +367,12 @@ def test_an_example_with_no_budget_is_marked_as_a_known_gap():
         if example["outputs"].get("budget_given") is False
     ]
     assert len(no_budget) == 2
-    assert all("known_gap" in example["metadata"] for example in no_budget)
-    with pytest.raises(ValueError):  # pydantic's ValidationError
-        summarize_budget.invoke({"items": [{"label": "x", "category": "food", "amount": 1}]})
+    for example in no_budget:
+        assert "known_gap" not in example["metadata"], example["key"]
+    analyst = next(e for e in no_budget if "expected_items" in e["outputs"])["outputs"]
+    result = summarize_budget.invoke({"items": analyst["expected_items"]})
+    assert result["total_estimated"] == analyst["expected_total"]
+    assert result["budget_total"] is None and "over_budget" not in result
 
 
 # --- staleness --------------------------------------------------------------

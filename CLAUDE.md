@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
-uv run pytest                            # 375 tests, ~4s, no network, no model calls
+uv run pytest                            # 378 tests, ~4s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -727,12 +727,13 @@ undo:
 - **Repeated whole-agent runs bypass the shared-run cache** (`agent_target`).
   Shared, every repetition would be served the first transcript, and three
   identical scores would read as a stable rate.
-- **The two `no-budget` examples are meant to fail today.** `summarize_budget`
-  requires `budget_total > 0`, so an agent can only call it by inventing a
-  budget, and a real run did exactly that. They carry `known_gap`, and
-  `test_an_example_with_no_budget_is_marked_as_a_known_gap` goes red the day
-  the tool accepts a plan with no budget, so the marker is removed instead of
-  left to excuse a real failure.
+- **`summarize_budget` takes no budget at all, on purpose.** It used to
+  require one, and every no-budget run invented a figure: $1, $795, $3000 and
+  $10,000, and against $795 a $985 plan came back "over budget". The reply
+  rarely mentioned the figure, so only `budget_not_invented`, which reads the
+  calls, caught it. Without a budget the comparison keys are absent rather
+  than null, and the Trip page drops its "Remaining" and "Budget used" cards.
+  Don't make `budget_total` required again to "simplify" the tool.
 
 **Write a conditional rubric criterion as a prohibition.** `JUDGE_PROMPT`
 reads silent evidence as not met, so "Labels any prices as sample data" fails

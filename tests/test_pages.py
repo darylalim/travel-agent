@@ -810,3 +810,20 @@ def test_one_fallback_format_reaches_every_money_surface(trip_page):
     # `st.error` takes finished text, so a raw interpolation printed the float
     # repr `1600.0` beneath cards the same payload renders as `1,600.00 SEK`.
     assert trip_page.error[0].value == "Over budget by 1,600.00 SEK."
+
+
+def test_a_plan_with_no_budget_shows_the_total_and_no_verdict(trip_page: AppTest):
+    """Without a budget the page shows the estimate and says there is nothing to compare.
+
+    `summarize_budget` leaves the comparison keys out when no budget was set.
+    Rendering "Remaining" and "Budget used" anyway would show two blank cards
+    beside the total, which reads as a budget that exists and was not worked
+    out, the opposite of what happened.
+    """
+    record = trip_page.session_state["record"]
+    record.record_tool(_costing({"flights": 420.0, "lodging": 525.0}, budget_total=None))
+    trip_page.run()
+
+    assert [card.label for card in trip_page.metric] == ["Estimated total"]
+    assert not trip_page.error
+    assert any("No budget set" in caption for caption in _captions(trip_page))

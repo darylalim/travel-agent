@@ -1,6 +1,6 @@
 {
   "name": "travel-agent: budget-analyst hard",
-  "description": "Briefs a plausible budget analyst gets wrong, so the score can move; `travel-agent: budget-analyst` is the regression set expected to stay at 1. Run with --repetitions for a pass rate. Same shape as the regression set, plus: `expected_total` is null where the total depends on an exchange rate the analyst picks, with `unconverted_amounts` naming the foreign figures that must not be costed as given; `confirmed_categories` are lines the brief says are already paid, which must go in as `estimated: false`; `budget_given: false` marks a plan with no budget, and a reference `budget_total` of null expects a call that supplies none. `no-budget-given` cannot pass until `summarize_budget` accepts a plan with no budget; it is here to measure that change.",
+  "description": "Briefs a plausible budget analyst gets wrong, so the score can move; `travel-agent: budget-analyst` is the regression set expected to stay at 1. Run with --repetitions for a pass rate. Same shape as the regression set, plus: `expected_total` is null where the total depends on an exchange rate the analyst picks, with `unconverted_amounts` naming the foreign figures that must not be costed as given; `confirmed_categories` are lines the brief says are already paid, which must go in as `estimated: false`; `budget_given: false` marks a plan with no budget, and a reference `budget_total` of null expects a call that supplies none. `no-budget-given` could not pass while `summarize_budget` required a budget; it was written to measure the change that made it optional.",
   "examples": [
     {
       "key": "nights-vs-days",
@@ -130,7 +130,6 @@
       "metadata": {
         "behaviour": ["no-budget", "tool-gap"],
         "trap": "summarize_budget requires budget_total > 0, so the only way to call it is to invent one.",
-        "known_gap": "summarize_budget rejects a call with no budget_total, so this example fails until the tool accepts one.",
         "dates_intentionally_past": false
       }
     }

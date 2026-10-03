@@ -31,23 +31,30 @@ class BudgetItem(BaseModel):
 @tool
 def summarize_budget(
     items: list[BudgetItem],
-    budget_total: float,
+    budget_total: float | None = None,
     currency: str = "USD",
 ) -> dict:
-    """Total a list of trip cost lines and compare them against a budget.
+    """Total a list of trip cost lines, and compare them against a budget if there is one.
 
     Use this for every budget calculation rather than adding figures up in
-    your head. Returns per-category subtotals, the grand total, how much
-    budget remains, and the largest line items.
+    your head. Returns per-category subtotals, the grand total and the largest
+    line items. With a budget it also returns how much remains, whether the
+    plan is over, and by how much. Without one, `budget_total` comes back null
+    and there is no comparison: report the total, not a verdict.
 
     Args:
         items: Every cost line in the plan. Multiply-out lines (5 nights of
             lodging) should use `quantity`, not a pre-multiplied `amount`.
-        budget_total: The traveler's total budget for the trip.
-        currency: Currency code all amounts are expressed in.
+        budget_total: The traveler's total budget for the trip. Leave it out
+            when they have not set one. Never supply a placeholder: a made-up
+            budget comes back as an over- or under-budget verdict on a number
+            the traveler never gave.
+        currency: Currency code all amounts are expressed in. The tool does no
+            conversion, so convert any figure quoted in another currency
+            before passing it.
     """
-    if budget_total <= 0:
-        return {"error": "budget_total must be greater than zero."}
+    if budget_total is not None and budget_total <= 0:
+        return {"error": "budget_total must be greater than zero; leave it out if there is none."}
     if not items:
         return {"error": "No cost items supplied; nothing to total."}
 
@@ -71,17 +78,26 @@ def summarize_budget(
         )
 
     total = round(total, 2)
-    remaining = round(budget_total - total, 2)
     largest = sorted(lines, key=lambda line: line["subtotal"], reverse=True)[:3]
 
+    # The comparison keys are absent, not null, without a budget: a reader that
+    # treats null as "nothing to say" would otherwise read `over_budget: None`
+    # as a plan that fits.
+    comparison = (
+        {
+            "remaining": round(budget_total - total, 2),
+            "over_budget": total > budget_total,
+            "overage": round(total - budget_total, 2) if total > budget_total else 0.0,
+            "percent_of_budget_used": round(total / budget_total * 100, 1),
+        }
+        if budget_total is not None
+        else {}
+    )
     return {
         "currency": currency,
-        "budget_total": round(budget_total, 2),
+        "budget_total": None if budget_total is None else round(budget_total, 2),
         "total_estimated": total,
-        "remaining": remaining,
-        "over_budget": total > budget_total,
-        "overage": round(total - budget_total, 2) if total > budget_total else 0.0,
-        "percent_of_budget_used": round(total / budget_total * 100, 1),
+        **comparison,
         "by_category": dict(sorted(by_category.items(), key=lambda kv: kv[1], reverse=True)),
         "largest_line_items": largest,
         "all_lines_estimated": all(item.estimated for item in items),

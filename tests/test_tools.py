@@ -45,6 +45,27 @@ def test_budget_flags_overage():
     assert result["percent_of_budget_used"] == pytest.approx(157.0)
 
 
+def test_a_plan_with_no_budget_is_totalled_without_a_verdict():
+    # Before this, a call needed a budget, and every real run with none
+    # invented one: $1, $795, $3000, $10000. Against $795 a $985 plan came
+    # back "over budget".
+    result = summarize_budget.invoke({"items": _items()})
+
+    assert result["total_estimated"] == pytest.approx(3140.0)
+    assert result["budget_total"] is None
+    # Absent rather than null, so nothing downstream reads "fits".
+    for key in ("remaining", "over_budget", "overage", "percent_of_budget_used"):
+        assert key not in result
+    assert result["largest_line_items"][0]["label"] == "SFO-NRT return"
+
+
+def test_the_docstring_tells_the_model_not_to_invent_a_budget_or_skip_conversion():
+    # The docstring is the model's only interface to these two rules.
+    doc = summarize_budget.description
+    assert "Never supply a placeholder" in doc
+    assert "convert any figure quoted in another currency" in doc
+
+
 def test_budget_rejects_empty_and_nonpositive():
     assert "error" in summarize_budget.invoke({"items": [], "budget_total": 100.0})
     assert "error" in summarize_budget.invoke({"items": _items(), "budget_total": 0.0})

@@ -546,8 +546,7 @@ def budget_total(outputs: dict, reference_outputs: dict) -> dict:
 
     Re-runs the real tool on the analyst's own arguments rather than reading
     its prose, so a correct sentence over a wrong call still scores 0. A
-    reference `budget_total` of null expects a call with no budget at all,
-    which today's tool rejects: `no-budget-given` fails until it accepts one.
+    reference `budget_total` of null expects a call with no budget at all.
     """
     from travel_agent.tools.budget import summarize_budget
 

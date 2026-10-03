@@ -417,25 +417,32 @@ if budget:
             chart_data=costing_series(costings, "total_estimated"),
             chart_type="bar",
         )
-        st.metric(
-            "Remaining",
-            remaining,
-            format=money,
-            border=True,
-            height=_CARD_HEIGHT,
-            help="Budget less the estimate. Negative when the plan overshoots.",
-        )
-        with st.container(border=True, height=_CARD_HEIGHT):
+        # Only against a budget the traveler set. `summarize_budget` returns no
+        # comparison without one, and two blank cards beside the total would
+        # read as a budget that exists and was not worked out.
+        if ceiling:
             st.metric(
-                "Budget used",
-                used,
-                format="%.0f%%",
-                help="Share of the ceiling the estimate accounts for.",
+                "Remaining",
+                remaining,
+                format=money,
+                border=True,
+                height=_CARD_HEIGHT,
+                help="Budget less the estimate. Negative when the plan overshoots.",
             )
-            if isinstance(used, (int, float)):
-                # st.progress rejects floats outside 0-1, and overspending
-                # legitimately exceeds 100%.
-                st.progress(min(max(used / 100, 0.0), 1.0))
+            with st.container(border=True, height=_CARD_HEIGHT):
+                st.metric(
+                    "Budget used",
+                    used,
+                    format="%.0f%%",
+                    help="Share of the ceiling the estimate accounts for.",
+                )
+                if isinstance(used, (int, float)):
+                    # st.progress rejects floats outside 0-1, and overspending
+                    # legitimately exceeds 100%.
+                    st.progress(min(max(used / 100, 0.0), 1.0))
+
+    if not ceiling:
+        st.caption(":material/info: No budget set, so the estimate is not compared to one.")
 
     if budget.get("over_budget"):
         # The fourth money figure on this page, and the one that cannot carry a
