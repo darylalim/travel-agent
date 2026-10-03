@@ -21,6 +21,7 @@ from travel_agent.prompts import MEMORY_PATH, WORKSPACE
 from travel_agent.subagents import build_subagents
 from travel_agent.tools.availability import _normalize_cabin
 from travel_agent.tools.budget import summarize_budget
+from travel_agent.tools.search import build_search_tools
 
 DATASETS = upload.load_datasets()
 ROSTER = {subagent["name"]: subagent for subagent in build_subagents([])}
@@ -91,6 +92,18 @@ def main_agent_tools() -> set[str]:
     return set(agent.nodes["tools"].bound.tools_by_name)
 
 
+@pytest.fixture(scope="module")
+def web_search_tools() -> set[str]:
+    """The web search tool names, built offline with a placeholder key.
+
+    A reference may offer one only as an alternative, in an example marked
+    `requires_web_search`, since the agent lacks it without a key.
+    """
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setenv("TAVILY_API_KEY", "placeholder-not-a-key")
+        return {tool.name for tool in build_search_tools()}
+
+
 @pytest.mark.parametrize("example", _examples("trajectory"), ids=_ids("trajectory"))
 def test_trajectory_names_only_real_subagents(example):
     outputs = example["outputs"]
@@ -117,7 +130,9 @@ def test_trajectory_names_only_real_main_agent_tools(example, main_agent_tools):
 
 
 @pytest.mark.parametrize("example", _examples("trajectory"), ids=_ids("trajectory"))
-def test_every_alternative_in_required_any_of_is_reachable(example, main_agent_tools):
+def test_every_alternative_in_required_any_of_is_reachable(
+    example, main_agent_tools, web_search_tools
+):
     # An alternative naming a forbidden or nonexistent path still reads as
     # "either is fine" while only one of them can ever pass.
     outputs = example["outputs"]
@@ -125,7 +140,9 @@ def test_every_alternative_in_required_any_of_is_reachable(example, main_agent_t
         assert set(group) <= {"subagents", "tools", "after_subagent"}, group
         subagents, tools = set(group.get("subagents", [])), set(group.get("tools", []))
         assert subagents or tools, group
-        assert subagents <= set(ROSTER) and tools <= main_agent_tools
+        assert subagents <= set(ROSTER) and tools <= main_agent_tools | web_search_tools
+        if tools & web_search_tools:
+            assert example["metadata"]["requires_web_search"], example["key"]
         assert not subagents & set(outputs["forbidden_subagents"])
         assert not tools & set(outputs["forbidden_tools"])
         if subagents:
@@ -157,12 +174,42 @@ def test_trajectory_file_paths_follow_the_prompt_constants(example):
         assert path == MEMORY_PATH or path.startswith(f"{WORKSPACE}/"), path
 
 
-def test_research_examples_say_they_need_web_search():
-    # Without TAVILY_API_KEY the researcher has no tools, so an example that
-    # requires it should be skippable rather than a guaranteed failure.
+def test_research_examples_say_they_need_web_search(web_search_tools):
+    # Without TAVILY_API_KEY the researcher has no tools and the main agent no
+    # search, so an example that requires research should be skippable rather
+    # than a guaranteed failure.
     for example in _examples("trajectory"):
-        needs = "destination-researcher" in example["outputs"]["required_subagents"]
+        outputs = example["outputs"]
+        research = {"destination-researcher", *web_search_tools}
+        needs = bool(research & set(outputs["required_subagents"])) or any(
+            research & {*group.get("subagents", []), *group.get("tools", [])}
+            for group in outputs["required_any_of"]
+        )
         assert example["metadata"]["requires_web_search"] is needs, example["key"]
+
+
+def test_research_may_be_done_with_web_search_directly():
+    # A real run answered the visa question with two `tavily_search` calls of
+    # its own, as the prompt allows for a couple of tool calls. v2 required
+    # `destination-researcher` and failed it.
+    outputs = next(
+        e for e in _examples("trajectory") if e["key"] == "entry-requirements-go-to-research"
+    )["outputs"]
+    assert "destination-researcher" not in outputs["required_subagents"]
+    assert "task" not in outputs["required_tools"]
+    assert {"subagents": ["destination-researcher"], "tools": ["tavily_search"]} in (
+        outputs["required_any_of"]
+    )
+
+
+def test_past_dates_may_be_planned_on_substitutes():
+    # A real run flagged the passed dates, moved them a year on and sent the
+    # scout to search those. v2 forbade the scout and failed it; what the
+    # example is about, a search dated in the past, is `searches_not_in_past`.
+    outputs = next(e for e in _examples("trajectory") if e["key"] == "past-dates-not-searched")[
+        "outputs"
+    ]
+    assert "availability-scout" not in outputs["forbidden_subagents"]
 
 
 # --- availability-scout -----------------------------------------------------

@@ -37,6 +37,7 @@ import os
 import sys
 import uuid
 from collections.abc import Callable, Iterable
+from datetime import date
 from functools import cache
 from typing import Any
 
@@ -357,6 +358,33 @@ def file_access(outputs: dict, reference_outputs: dict) -> dict:
     return _verdict(problems, f"wrote {sorted(p for p in written if p)}")
 
 
+_SEARCH_DATE_FIELDS = ("depart_date", "return_date", "check_in", "check_out")
+
+
+def searches_not_in_past(outputs: dict, reference_outputs: dict) -> dict:
+    """No search, at any level, asked for a date that had already passed.
+
+    The one trajectory check that reads subagent calls. The scout searches the
+    dates its brief gives it, so a past-dated search is the main agent's brief
+    showing through, and the tool answers it only with an error. Substituting
+    future dates is fine; a real run did that, and v2 failed it for delegating.
+    """
+    from travel_agent.clock import today
+
+    searches = [c for c in outputs["tool_calls"] if c["name"] in {"search_flights", "search_stays"}]
+    if not searches:
+        return {"score": None, "comment": "no searches"}
+    past = set()
+    for call in searches:
+        for field in _SEARCH_DATE_FIELDS:
+            try:
+                if date.fromisoformat(str(call["args"].get(field))) < today():
+                    past.add(str(call["args"][field]))
+            except ValueError:  # absent or malformed; the tool rejects the latter itself
+                continue
+    return _verdict([f"searched past dates {sorted(past)}"] if past else [], "all dates ahead")
+
+
 # --- availability-scout ------------------------------------------------------
 
 
@@ -623,7 +651,7 @@ def rubric(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
 EVALUATORS: dict[str, list[Callable[..., dict]]] = {
     "availability_scout": [search_arguments, cabin_as_briefed, forbidden_tools_unused, rubric],
     "budget_analyst": [budget_total, budget_currency, due_at_accommodation_excluded, rubric],
-    "trajectory": [delegation, delegation_order, tool_use, file_access],
+    "trajectory": [delegation, delegation_order, tool_use, file_access, searches_not_in_past],
     "final_response": [rubric],
 }
 

@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
-uv run pytest                            # 303 tests, ~4s, no network, no model calls
+uv run pytest                            # 307 tests, ~4s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -695,6 +695,9 @@ meets a profile another one wrote. Three things there are easy to undo:
   order by `step`, never list position. Two `task` calls in one turn run side by
   side, so an analyst briefed alongside the scout never saw its prices.
   `test_costing_in_the_same_turn_as_the_scout_is_not_after_it` pins that.
+  The one exception is `searches_not_in_past`, which reads every search at
+  every level: the scout searches the dates its brief gives it, so a past date
+  there is the main agent's brief showing through.
 - **File checks read the calls, not the final state.** `/memories/` routes to
   the store, so a profile write never appears in the state's `files`.
 - **A request is run once per process** (`run_agent_shared`). Four requests

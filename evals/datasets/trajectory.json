@@ -1,6 +1,6 @@
 {
-  "name": "travel-agent: trajectory v2",
-  "description": "What the main agent should call, and in what order, judged against constraints rather than a single exact sequence, since a planner has many valid paths. Only main-agent tool calls count; a subagent's own calls are scored by the subagent datasets. Subagents are named by `task`'s `subagent_type` argument. `ordered_subagents` is a subsequence that must appear in that order, not the full trajectory. Each `required_any_of` entry is met by delegating to any listed subagent or calling any listed tool directly, after the `after_subagent` delegation when one is named. v2: a full trip no longer requires `budget-analyst`; costing the plan directly with `summarize_budget` also passes, as a real run did.",
+  "name": "travel-agent: trajectory v3",
+  "description": "What the main agent should call, and in what order, judged against constraints rather than a single exact sequence, since a planner has many valid paths. Only main-agent tool calls count; a subagent's own calls are scored by the subagent datasets. Subagents are named by `task`'s `subagent_type` argument. `ordered_subagents` is a subsequence that must appear in that order, not the full trajectory. Each `required_any_of` entry is met by delegating to any listed subagent or calling any listed tool directly, after the `after_subagent` delegation when one is named. v2: a full trip no longer requires `budget-analyst`; costing the plan directly with `summarize_budget` also passes, as a real run did. v3: research may be done with `tavily_search` directly rather than through `destination-researcher`, and a request with past dates may be planned on substituted future dates. What fails is a search dated in the past, read from every search the run made, since a scout searches what its brief says. Both changes follow real runs that v2 failed for behaviour the prompt allows.",
   "examples": [
     {
       "key": "full-trip-costs-after-scouting",
@@ -97,17 +97,22 @@
         ]
       },
       "outputs": {
-        "required_subagents": ["destination-researcher"],
+        "required_subagents": [],
         "forbidden_subagents": ["availability-scout", "budget-analyst"],
         "ordered_subagents": [],
-        "required_any_of": [],
-        "required_tools": ["task"],
+        "required_any_of": [
+          {
+            "subagents": ["destination-researcher"],
+            "tools": ["tavily_search"]
+          }
+        ],
+        "required_tools": [],
         "forbidden_tools": [],
         "required_file_writes": [],
         "forbidden_file_reads": ["/memories/traveler_profile.md"]
       },
       "metadata": {
-        "rationale": "Entry rules go stale and are web research. No dates or prices were asked for.",
+        "rationale": "Entry rules go stale and are web research. No dates or prices were asked for. Two searches are a couple of tool calls, which the prompt says to do directly, so calling tavily_search passes as well as delegating; a real run searched directly.",
         "requires_web_search": true,
         "dates_intentionally_past": false
       }
@@ -150,7 +155,7 @@
       },
       "outputs": {
         "required_subagents": [],
-        "forbidden_subagents": ["availability-scout"],
+        "forbidden_subagents": [],
         "ordered_subagents": [],
         "required_any_of": [],
         "required_tools": [],
@@ -159,7 +164,7 @@
         "forbidden_file_reads": ["/memories/traveler_profile.md"]
       },
       "metadata": {
-        "rationale": "The system prompt states today's date, and these dates are behind it. Sending the scout off to search them only buys an error from the search tool.",
+        "rationale": "The system prompt states today's date, and these dates are behind it. Planning on substituted future dates and saying so is allowed: the final-response rubric for the same request allows it, and a real run did it. Searching the dates as given only buys an error from the search tool, which searches_not_in_past catches.",
         "requires_web_search": false,
         "dates_intentionally_past": true
       }

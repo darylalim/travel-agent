@@ -9,6 +9,7 @@ no model calls.
 
 from __future__ import annotations
 
+import copy
 from collections.abc import Iterator
 from typing import Any
 
@@ -315,6 +316,16 @@ SCORED_TRIP = _trip(
     [("summarize_budget", {"items": [], "budget_total": 4000})],
     [("write_file", {"file_path": "/trip/itinerary.md", "content": "# Plan"})],
 )
+# The scout's search, made during the turn that delegated to it.
+SCORED_TRIP["tool_calls"].insert(
+    1,
+    {
+        "agent": "subagent",
+        "step": 1,
+        "name": "search_flights",
+        "args": {"depart_date": "2027-04-05", "return_date": "2027-04-10"},
+    },
+)
 
 
 def test_a_trip_costed_after_scouting_passes_every_trajectory_check():
@@ -390,6 +401,32 @@ def test_an_edit_counts_as_a_write_and_a_profile_read_fails():
         "score": 0,
         "comment": "read ['/memories/traveler_profile.md']",
     }
+
+
+def test_a_search_dated_in_the_past_fails_at_any_level():
+    # The pinned today is 2026-01-01. The scout searching what its brief said
+    # is the main agent's brief showing through, so subagent calls count here.
+    substituted = _trip([_task("availability-scout")])
+    substituted["tool_calls"].append(
+        {
+            "agent": "subagent",
+            "step": 1,
+            "name": "search_flights",
+            "args": {"depart_date": "2026-12-01", "return_date": "2026-12-04"},
+        }
+    )
+    assert harness.searches_not_in_past(substituted, TRAJECTORY_REF)["score"] == 1
+    as_given = copy.deepcopy(substituted)
+    as_given["tool_calls"][-1]["args"]["depart_date"] = "2025-12-01"
+    assert harness.searches_not_in_past(as_given, TRAJECTORY_REF) == {
+        "score": 0,
+        "comment": "searched past dates ['2025-12-01']",
+    }
+
+
+def test_no_search_is_not_a_pass_on_dates():
+    # Vacuous, so n/a: a 1 here would inflate every example that never searches.
+    assert harness.searches_not_in_past(_trip(), TRAJECTORY_REF)["score"] is None
 
 
 def test_no_ordering_in_the_reference_is_not_applicable():
