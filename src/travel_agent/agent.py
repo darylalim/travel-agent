@@ -18,6 +18,7 @@ from deepagents import create_deep_agent
 from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
+from langchain_core.tools import BaseTool
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.config import get_config
 from langgraph.store.base import BaseStore
@@ -98,6 +99,7 @@ def build_agent(
     checkpointer: BaseCheckpointSaver | None = None,
     store: BaseStore | None = None,
     max_tokens: int = DEFAULT_MAX_TOKENS,
+    search_tools: list[BaseTool] | None = None,
 ):
     """Build the travel agent.
 
@@ -116,8 +118,12 @@ def build_agent(
             `langgraph dev` / LangGraph Platform — the server provides it.
         max_tokens: Output ceiling for every agent. On Opus 5.5 thinking is
             always on and counts against this, so keep it generous.
+        search_tools: Web search for the main agent and the researcher, or
+            `None` to build the real one from `TAVILY_API_KEY`. Evals pass a
+            scripted search here, the same way they pass a built model.
     """
-    search_tools = build_search_tools()
+    if search_tools is None:
+        search_tools = build_search_tools()
     subagent_models = {
         name: _chat_model(spec.model, spec.effort, max_tokens)
         for name, spec in SUBAGENT_MODELS.items()

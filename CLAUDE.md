@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
-uv run pytest                            # 380 tests, ~4s, no network, no model calls
+uv run pytest                            # 443 tests, ~4s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -747,8 +747,40 @@ quote any price without labelling it" passes it. `final response hard v2`
 exists because of that. The regression `tokyo-no-origin` still carries the old
 wording and only passes because the agent happens to quote prices.
 
+**The `_scripted` sets decide what the tools return** (`evals/scripted.py`).
+Sample data never produces a cabin downgrade, a `mixed` round trip, an offer
+seconds from expiry, live flights beside sample lodging, or research that
+partly fails, and Duffel and Tavily cannot be told to. An example's
+`scripted_tools` metadata scripts flights, stays or web search. A
+`ScriptedProvider` registered as `scripted` serves it, and
+`build_agent(search_tools=…)` takes a `ScriptedSearch`. Five things there are
+easy to undo:
+
+- **A script reaches its run through a `ContextVar`,** set around the stream in
+  `run_agent` and `run_subagent`. LangGraph runs tools on its own worker
+  threads, and those threads still see the right script, the subagent's
+  included. A global swap would leak one example's inventory into another at
+  `--concurrency 2`. `test_concurrent_runs_each_see_only_their_own_script`
+  pins it, and fails if the context is dropped.
+- **Scripts are looked up by inputs,** because `evaluate()` hands a run
+  function nothing else. A scripted request must appear in no other dataset,
+  or the shared-run cache would serve it on the wrong tools in one place.
+- **A rule no briefed search matches fails silently:** the search gets sample
+  data and the example measures nothing.
+  `test_every_scripted_rule_is_reached_by_the_search_the_brief_asks_for` checks
+  each rule against the example's own `expected_calls`.
+- **Search rules match on substrings.** `"eat"` routed "weather" queries to the
+  restaurant results until it was removed. The Amsterdam routing is pinned
+  against queries a real run made.
+- **Scripted offers are sample offers with a patch,** limited to keys a real
+  provider emits (`LIVE_ONLY_KEYS`). That keeps the "both providers emit the
+  same offer keys" hazard from gaining a third place to drift. `TAVILY_432`
+  reproduces the real outage error, but only its first 97 characters were
+  captured, and the rest is reconstructed.
+
 `main()` sets `TRAVEL_AGENT_PROVIDER=sample-data` over `.env`, because every
-rubric expects the sample-data label. `pytest` imports `evals` through
+rubric expects the sample-data label, except on a `_scripted` set, which runs
+on `scripted` and falls back to sample data wherever its script is silent. `pytest` imports `evals` through
 `pythonpath = ["."]` in `pyproject.toml`. The harness is not part of the wheel.
 
 ## Prompts

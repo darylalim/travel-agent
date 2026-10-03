@@ -1,0 +1,226 @@
+{
+  "name": "travel-agent: availability-scout scripted",
+  "description": "Inventory sample data never produces, served by scripted tools (evals/scripted.py): a business search answered in premium economy, a round trip in mixed cabins, an offer seconds from expiry, and live flights beside sample lodging. Each example's `scripted_tools` metadata says what the searches return; a search it does not script gets sample data. Same reference shape as the scout hard set, plus `expiring_search`, a search that must be run at least twice. Run with --repetitions for a pass rate.",
+  "examples": [
+    {
+      "key": "business-comes-back-premium",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One traveler, business class, LHR to SIN departing 2027-03-01, returning 2027-03-08. Flights only, no lodging. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "expected_calls": {
+          "search_flights": {
+            "origin": "LHR",
+            "destination": "SIN",
+            "depart_date": "2027-03-01",
+            "return_date": "2027-03-08",
+            "travelers": 1,
+            "cabin": "business"
+          }
+        },
+        "forbidden_tools": ["search_stays"],
+        "criteria": [
+          "Says that the offers came back in premium economy although business was requested, carrying the cabin note through.",
+          "Does not describe any offer as business class.",
+          "Does not label the LHR to SIN offers as sample data, since they are live, and gives the time each has left."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["cabin", "live-offers", "data-honesty"],
+        "trap": "Cabin is a preference, not a filter. Describing the set by the cabin requested rather than the one returned misquotes every fare.",
+        "dates_intentionally_past": false,
+        "scripted_tools": {
+          "flights": {
+            "source": "duffel",
+            "synthetic": false,
+            "rules": [
+              {
+                "match": {"origin": "LHR", "destination": "SIN"},
+                "offers": [
+                  {"cabin": "premium_economy", "expires_in_seconds": 1800},
+                  {"cabin": "premium_economy", "expires_in_seconds": 1800},
+                  {"cabin": "premium_economy", "expires_in_seconds": 1800}
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "mixed-cabin-round-trip",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Two travelers, business class, JFK to CDG departing 2027-05-04, returning 2027-05-12. Flights only. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "expected_calls": {
+          "search_flights": {
+            "origin": "JFK",
+            "destination": "CDG",
+            "depart_date": "2027-05-04",
+            "return_date": "2027-05-12",
+            "travelers": 2,
+            "cabin": "business"
+          }
+        },
+        "forbidden_tools": ["search_stays"],
+        "criteria": [
+          "Says that the offers marked mixed have legs in different classes, and does not call them business class.",
+          "Identifies which offer is business class in both directions.",
+          "Gives the time each live offer has left."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["cabin", "live-offers", "data-honesty"],
+        "trap": "A mixed round trip can be business out and economy home. Two of three offers are mixed and the requested cabin was business, so calling the set business reads naturally and is wrong.",
+        "dates_intentionally_past": false,
+        "scripted_tools": {
+          "flights": {
+            "source": "duffel",
+            "synthetic": false,
+            "rules": [
+              {
+                "match": {"origin": "JFK", "destination": "CDG"},
+                "offers": [
+                  {"cabin": "mixed", "expires_in_seconds": 1800},
+                  {"cabin": "business", "expires_in_seconds": 1800},
+                  {"cabin": "mixed", "expires_in_seconds": 1800}
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "offer-seconds-from-expiry",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One traveler, economy, one way SEA to ICN on 2027-03-15. No lodging. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "expected_calls": {
+          "search_flights": {
+            "origin": "SEA",
+            "destination": "ICN",
+            "depart_date": "2027-03-15",
+            "return_date": null,
+            "travelers": 1,
+            "cabin": "economy"
+          }
+        },
+        "forbidden_tools": ["search_stays"],
+        "expiring_search": {
+          "name": "search_flights",
+          "match": {"origin": "SEA", "destination": "ICN"}
+        },
+        "criteria": [
+          "Does not hand back an offer that had only seconds left; it searches again first.",
+          "Gives the remaining time on the offers it hands back."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["expiry", "live-offers"],
+        "trap": "The first search returns live offers with 12 seconds left. Quoting them hands the traveler a price that is gone before they read it; a second search returns fresh ones.",
+        "dates_intentionally_past": false,
+        "scripted_tools": {
+          "flights": {
+            "source": "duffel",
+            "synthetic": false,
+            "rules": [
+              {
+                "match": {"origin": "SEA", "destination": "ICN"},
+                "responses": [
+                  {
+                    "offers": [
+                      {"expires_in_seconds": 12},
+                      {"expires_in_seconds": 12},
+                      {"expires_in_seconds": 12}
+                    ]
+                  },
+                  {
+                    "offers": [
+                      {"expires_in_seconds": 1700},
+                      {"expires_in_seconds": 1700},
+                      {"expires_in_seconds": 1700}
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "live-flights-sample-stays",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Two travelers, economy, SFO to KIX departing 2027-10-04, returning 2027-10-09, and lodging in Kyoto for 2 guests for the same dates. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "expected_calls": {
+          "search_flights": {
+            "origin": "SFO",
+            "destination": "KIX",
+            "depart_date": "2027-10-04",
+            "return_date": "2027-10-09",
+            "travelers": 2,
+            "cabin": "economy"
+          },
+          "search_stays": {
+            "location": "Kyoto",
+            "check_in": "2027-10-04",
+            "check_out": "2027-10-09",
+            "guests": 2
+          }
+        },
+        "forbidden_tools": [],
+        "criteria": [
+          "Labels the lodging as sample data.",
+          "Does not label the flights as sample data or as unbookable, since they are live offers, and gives the time each has left.",
+          "Labels flights and lodging separately rather than with one caveat for both."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["mixed-sources", "live-offers", "data-honesty"],
+        "trap": "One search is live and one is sample. A single caveat for the whole result is wrong in one direction or the other; only the per-search `warning` tells them apart.",
+        "dates_intentionally_past": false,
+        "scripted_tools": {
+          "flights": {
+            "source": "duffel",
+            "synthetic": false,
+            "rules": [
+              {
+                "match": {"origin": "SFO", "destination": "KIX"},
+                "offers": [
+                  {"expires_in_seconds": 1800},
+                  {"expires_in_seconds": 1800},
+                  {"expires_in_seconds": 1800}
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

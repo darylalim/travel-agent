@@ -9,7 +9,9 @@ here against the live roster, tool schemas and `summarize_budget` itself.
 
 from __future__ import annotations
 
+import json
 from datetime import date
+from types import SimpleNamespace
 
 import pytest
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
@@ -17,10 +19,10 @@ from langchain_core.tools import BaseTool
 
 import travel_agent.agent as agent_module
 from evals import run as harness
-from evals import upload
+from evals import scripted, upload
 from travel_agent.prompts import MEMORY_PATH, WORKSPACE
 from travel_agent.subagents import build_subagents
-from travel_agent.tools.availability import _normalize_cabin
+from travel_agent.tools.availability import SampleProvider, _normalize_cabin
 from travel_agent.tools.budget import summarize_budget
 from travel_agent.tools.search import build_search_tools
 
@@ -41,9 +43,11 @@ def test_every_dataset_is_present():
     assert set(DATASETS) == {
         "final_response",
         "final_response_hard",
+        "final_response_scripted",
         "trajectory",
         "availability_scout",
         "availability_scout_hard",
+        "availability_scout_scripted",
         "budget_analyst",
         "budget_analyst_hard",
     }
@@ -228,9 +232,15 @@ def _family(*stems: str) -> list:
     ]
 
 
-SCOUT = _family("availability_scout", "availability_scout_hard")
+SCOUT = _family("availability_scout", "availability_scout_hard", "availability_scout_scripted")
 # Examples whose references name searches, wherever the searching happens.
-SEARCHES = _family("availability_scout", "availability_scout_hard", "final_response_hard")
+SEARCHES = _family(
+    "availability_scout",
+    "availability_scout_hard",
+    "availability_scout_scripted",
+    "final_response_hard",
+    "final_response_scripted",
+)
 BUDGET = _family("budget_analyst", "budget_analyst_hard")
 
 
@@ -405,3 +415,93 @@ def test_only_examples_marked_as_past_carry_past_dates():
         for example in dataset["examples"]
         if example["key"] in marked
     )
+
+
+# --- scripted tools ---------------------------------------------------------
+
+SCRIPTED = _family("availability_scout_scripted", "final_response_scripted")
+_TOOL_FOR = {"flights": "search_flights", "stays": "search_stays"}
+
+
+@pytest.mark.parametrize("example", SCRIPTED)
+def test_every_scripted_example_carries_a_script_the_hook_can_read(example):
+    script = example["metadata"]["scripted_tools"]
+    assert set(script) <= {"flights", "stays", "search", "search_default"}, example["key"]
+    tools = _scout_tools()
+    sample = {
+        "flights": SampleProvider().search_flights("SFO", "NRT", "2027-01-10", None, 1)[0],
+        "stays": SampleProvider().search_stays("Kyoto", "2027-01-10", "2027-01-12", 1, None)[0],
+    }
+    for kind in ("flights", "stays"):
+        for rule in script.get(kind, {}).get("rules", []):
+            assert set(rule["match"]) <= set(tools[_TOOL_FOR[kind]].args), (kind, rule)
+            responses = rule.get("responses") or [{"offers": rule["offers"]}]
+            allowed = set(sample[kind]) | scripted.LIVE_ONLY_KEYS[kind]
+            for response in responses:
+                for patch in response["offers"]:
+                    # A key no real provider emits would test a shape nobody serves.
+                    assert set(patch) <= allowed, (kind, sorted(set(patch) - allowed))
+    for rule in script.get("search", []):
+        assert rule["match_any"] and ("result" in rule) != ("error" in rule), rule
+    if "search" in script:
+        assert script.get("search_default") in {"error", "empty"}
+
+
+@pytest.mark.parametrize("example", SCRIPTED)
+def test_every_scripted_rule_is_reached_by_the_search_the_brief_asks_for(example):
+    # A rule no briefed search matches falls back to sample data, and the
+    # example quietly measures nothing.
+    script = example["metadata"]["scripted_tools"]
+    expected = _expected(example)
+    for kind in ("flights", "stays"):
+        for rule in script.get(kind, {}).get("rules", []):
+            reached = any(
+                name == _TOOL_FOR[kind]
+                and all(
+                    f in args and scripted._matches(f, v, args[f]) for f, v in rule["match"].items()
+                )
+                for name, args in expected
+            )
+            assert reached, (example["key"], kind, rule["match"])
+
+
+def test_scripted_inputs_are_unique_across_every_dataset():
+    # Scripts are looked up by inputs, and whole-agent runs are shared by
+    # inputs, so a scripted request repeated anywhere would run on the wrong
+    # tools in one of the two places.
+    # The regression sets share requests on purpose; only scripted ones must not.
+    where: dict[str, list[str]] = {}
+    for stem, dataset in DATASETS.items():
+        for example in dataset["examples"]:
+            key = json.dumps(example["inputs"], sort_keys=True)
+            where.setdefault(key, []).append(f"{stem}/{example['key']}")
+    for param in SCRIPTED:
+        example = param.values[0]
+        places = where[json.dumps(example["inputs"], sort_keys=True)]
+        assert len(places) == 1, places
+
+
+@pytest.mark.parametrize(
+    ("query", "answered"),
+    [
+        # Queries from the real Amsterdam run the outage cut short: the ones
+        # that failed there must fail here, and the restaurant one succeed.
+        ("best vegetarian vegan restaurants Amsterdam wheelchair accessible step-free", True),
+        ("Amsterdam August weather average temperature rain crowds", False),
+        ("ARTIS zoo wheelchair accessible; A'DAM Lookout lift; Vondelpark wheelchair paths", False),
+        ("USD to EUR exchange rate today", False),
+        ("GVB wheelchair accessible tram metro Amsterdam low-floor lifts", False),
+        ("Rijksmuseum Van Gogh Museum ticket prices wheelchair accessible", True),
+    ],
+)
+def test_the_amsterdam_script_answers_only_what_it_means_to(query, answered):
+    example = next(
+        e for e in _examples("final_response_scripted") if e["key"] == "amsterdam-partial-research"
+    )
+    scripted.register([SimpleNamespace(inputs=example["inputs"], metadata=example["metadata"])])
+    try:
+        with scripted.active(example["inputs"]):
+            result = scripted.ScriptedSearch().invoke({"query": query})
+    finally:
+        scripted._SCRIPTS.clear()
+    assert ("error" not in result) is answered, query

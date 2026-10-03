@@ -7,6 +7,7 @@
     uv run python -m evals.run budget_analyst_hard --repetitions 3   # a pass rate per example
     uv run python -m evals.run final_response --keys lisbon-over-budget --repetitions 3
     uv run python -m evals.run trajectory --no-web-search            # Tavily out of credits
+    uv run python -m evals.run availability_scout_scripted --repetitions 3   # scripted tools
 
 `--no-web-search` matters more than it looks. A Tavily key with no credits left
 still builds the search tool, which then answers every call with an error the
@@ -61,6 +62,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.store.memory import InMemoryStore
 from pydantic import BaseModel, Field
 
+from evals import scripted
 from evals.upload import load_datasets
 
 # Dataset file stem -> the subagent it scores. Names are checked against the
@@ -68,11 +70,14 @@ from evals.upload import load_datasets
 SUBAGENT_FOR = {
     "availability_scout": "availability-scout",
     "availability_scout_hard": "availability-scout",
+    "availability_scout_scripted": "availability-scout",
     "budget_analyst": "budget-analyst",
     "budget_analyst_hard": "budget-analyst",
 }
 # Dataset file stems scored by running the whole agent, main model included.
-AGENT_DATASETS = ("final_response", "final_response_hard", "trajectory")
+AGENT_DATASETS = ("final_response", "final_response_hard", "final_response_scripted", "trajectory")
+# Datasets whose examples carry `scripted_tools`; see `evals/scripted.py`.
+SCRIPTED_DATASETS = frozenset({"availability_scout_scripted", "final_response_scripted"})
 
 # Different from the main agent's model, so no model grades its own transcript.
 # Sonnet 5.5 rejects forced `tool_choice`, which LangChain's default structured
@@ -172,7 +177,12 @@ def run_subagent(subagent: str, inputs: dict) -> dict:
     # in place, and `evaluate()` passes this same `inputs` on to every
     # evaluator. Without it, `rubric` reads a `HumanMessage` where it expects
     # the example's dict.
-    stream = agent.stream(copy.deepcopy(inputs), config, stream_mode="updates", subgraphs=True)
+    # Consumed whole inside the script's context: tools run while the stream
+    # is read, and an example with no script runs exactly as before.
+    with scripted.active(inputs):
+        stream = list(
+            agent.stream(copy.deepcopy(inputs), config, stream_mode="updates", subgraphs=True)
+        )
     for namespace, update in stream:
         for node, value in (update or {}).items():
             messages = value.get("messages", []) if isinstance(value, dict) else []
@@ -214,14 +224,23 @@ def run_agent(inputs: dict) -> dict:
     """
     from travel_agent.agent import build_agent
 
-    agent = build_agent(checkpointer=MemorySaver(), store=InMemoryStore())
+    agent = build_agent(
+        checkpointer=MemorySaver(),
+        store=InMemoryStore(),
+        search_tools=scripted.search_tools_for(inputs),
+    )
     config = {"configurable": {"thread_id": f"eval-{uuid.uuid4().hex}"}}
     tool_calls: list[dict] = []
     tool_results: list[dict] = []
     response = ""
     usage: dict[str, dict] = {}
     step = 0
-    stream = agent.stream(copy.deepcopy(inputs), config, stream_mode="updates", subgraphs=True)
+    # Consumed whole inside the script's context: tools run while the stream
+    # is read, and an example with no script runs exactly as before.
+    with scripted.active(inputs):
+        stream = list(
+            agent.stream(copy.deepcopy(inputs), config, stream_mode="updates", subgraphs=True)
+        )
     for namespace, update in stream:
         level = "subagent" if namespace else "main"
         for node, value in (update or {}).items():
@@ -540,6 +559,24 @@ def forbidden_tools_unused(outputs: dict, reference_outputs: dict) -> dict:
     return {"score": int(not used), "comment": f"called {used}" if used else "none called"}
 
 
+def refreshed_expiring_offer(outputs: dict, reference_outputs: dict) -> dict:
+    """A search that came back seconds from expiry was run again.
+
+    The prompt says to re-search rather than hand back an offer that has
+    expired or is about to, and the only evidence of that is a second call.
+    """
+    expiring = reference_outputs.get("expiring_search")
+    if not expiring:
+        return {"score": None, "comment": "no expiring offer in this example"}
+    name, match = expiring["name"], expiring["match"]
+    runs = [
+        c
+        for c in outputs["tool_calls"]
+        if c["name"] == name and all(_same(f, v, c["args"].get(f)) for f, v in match.items())
+    ]
+    return _verdict([] if len(runs) >= 2 else [f"searched {len(runs)} time(s)"], "searched again")
+
+
 # --- budget-analyst ----------------------------------------------------------
 
 
@@ -784,6 +821,14 @@ EVALUATORS: dict[str, list[Callable[..., dict]]] = {
         budget_not_invented,
         rubric,
     ],
+    "availability_scout_scripted": [
+        search_arguments,
+        cabin_as_briefed,
+        forbidden_tools_unused,
+        refreshed_expiring_offer,
+        rubric,
+    ],
+    "final_response_scripted": [search_arguments, searches_not_in_past, rubric],
     "final_response_hard": [
         search_arguments,
         forbidden_arguments,
@@ -945,9 +990,16 @@ def main(argv: list[str] | None = None) -> int:
                 continue
         metadata: dict[str, Any] = {
             "judge": None if args.no_judge else JUDGE_MODEL,
-            "provider": "sample-data",
+            "provider": scripted.PROVIDER if stem in SCRIPTED_DATASETS else "sample-data",
             "repetitions": args.repetitions,
         }
+        # Per dataset, since datasets run one after another. The scripted
+        # provider serves sample data wherever a script is silent.
+        if stem in SCRIPTED_DATASETS:
+            os.environ["TRAVEL_AGENT_PROVIDER"] = scripted.PROVIDER
+            print(f"{name}: {scripted.register(examples)} scripted examples")
+        else:
+            os.environ["TRAVEL_AGENT_PROVIDER"] = "sample-data"
         if stem in SUBAGENT_FOR:
             subagent = SUBAGENT_FOR[stem]
             print(f"{name}: {len(examples)} examples on {SUBAGENT_MODELS[subagent].model}")

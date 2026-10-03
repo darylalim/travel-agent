@@ -869,3 +869,15 @@ def test_repeated_runs_never_share_a_transcript():
     # identical scores would read as a stable pass rate.
     assert harness.agent_target(1) is harness.run_agent_shared
     assert harness.agent_target(3) is harness.run_agent
+
+
+def test_an_offer_seconds_from_expiry_must_be_searched_again():
+    ref = {"expiring_search": {"name": "search_flights", "match": {"origin": "SEA"}}}
+    sea = ("search_flights", {"origin": "sea", "destination": "ICN"})
+    assert harness.refreshed_expiring_offer(_outputs(sea, sea), ref)["score"] == 1
+    once = harness.refreshed_expiring_offer(_outputs(sea), ref)
+    assert once == {"score": 0, "comment": "searched 1 time(s)"}
+    # A different route is not a refresh of the expiring one.
+    elsewhere = ("search_flights", {"origin": "PDX", "destination": "ICN"})
+    assert harness.refreshed_expiring_offer(_outputs(sea, elsewhere), ref)["score"] == 0
+    assert harness.refreshed_expiring_offer(_outputs(sea), {})["score"] is None
