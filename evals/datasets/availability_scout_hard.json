@@ -1,0 +1,166 @@
+{
+  "name": "travel-agent: availability-scout hard",
+  "description": "Briefs a plausible availability scout gets wrong, so the score can move; `travel-agent: availability-scout v2` is the regression set expected to stay at 1. Run with --repetitions for a pass rate. Same shape as the regression set, plus: an `expected_calls` entry may be a list when the brief needs several searches of one kind, and an argument set may be partial, checking only the fields it names; `forbidden_arguments` maps a tool to argument values no call may pass. Assumes TRAVEL_AGENT_PROVIDER=sample-data.",
+  "examples": [
+    {
+      "key": "checkin-before-arrival",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Two travelers, economy, LAX to SYD departing 2027-01-20 and returning 2027-02-03. The outbound flight crosses the date line and lands in Sydney on the morning of 2027-01-22. Lodging in Sydney for 2 guests, check in 2027-01-20, check out 2027-02-03. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "expected_calls": {
+          "search_flights": {
+            "origin": "LAX",
+            "destination": "SYD",
+            "depart_date": "2027-01-20",
+            "return_date": "2027-02-03",
+            "travelers": 2,
+            "cabin": "economy"
+          },
+          "search_stays": {
+            "location": "Sydney",
+            "check_in": "2027-01-22",
+            "check_out": "2027-02-03",
+            "guests": 2
+          }
+        },
+        "forbidden_tools": [],
+        "criteria": [
+          "Points out that the briefed check-in date is two nights before the travelers land.",
+          "Searches lodging from the arrival date, 2027-01-22, and says which dates it searched.",
+          "Labels flights and lodging as sample data."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["dates", "contradiction", "data-honesty"],
+        "trap": "The brief contradicts itself and the scout cannot ask. Searching the briefed dates pays for two nights nobody sleeps in.",
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "open-jaw-multi-city",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One traveler, economy. Chicago O'Hare (ORD) to Paris CDG on 2027-09-03, Paris CDG to Rome FCO on 2027-09-08, and Rome FCO back to ORD on 2027-09-13. Flights only; lodging is handled separately. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "expected_calls": {
+          "search_flights": [
+            {
+              "origin": "ORD",
+              "destination": "CDG",
+              "depart_date": "2027-09-03",
+              "return_date": null,
+              "travelers": 1,
+              "cabin": "economy"
+            },
+            {
+              "origin": "CDG",
+              "destination": "FCO",
+              "depart_date": "2027-09-08",
+              "return_date": null,
+              "travelers": 1,
+              "cabin": "economy"
+            },
+            {
+              "origin": "FCO",
+              "destination": "ORD",
+              "depart_date": "2027-09-13",
+              "return_date": null,
+              "travelers": 1,
+              "cabin": "economy"
+            }
+          ]
+        },
+        "forbidden_tools": ["search_stays"],
+        "criteria": [
+          "Searches each leg one way, and never a round trip that brings the traveler home from Paris.",
+          "Gives an option for each of the three legs.",
+          "Labels the fares as sample data."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["multi-city", "scope-discipline", "data-honesty"],
+        "trap": "search_flights has one origin and destination plus an optional return, so the familiar shape is a round trip, and here a round trip is the wrong trip.",
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "ceiling-below-everything",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Lodging only, the traveler already has flights. Edinburgh, check in 2027-08-14, check out 2027-08-18, 1 guest, maximum $50 per night. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "expected_calls": {
+          "search_stays": {
+            "location": "Edinburgh",
+            "check_in": "2027-08-14",
+            "check_out": "2027-08-18",
+            "guests": 1,
+            "max_nightly_rate": 50
+          }
+        },
+        "forbidden_tools": ["search_flights"],
+        "criteria": [
+          "Reports that no stay came back at or under $50 a night.",
+          "If it shows any dearer stays, marks each one as above the $50 ceiling and gives its rate.",
+          "Labels the result as sample data, including the search that returned nothing."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["empty-result", "lodging", "data-honesty"],
+        "trap": "No sample stay can be under about $51 a night, so the search returns no offers and an empty `sources` list. Only `warning` still says sample data, and an empty result read as real reads as 'we checked and Edinburgh is full'.",
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "yen-ceiling",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Lodging only, the traveler already has flights. Kyoto, check in 2027-11-20, check out 2027-11-23, 2 guests, maximum ¥20,000 per night. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "expected_calls": {
+          "search_stays": {
+            "location": "Kyoto",
+            "check_in": "2027-11-20",
+            "check_out": "2027-11-23",
+            "guests": 2
+          }
+        },
+        "forbidden_tools": ["search_flights"],
+        "forbidden_arguments": {
+          "search_stays": {"max_nightly_rate": [20000]}
+        },
+        "criteria": [
+          "Converts the yen ceiling to US dollars before using it, and states the rate it used.",
+          "Compares each stay with the ceiling in a single currency.",
+          "Labels the lodging as sample data."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["currency", "lodging", "data-honesty"],
+        "trap": "max_nightly_rate is a bare USD number, so ¥20,000 passed as is searches for twenty-thousand-dollar rooms and filters nothing.",
+        "dates_intentionally_past": false
+      }
+    }
+  ]
+}

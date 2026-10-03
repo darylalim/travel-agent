@@ -4,15 +4,20 @@
     uv run python -m evals.run budget_analyst availability_scout
     uv run python -m evals.run trajectory --limit 1                  # one full trip
     uv run python -m evals.run trajectory final_response
+    uv run python -m evals.run budget_analyst_hard --repetitions 3   # a pass rate per example
 
-The two subagent datasets run one subagent each on its real model, through the
+The `_hard` datasets hold examples a plausible agent gets wrong, so their scores
+can move; the others are a regression set expected to stay at 1. Run the hard
+ones with `--repetitions`, since a single pass or fail is a sample, not a rate.
+
+The subagent datasets run one subagent each on its real model, through the
 real graph. A scripted `Dispatcher` takes the main agent's seat: it makes a
 single `task` call carrying the example's brief and then stops. That way the
 subagent gets exactly what production gives it, with deepagents' own middleware
 stack, the filesystem and `CurrentDateMiddleware`. A subagent rebuilt by hand
 would drift from that, and a drifted harness scores a stack nobody runs.
 
-`trajectory` and `final_response` run the whole agent instead: `build_agent()`
+`trajectory` and the `final_response` sets run the whole agent instead: `build_agent()`
 with its default model and effort, exactly as the CLI builds it, on a fresh
 checkpointer and store so no example meets a traveler profile an earlier one
 wrote. Several requests appear in both datasets, so one process runs each
@@ -55,10 +60,12 @@ from evals.upload import load_datasets
 # roster in tests, since a stale one would dispatch to a subagent that is gone.
 SUBAGENT_FOR = {
     "availability_scout": "availability-scout",
+    "availability_scout_hard": "availability-scout",
     "budget_analyst": "budget-analyst",
+    "budget_analyst_hard": "budget-analyst",
 }
 # Dataset file stems scored by running the whole agent, main model included.
-AGENT_DATASETS = ("final_response", "trajectory")
+AGENT_DATASETS = ("final_response", "final_response_hard", "trajectory")
 
 # Different from the main agent's model, so no model grades its own transcript.
 # Sonnet 5.5 rejects forced `tool_choice`, which LangChain's default structured
@@ -428,6 +435,19 @@ def _with_defaults(name: str, args: dict) -> dict:
     return {field: args.get(field, spec.get("default")) for field, spec in schema.items()}
 
 
+def _expected_calls(reference_outputs: dict) -> list[tuple[str, dict]]:
+    """Each expected call as (tool, arguments).
+
+    A tool maps to one argument set, or to a list when the brief needs several
+    searches of one kind, such as each leg of an open-jaw trip. An argument set
+    may be partial: only the fields it names are checked.
+    """
+    pairs = []
+    for name, expected in reference_outputs.get("expected_calls", {}).items():
+        pairs += [(name, e) for e in (expected if isinstance(expected, list) else [expected])]
+    return pairs
+
+
 def search_arguments(outputs: dict, reference_outputs: dict) -> dict:
     """Share of expected searches that some call made with every briefed argument.
 
@@ -437,9 +457,11 @@ def search_arguments(outputs: dict, reference_outputs: dict) -> dict:
     then searched the briefed dates. Reading only the first call failed it for
     being more careful than the brief.
     """
-    expected_calls = reference_outputs["expected_calls"]
+    expected_calls = _expected_calls(reference_outputs)
+    if not expected_calls:
+        return {"score": None, "comment": "no searches expected"}
     misses = []
-    for name, expected in expected_calls.items():
+    for name, expected in expected_calls:
         calls = [
             _with_defaults(name, c["args"]) for c in outputs["tool_calls"] if c["name"] == name
         ]
@@ -453,7 +475,8 @@ def search_arguments(outputs: dict, reference_outputs: dict) -> dict:
         if all(wrong_per_call):  # no call matched; report the nearest miss
             nearest, actual = min(zip(wrong_per_call, calls, strict=True), key=lambda p: len(p[0]))
             fields = ", ".join(f"{f}={actual.get(f)!r}" for f in nearest)
-            misses.append(f"{name}: no call matched the brief; nearest had {fields}")
+            wanted = ", ".join(f"{f}={expected[f]!r}" for f in nearest)
+            misses.append(f"{name}: no call had {wanted}; nearest had {fields}")
     score = (len(expected_calls) - len(misses)) / len(expected_calls)
     return {"score": score, "comment": "; ".join(misses) or "all briefed arguments sent"}
 
@@ -465,9 +488,13 @@ def cabin_as_briefed(outputs: dict, reference_outputs: dict) -> dict:
     brief: the prompt lets the scout vary airports and dates, never the cabin,
     so here a single off-brief cabin fails.
     """
-    expected = reference_outputs["expected_calls"].get("search_flights")
-    if expected is None:
-        return {"score": None, "comment": "no flight search expected"}
+    briefed = {
+        e["cabin"]
+        for name, e in _expected_calls(reference_outputs)
+        if name == "search_flights" and "cabin" in e
+    }
+    if not briefed:
+        return {"score": None, "comment": "no flight cabin briefed"}
     cabins = [
         _with_defaults("search_flights", c["args"])["cabin"]
         for c in outputs["tool_calls"]
@@ -475,8 +502,28 @@ def cabin_as_briefed(outputs: dict, reference_outputs: dict) -> dict:
     ]
     if not cabins:
         return {"score": 0, "comment": "search_flights never called"}
-    wrong = [c for c in cabins if not _same("cabin", expected["cabin"], c)]
+    wrong = [c for c in cabins if not any(_same("cabin", b, c) for b in briefed)]
     return {"score": int(not wrong), "comment": f"searched {cabins}"}
+
+
+def forbidden_arguments(outputs: dict, reference_outputs: dict) -> dict:
+    """No call passed a value the brief rules out, at any level.
+
+    For a figure that must be converted before it reaches a tool, such as a
+    nightly ceiling briefed in yen: `max_nightly_rate` is USD, so ¥20,000
+    passed as is searches for twenty-thousand-dollar rooms.
+    """
+    forbidden = reference_outputs.get("forbidden_arguments", {})
+    if not forbidden:
+        return {"score": None, "comment": "no values ruled out"}
+    hits = [
+        f"{c['name']}({field}={c['args'][field]!r})"
+        for c in outputs["tool_calls"]
+        for field, values in forbidden.get(c["name"], {}).items()
+        if c["args"].get(field) is not None
+        and any(_same(field, value, c["args"][field]) for value in values)
+    ]
+    return _verdict([f"passed {hits}"] if hits else [], "none passed")
 
 
 def forbidden_tools_unused(outputs: dict, reference_outputs: dict) -> dict:
@@ -498,10 +545,14 @@ def budget_total(outputs: dict, reference_outputs: dict) -> dict:
     """The analyst's final `summarize_budget` call totals to the reference.
 
     Re-runs the real tool on the analyst's own arguments rather than reading
-    its prose, so a correct sentence over a wrong call still scores 0.
+    its prose, so a correct sentence over a wrong call still scores 0. A
+    reference `budget_total` of null expects a call with no budget at all,
+    which today's tool rejects: `no-budget-given` fails until it accepts one.
     """
     from travel_agent.tools.budget import summarize_budget
 
+    if reference_outputs["expected_total"] is None:
+        return {"score": None, "comment": "the total depends on an exchange rate the analyst picks"}
     args = _last_budget_call(outputs)
     if args is None:
         return {"score": 0, "comment": "summarize_budget never called"}
@@ -538,18 +589,75 @@ def due_at_accommodation_excluded(outputs: dict, reference_outputs: dict) -> dic
     Catches the separate line, per unit or as a subtotal. Folding the amount
     into the lodging line instead moves the total, which `budget_total` scores.
     """
-    excluded = {float(x) for x in reference_outputs.get("excluded_amounts", [])}
+    excluded = reference_outputs.get("excluded_amounts", [])
     if not excluded:
         return {"score": None, "comment": "nothing to exclude in this example"}
     args = _last_budget_call(outputs)
     if args is None:
         return {"score": 0, "comment": "summarize_budget never called"}
-    costed = []
+    costed = _lines_costing(args, excluded)
+    return {"score": int(not costed), "comment": f"costed {costed}" if costed else "kept out"}
+
+
+def _lines_costing(args: dict, amounts: list) -> list[dict]:
+    """Items whose amount, per unit or as a subtotal, is one of `amounts`."""
+    targets = {float(x) for x in amounts}
+    lines = []
     for item in args.get("items", []):
         amount, quantity = float(item.get("amount", 0)), float(item.get("quantity", 1))
-        if {amount, amount * quantity} & excluded:
-            costed.append(item)
-    return {"score": int(not costed), "comment": f"costed {costed}" if costed else "kept out"}
+        if {amount, amount * quantity} & targets:
+            lines.append(item)
+    return lines
+
+
+def foreign_amounts_converted(outputs: dict, reference_outputs: dict) -> dict:
+    """A figure briefed in another currency is not costed as if it were the trip's.
+
+    The rate is the analyst's to pick, so the total cannot be scored exactly;
+    what can be is the raw foreign figure turning up unchanged.
+    """
+    unconverted = reference_outputs.get("unconverted_amounts", [])
+    if not unconverted:
+        return {"score": None, "comment": "no foreign amounts in this example"}
+    args = _last_budget_call(outputs)
+    if args is None:
+        return {"score": 0, "comment": "summarize_budget never called"}
+    raw = _lines_costing(args, unconverted)
+    return _verdict([f"costed unconverted {raw}"] if raw else [], "converted")
+
+
+def booked_lines_confirmed(outputs: dict, reference_outputs: dict) -> dict:
+    """Costs the brief says are already paid go in as `estimated: false`.
+
+    That flag is what tells the traveler which part of the total is settled,
+    and which lines a cut cannot touch.
+    """
+    categories = set(reference_outputs.get("confirmed_categories", []))
+    if not categories:
+        return {"score": None, "comment": "nothing already paid in this example"}
+    args = _last_budget_call(outputs)
+    if args is None:
+        return {"score": 0, "comment": "summarize_budget never called"}
+    lines = [i for i in args.get("items", []) if i.get("category") in categories]
+    if not lines:
+        return {"score": 0, "comment": f"no {sorted(categories)} line costed"}
+    estimated = [i.get("label") for i in lines if i.get("estimated", True)]
+    return _verdict([f"left estimated: {estimated}"] if estimated else [], "marked confirmed")
+
+
+def budget_not_invented(outputs: dict, reference_outputs: dict) -> dict:
+    """With no budget given, no `summarize_budget` call, at any level, supplies one.
+
+    Read from the calls, since a reply can avoid naming a figure the plan was
+    still measured against.
+    """
+    if reference_outputs.get("budget_given", True):
+        return {"score": None, "comment": "a budget was given"}
+    calls = [c for c in outputs["tool_calls"] if c["name"] == "summarize_budget"]
+    if not calls:
+        return {"score": None, "comment": "summarize_budget never called"}
+    invented = sorted({c["args"]["budget_total"] for c in calls if c["args"].get("budget_total")})
+    return _verdict([f"costed against {invented}"] if invented else [], "no budget supplied")
 
 
 # --- rubric judge ------------------------------------------------------------
@@ -653,6 +761,30 @@ EVALUATORS: dict[str, list[Callable[..., dict]]] = {
     "budget_analyst": [budget_total, budget_currency, due_at_accommodation_excluded, rubric],
     "trajectory": [delegation, delegation_order, tool_use, file_access, searches_not_in_past],
     "final_response": [rubric],
+    # The hard sets add checks the regression sets do not carry, so the
+    # regression experiments keep the columns they were first scored with.
+    "availability_scout_hard": [
+        search_arguments,
+        cabin_as_briefed,
+        forbidden_tools_unused,
+        forbidden_arguments,
+        rubric,
+    ],
+    "budget_analyst_hard": [
+        budget_total,
+        budget_currency,
+        foreign_amounts_converted,
+        booked_lines_confirmed,
+        budget_not_invented,
+        rubric,
+    ],
+    "final_response_hard": [
+        search_arguments,
+        forbidden_arguments,
+        searches_not_in_past,
+        budget_not_invented,
+        rubric,
+    ],
 }
 
 
@@ -696,12 +828,51 @@ def summarize(rows: Iterable[Any]) -> list[str]:
     return lines
 
 
+def pass_rates(rows: Iterable[Any]) -> list[str]:
+    """Mean score per example and evaluator across repetitions.
+
+    One run is a sample, not a rate: the hard sets exist to move, and a single
+    pass or fail cannot show which way. Empty when nothing ran twice.
+    """
+    scores: dict[str, dict[str, list[float]]] = {}
+    runs: dict[str, int] = {}
+    for row in rows:
+        key = (row["example"].metadata or {}).get("key", row["example"].id)
+        runs[key] = runs.get(key, 0) + 1
+        for r in row["evaluation_results"]["results"]:
+            if r.score is not None:
+                scores.setdefault(key, {}).setdefault(r.key, []).append(r.score)
+    if max(runs.values(), default=0) < 2:
+        return []
+    lines = ["  pass rates:"]
+    for key, count in runs.items():
+        means = ", ".join(
+            f"{name}={sum(values) / len(values):.2f} ({len(values)})"
+            for name, values in scores.get(key, {}).items()
+        )
+        lines.append(f"    {key} over {count} runs: {means or 'nothing scored'}")
+    return lines
+
+
+def agent_target(repetitions: int) -> Callable[[dict], dict]:
+    """The whole-agent run function for an evaluation.
+
+    Sharing a run across datasets is only sound for one repetition: repeated,
+    every run of an example would be served the first one's transcript, and
+    three identical scores would read as a stable pass rate.
+    """
+    return run_agent_shared if repetitions == 1 else run_agent
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("datasets", nargs="+", choices=sorted([*SUBAGENT_FOR, *AGENT_DATASETS]))
     parser.add_argument("--limit", type=int, help="Run only the first N examples of each.")
     parser.add_argument("--no-judge", action="store_true", help="Skip the LLM rubric judge.")
     parser.add_argument("--concurrency", type=int, default=2)
+    parser.add_argument(
+        "--repetitions", type=int, default=1, help="Run each example N times, for pass rates."
+    )
     args = parser.parse_args(argv)
     if args.no_judge and "final_response" in args.datasets:
         # The judge is its only evaluator: every trip would be paid for and none scored.
@@ -726,6 +897,7 @@ def main(argv: list[str] | None = None) -> int:
         metadata: dict[str, Any] = {
             "judge": None if args.no_judge else JUDGE_MODEL,
             "provider": "sample-data",
+            "repetitions": args.repetitions,
         }
         if stem in SUBAGENT_FOR:
             subagent = SUBAGENT_FOR[stem]
@@ -755,7 +927,7 @@ def main(argv: list[str] | None = None) -> int:
                 "subagent_models": {n: s.model for n, s in SUBAGENT_MODELS.items()},
                 "web_search": has_web_search,
             }
-            target = run_agent_shared
+            target = agent_target(args.repetitions)
 
         results = evaluate(
             target,
@@ -763,10 +935,12 @@ def main(argv: list[str] | None = None) -> int:
             evaluators=evaluators,
             experiment_prefix=stem,
             max_concurrency=args.concurrency,
+            num_repetitions=args.repetitions,
             metadata=metadata,
         )
         print(f"  experiment: {results.experiment_name}")
-        print(*summarize(results), sep="\n")
+        rows = list(results)  # read twice below
+        print(*summarize(rows), *pass_rates(rows), sep="\n")
     return 0
 
 

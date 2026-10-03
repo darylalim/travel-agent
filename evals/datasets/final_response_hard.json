@@ -1,0 +1,94 @@
+{
+  "name": "travel-agent: final response hard",
+  "description": "Whole-trip requests a plausible planner gets wrong, so the score can move; `travel-agent: final response` is the regression set expected to stay at 1. Run with --repetitions for a pass rate. Graded by rubric, plus code checks read from every search the run made, the subagents' included: `expected_calls` and `forbidden_arguments` take the availability-scout shape, and `budget_given: false` fails any summarize_budget call that supplies a budget the traveler never gave. Assumes TRAVEL_AGENT_PROVIDER=sample-data. `no-budget` cannot pass its code check until summarize_budget accepts a plan with no budget; it is here to measure that change.",
+  "examples": [
+    {
+      "key": "nights-contradict-dates",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Plan 5 nights in Kyoto for 2 people flying from SFO, 2027-04-05 to 2027-04-08. Budget $4000."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": 4000,
+        "currency": "USD",
+        "criteria": [
+          "Notices that 2027-04-05 to 2027-04-08 is 3 nights, not 5.",
+          "Either asks which is right in one concise question, or states the reading it chose and plans on it throughout.",
+          "Does not present a plan whose nights, lodging and dates disagree with each other.",
+          "Labels any flight and lodging prices as sample data."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["contradiction", "dates", "data-honesty"],
+        "trap": "Two readings give materially different trips, which is exactly when the prompt says to check in; silently picking one is the failure.",
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "no-budget",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Plan 4 days in Lisbon for 2 people flying from Boston, 2027-05-10 to 2027-05-14. We haven't set a budget yet; tell us what it would cost."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": null,
+        "budget_given": false,
+        "currency": "USD",
+        "criteria": [
+          "States an estimated total for the trip.",
+          "Does not describe the plan as within or over a budget, since none was given.",
+          "Labels flight and lodging prices as sample data."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["no-budget", "tool-gap", "data-honesty"],
+        "trap": "A real run with no budget passed summarize_budget an invented $1500 as a 'reference line'. The tool requires a budget, so it cannot be called honestly here.",
+        "known_gap": "summarize_budget rejects a call with no budget_total, so budget_not_invented fails until the tool accepts one.",
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "split-origins",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "4 of us are meeting in Lisbon, 2027-06-07 to 2027-06-12: two flying from San Francisco (SFO) and two from New York (JFK). Find flights and one place for all four to stay. Budget $9000 total."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": 9000,
+        "currency": "USD",
+        "expected_calls": {
+          "search_flights": [
+            {"origin": "SFO", "destination": "LIS", "travelers": 2},
+            {"origin": "JFK", "destination": "LIS", "travelers": 2}
+          ]
+        },
+        "forbidden_arguments": {
+          "search_flights": {"travelers": [4]}
+        },
+        "criteria": [
+          "Prices flights separately for the two travelers from SFO and the two from JFK.",
+          "Finds lodging for all four together.",
+          "States the total for the group against the $9000 budget.",
+          "Labels flight and lodging prices as sample data."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["group", "multi-origin", "data-honesty"],
+        "trap": "The group has one destination and one budget, so one search for 4 travelers from a single airport reads naturally and prices half the group from the wrong city.",
+        "dates_intentionally_past": false
+      }
+    }
+  ]
+}

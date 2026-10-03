@@ -1,0 +1,138 @@
+{
+  "name": "travel-agent: budget-analyst hard",
+  "description": "Briefs a plausible budget analyst gets wrong, so the score can move; `travel-agent: budget-analyst` is the regression set expected to stay at 1. Run with --repetitions for a pass rate. Same shape as the regression set, plus: `expected_total` is null where the total depends on an exchange rate the analyst picks, with `unconverted_amounts` naming the foreign figures that must not be costed as given; `confirmed_categories` are lines the brief says are already paid, which must go in as `estimated: false`; `budget_given: false` marks a plan with no budget, and a reference `budget_total` of null expects a call that supplies none. `no-budget-given` cannot pass until `summarize_budget` accepts a plan with no budget; it is here to measure that change.",
+  "examples": [
+    {
+      "key": "nights-vs-days",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a $2250 USD budget for 2 travelers in Lisbon. They arrive 2027-05-10 and leave 2027-05-15. Flights JFK-LIS return: $480 per person. Lodging: $140 per night for every night of the stay. Food: $40 per person per day, counting both the arrival and the departure day. Airport transfers: $60 total. Figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": 2250,
+        "currency": "USD",
+        "expected_items": [
+          {"label": "JFK-LIS return", "category": "flights", "amount": 480, "quantity": 2},
+          {"label": "Lodging", "category": "lodging", "amount": 140, "quantity": 5},
+          {"label": "Food", "category": "food", "amount": 40, "quantity": 12},
+          {"label": "Airport transfers", "category": "transport", "amount": 60, "quantity": 1}
+        ],
+        "expected_total": 2200,
+        "over_budget": false,
+        "criteria": [
+          "Costs lodging for 5 nights, worked out from the arrival and departure dates.",
+          "Costs food for 6 days per traveler, since the arrival and departure days both count.",
+          "Reports that the plan fits the $2250 budget with $50 to spare.",
+          "Flags that the figures came from sample data."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["arithmetic", "dates"],
+        "trap": "The brief gives dates, not counts. Six nights of lodging puts the plan $90 over budget; five days of food leaves it looking $130 under.",
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "mixed-currency",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a €3000 EUR budget for 2 travelers, 4 nights in Rome. Flights BOS-FCO return: $650 per person, quoted in US dollars. Lodging: €160 per night for 4 nights. Food: €50 per person per day for 4 days. Museum passes: €120 total. All figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": 3000,
+        "currency": "EUR",
+        "expected_total": null,
+        "over_budget": false,
+        "unconverted_amounts": [650, 1300],
+        "criteria": [
+          "Converts the US dollar flight fare into euros before costing it, and states the rate it used.",
+          "Reports the total and the comparison with the budget in euros.",
+          "Does not present the converted total as exact, since it rests on an assumed rate.",
+          "Flags that the figures came from sample data."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["currency"],
+        "trap": "summarize_budget takes one currency. Passing $650 as €650 understates the flights by the exchange rate, and nothing in the arithmetic objects.",
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "booked-flights-not-cut",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a $4000 USD budget for 2 travelers, 6 nights in Reykjavik. The flights are already booked and paid: $890 per person return, a confirmed price. Lodging: $260 per night for 6 nights. Food: $85 per person per day for 6 days. Northern lights tour: $180 per person. Every figure except the flights is sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": 4000,
+        "currency": "USD",
+        "expected_items": [
+          {"label": "Flights, booked", "category": "flights", "amount": 890, "quantity": 2, "estimated": false},
+          {"label": "Lodging", "category": "lodging", "amount": 260, "quantity": 6},
+          {"label": "Food", "category": "food", "amount": 85, "quantity": 12},
+          {"label": "Northern lights tour", "category": "activities", "amount": 180, "quantity": 2}
+        ],
+        "expected_total": 4720,
+        "over_budget": true,
+        "confirmed_categories": ["flights"],
+        "criteria": [
+          "Reports that the plan is $720 over the $4000 budget.",
+          "Proposes cuts only to lodging, food or the tour, never to the flights that are already paid.",
+          "Distinguishes the confirmed flight price from the estimated sample figures."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["over-budget", "confirmed-costs", "data-honesty"],
+        "trap": "Flights are the largest line, so they are the obvious cut, and they cannot be cut.",
+        "dates_intentionally_past": false
+      }
+    },
+    {
+      "key": "no-budget-given",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this plan for 1 traveler, 3 nights in Edinburgh. No budget has been set; the traveler wants to know what it will cost. Flights LHR-EDI return: $210. Lodging: $175 per night for 3 nights. Food: $60 per day for 3 days. Castle and museum entries: $70 total. Figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "budget_total": null,
+        "budget_given": false,
+        "currency": "USD",
+        "expected_items": [
+          {"label": "LHR-EDI return", "category": "flights", "amount": 210, "quantity": 1},
+          {"label": "Lodging", "category": "lodging", "amount": 175, "quantity": 3},
+          {"label": "Food", "category": "food", "amount": 60, "quantity": 3},
+          {"label": "Castle and museum entries", "category": "activities", "amount": 70, "quantity": 1}
+        ],
+        "expected_total": 985,
+        "over_budget": null,
+        "criteria": [
+          "Reports the total, $985.",
+          "Does not describe the plan as fitting or exceeding a budget the traveler never set.",
+          "Flags that the figures came from sample data."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["no-budget", "tool-gap"],
+        "trap": "summarize_budget requires budget_total > 0, so the only way to call it is to invent one.",
+        "known_gap": "summarize_budget rejects a call with no budget_total, so this example fails until the tool accepts one.",
+        "dates_intentionally_past": false
+      }
+    }
+  ]
+}

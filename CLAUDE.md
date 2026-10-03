@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
-uv run pytest                            # 307 tests, ~4s, no network, no model calls
+uv run pytest                            # 375 tests, ~4s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -24,6 +24,7 @@ uv run python -m evals.upload            # upload any not already in LangSmith
 uv run python -m evals.run budget_analyst --limit 1 --no-judge   # cheapest real run
 uv run python -m evals.run budget_analyst availability_scout     # spends real tokens
 uv run python -m evals.run trajectory --limit 1                  # one full trip, ~$1
+uv run python -m evals.run budget_analyst_hard --repetitions 3   # a pass rate, ~$0.50
 ```
 
 `ruff check --fix` is never run here, and `/astral:ruff` will suggest it. There
@@ -636,9 +637,10 @@ A test about the past-date check sets its own `today` on top.
 
 ### Evaluation datasets
 
-`evals/datasets/` holds four LangSmith datasets: final responses graded by
+`evals/datasets/` holds seven LangSmith datasets: final responses graded by
 rubric, main-agent trajectories, and single-step references for
-`availability-scout` and `budget-analyst`. They assume
+`availability-scout` and `budget-analyst`, plus a `_hard` set for each of the
+final-response, scout and analyst sets. They assume
 `TRAVEL_AGENT_PROVIDER=sample-data`, so every rubric expects the sample-data
 label. Against a live token that expectation is wrong, not the agent.
 
@@ -713,6 +715,24 @@ judge is its only evaluator. Without `TAVILY_API_KEY`, examples marked
 `test_every_trajectory_reference_is_reachable` builds the shortest run each
 reference describes and requires full marks, so a reference no run can meet
 fails here rather than as a low score.
+
+**The regression sets and the `_hard` sets do different jobs.** The originals
+all passed at 1 on their first real run, so they catch breakage and can no
+longer show improvement. The `_hard` sets hold briefs a plausible agent gets
+wrong, each with its `trap` in metadata, and are run with `--repetitions` for a
+pass rate. New checks go on the hard sets only, so the regression experiments
+keep the columns they were first scored with. Two things there are easy to
+undo:
+
+- **Repeated whole-agent runs bypass the shared-run cache** (`agent_target`).
+  Shared, every repetition would be served the first transcript, and three
+  identical scores would read as a stable rate.
+- **The two `no-budget` examples are meant to fail today.** `summarize_budget`
+  requires `budget_total > 0`, so an agent can only call it by inventing a
+  budget, and a real run did exactly that. They carry `known_gap`, and
+  `test_an_example_with_no_budget_is_marked_as_a_known_gap` goes red the day
+  the tool accepts a plan with no budget, so the marker is removed instead of
+  left to excuse a real failure.
 
 `main()` sets `TRAVEL_AGENT_PROVIDER=sample-data` over `.env`, because every
 rubric expects the sample-data label. `pytest` imports `evals` through

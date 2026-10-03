@@ -16,6 +16,7 @@ from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.tools import BaseTool
 
 import travel_agent.agent as agent_module
+from evals import run as harness
 from evals import upload
 from travel_agent.prompts import MEMORY_PATH, WORKSPACE
 from travel_agent.subagents import build_subagents
@@ -35,13 +36,16 @@ def _ids(stem: str) -> list[str]:
     return [example["key"] for example in _examples(stem)]
 
 
-def test_all_four_datasets_are_present():
+def test_every_dataset_is_present():
     # A renamed file would otherwise drop out of every parametrised test below.
     assert set(DATASETS) == {
         "final_response",
+        "final_response_hard",
         "trajectory",
         "availability_scout",
+        "availability_scout_hard",
         "budget_analyst",
+        "budget_analyst_hard",
     }
 
 
@@ -215,6 +219,21 @@ def test_past_dates_may_be_planned_on_substitutes():
 # --- availability-scout -----------------------------------------------------
 
 
+def _family(*stems: str) -> list:
+    """Every example across `stems`, as pytest params with stem-qualified ids."""
+    return [
+        pytest.param(example, id=f"{stem}/{example['key']}")
+        for stem in stems
+        for example in _examples(stem)
+    ]
+
+
+SCOUT = _family("availability_scout", "availability_scout_hard")
+# Examples whose references name searches, wherever the searching happens.
+SEARCHES = _family("availability_scout", "availability_scout_hard", "final_response_hard")
+BUDGET = _family("budget_analyst", "budget_analyst_hard")
+
+
 def _scout_tools() -> dict[str, BaseTool]:
     # Read off the roster rather than imported, so a tool unbound from the
     # scout fails here instead of being "expected" of a subagent that lacks it.
@@ -223,45 +242,93 @@ def _scout_tools() -> dict[str, BaseTool]:
     return {tool.name: tool for tool in tools if isinstance(tool, BaseTool)}
 
 
-@pytest.mark.parametrize("example", _examples("availability_scout"), ids=_ids("availability_scout"))
+def _expected(example: dict) -> list[tuple[str, dict]]:
+    return harness._expected_calls(example["outputs"])
+
+
+@pytest.mark.parametrize("example", SEARCHES)
+def test_search_references_name_real_arguments(example):
+    tools = _scout_tools()
+    outputs = example["outputs"]
+    for name, args in _expected(example):
+        assert set(args) <= set(tools[name].args), name
+    for name, fields in outputs.get("forbidden_arguments", {}).items():
+        assert set(fields) <= set(tools[name].args), name
+        # A reference that expects a value it also forbids fails every run.
+        for field, values in fields.items():
+            for expected_name, args in _expected(example):
+                if expected_name == name and field in args:
+                    assert args[field] not in values, (name, field)
+
+
+@pytest.mark.parametrize("example", SCOUT)
 def test_scout_references_are_calls_the_real_tools_accept(example):
+    # Partial references are fine for the scout too: the tool fills the rest
+    # with its own defaults, as `search_arguments` assumes.
     tools = _scout_tools()
     outputs = example["outputs"]
     assert set(outputs["forbidden_tools"]) <= set(tools)
     assert not set(outputs["expected_calls"]) & set(outputs["forbidden_tools"])
-    for name, args in outputs["expected_calls"].items():
-        assert set(args) <= set(tools[name].args), name
+    for name, args in _expected(example):
         result = tools[name].invoke(args)
         assert "error" not in result, (name, result)
 
 
-@pytest.mark.parametrize("example", _examples("availability_scout"), ids=_ids("availability_scout"))
+@pytest.mark.parametrize("example", SEARCHES)
 def test_scout_reference_dates_come_from_the_brief(example):
     # The scout can only search dates it was given. A reference date missing
     # from the brief is one edit that moved the input and not the answer.
     brief = example["inputs"]["messages"][-1]["content"]
-    for name, args in example["outputs"]["expected_calls"].items():
+    for name, args in _expected(example):
         for field in ("depart_date", "return_date", "check_in", "check_out"):
             if args.get(field):
                 assert args[field] in brief, (name, field)
 
 
-@pytest.mark.parametrize("example", _examples("availability_scout"), ids=_ids("availability_scout"))
+@pytest.mark.parametrize("example", SEARCHES)
 def test_scout_reference_cabins_are_already_canonical(example):
     # An evaluator compares the scout's `cabin` argument by equality, and the
     # tool forgives "Premium Economy". A reference spelled that way would fail
     # a scout that sent the canonical value.
-    flights = example["outputs"]["expected_calls"].get("search_flights")
-    if flights:
-        assert _normalize_cabin(flights["cabin"]) == flights["cabin"]
+    for name, args in _expected(example):
+        if name == "search_flights" and "cabin" in args:
+            assert _normalize_cabin(args["cabin"]) == args["cabin"]
+
+
+def test_the_empty_ceiling_is_below_every_sample_stay_however_the_city_is_spelled():
+    # The sample seed includes the location string, so a ceiling picked just
+    # under one spelling's cheapest stay could return offers for another.
+    # The warning must survive the empty result: it is the only thing left
+    # saying sample data, since `sources` is empty too.
+    example = next(
+        e for e in _examples("availability_scout_hard") if e["key"] == "ceiling-below-everything"
+    )
+    args = example["outputs"]["expected_calls"]["search_stays"]
+    for location in ("Edinburgh", "Edinburgh, UK", "Edinburgh, Scotland", "EDINBURGH"):
+        result = _scout_tools()["search_stays"].invoke({**args, "location": location})
+        assert result["offers"] == [] and result["sources"] == [], location
+        assert result["warning"], location
 
 
 # --- budget-analyst ---------------------------------------------------------
 
 
-@pytest.mark.parametrize("example", _examples("budget_analyst"), ids=_ids("budget_analyst"))
+def _total(items: list[dict]) -> float:
+    return round(sum(item["amount"] * item.get("quantity", 1) for item in items), 2)
+
+
+@pytest.mark.parametrize("example", BUDGET)
 def test_budget_references_match_the_real_arithmetic(example):
     outputs = example["outputs"]
+    if outputs["expected_total"] is None:
+        # Only an exchange rate the analyst picks leaves the total open, and
+        # then the foreign figures are what the example scores instead.
+        assert outputs["unconverted_amounts"], example["key"]
+        return
+    if outputs["budget_total"] is None:
+        assert _total(outputs["expected_items"]) == outputs["expected_total"]
+        assert outputs["over_budget"] is None
+        return
     result = summarize_budget.invoke(
         {
             "items": outputs["expected_items"],
@@ -273,11 +340,36 @@ def test_budget_references_match_the_real_arithmetic(example):
     assert result["over_budget"] is outputs["over_budget"]
 
 
-@pytest.mark.parametrize("example", _examples("budget_analyst"), ids=_ids("budget_analyst"))
+@pytest.mark.parametrize("example", BUDGET)
 def test_excluded_amounts_are_not_in_the_reference_lines(example):
-    excluded = set(example["outputs"].get("excluded_amounts", []))
-    amounts = {item["amount"] for item in example["outputs"]["expected_items"]}
-    assert not excluded & amounts
+    outputs = example["outputs"]
+    ruled_out = {*outputs.get("excluded_amounts", []), *outputs.get("unconverted_amounts", [])}
+    amounts = {item["amount"] for item in outputs.get("expected_items", [])}
+    assert not ruled_out & amounts
+
+
+@pytest.mark.parametrize("example", BUDGET)
+def test_confirmed_categories_are_confirmed_in_the_reference(example):
+    outputs = example["outputs"]
+    for category in outputs.get("confirmed_categories", []):
+        lines = [i for i in outputs["expected_items"] if i["category"] == category]
+        assert lines and all(i.get("estimated") is False for i in lines), category
+
+
+def test_an_example_with_no_budget_is_marked_as_a_known_gap():
+    # Both no-budget references expect a call with no budget, which today's
+    # tool rejects. When the tool accepts one, this goes red: drop the
+    # `known_gap` markers, since those examples can now pass on merit.
+    no_budget = [
+        example
+        for stem in ("budget_analyst_hard", "final_response_hard")
+        for example in _examples(stem)
+        if example["outputs"].get("budget_given") is False
+    ]
+    assert len(no_budget) == 2
+    assert all("known_gap" in example["metadata"] for example in no_budget)
+    with pytest.raises(ValueError):  # pydantic's ValidationError
+        summarize_budget.invoke({"items": [{"label": "x", "category": "food", "amount": 1}]})
 
 
 # --- staleness --------------------------------------------------------------

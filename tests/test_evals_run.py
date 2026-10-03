@@ -698,3 +698,151 @@ def test_the_judge_request_never_forces_a_tool(monkeypatch: pytest.MonkeyPatch):
     assert payload["output_config"]["effort"] == harness.JUDGE_EFFORT
     assert payload["model"] == harness.JUDGE_MODEL.split(":", 1)[1]
     assert payload["fallbacks"] == "default"
+
+
+# --- hard-set evaluators -----------------------------------------------------
+
+
+OPEN_JAW = {
+    "expected_calls": {
+        "search_flights": [
+            {"origin": "ORD", "destination": "CDG", "return_date": None, "cabin": "economy"},
+            {"origin": "CDG", "destination": "FCO", "return_date": None, "cabin": "economy"},
+        ]
+    }
+}
+
+
+def test_each_expected_call_in_a_list_needs_its_own_match():
+    first_leg = ("search_flights", {"origin": "ORD", "destination": "CDG"})
+    round_trip = ("search_flights", {"origin": "ORD", "destination": "CDG", "return_date": "x"})
+    second_leg = ("search_flights", {"origin": "CDG", "destination": "FCO"})
+    assert harness.search_arguments(_outputs(first_leg), OPEN_JAW)["score"] == 0.5
+    assert harness.search_arguments(_outputs(first_leg, second_leg), OPEN_JAW)["score"] == 1
+    # A round trip is the familiar shape and the wrong one; the miss names why.
+    result = harness.search_arguments(_outputs(round_trip, second_leg), OPEN_JAW)
+    assert result["score"] == 0.5 and "return_date=None" in result["comment"]
+
+
+def test_no_expected_searches_is_not_applicable():
+    assert harness.search_arguments(_outputs(), {"criteria": ["a"]})["score"] is None
+    assert harness.cabin_as_briefed(_outputs(), {"criteria": ["a"]})["score"] is None
+
+
+def test_cabin_is_checked_against_every_briefed_leg():
+    business = ("search_flights", {**FLIGHTS, "cabin": "business"})
+    assert harness.cabin_as_briefed(_outputs(("search_flights", FLIGHTS)), OPEN_JAW)["score"] == 1
+    assert harness.cabin_as_briefed(_outputs(business), OPEN_JAW)["score"] == 0
+
+
+YEN = {"forbidden_arguments": {"search_stays": {"max_nightly_rate": [20000]}}}
+
+
+def test_an_unconverted_ceiling_fails_at_any_level():
+    stays = {"location": "Kyoto", "guests": 2}
+    raw = {
+        "agent": "subagent",
+        "name": "search_stays",
+        "args": {**stays, "max_nightly_rate": "20000"},
+    }
+    converted = _outputs(("search_stays", {**stays, "max_nightly_rate": 133}))
+    assert harness.forbidden_arguments(converted, YEN)["score"] == 1
+    assert harness.forbidden_arguments({"tool_calls": [raw]}, YEN)["score"] == 0
+    # Leaving the ceiling out and filtering by the converted figure is allowed.
+    assert harness.forbidden_arguments(_outputs(("search_stays", stays)), YEN)["score"] == 1
+    assert harness.forbidden_arguments(converted, {})["score"] is None
+
+
+def test_a_total_that_rests_on_a_chosen_rate_is_not_scored_exactly():
+    ref = {"budget_total": 3000, "currency": "EUR", "expected_total": None}
+    assert harness.budget_total(_budget(LINES), ref)["score"] is None
+
+
+def test_a_raw_foreign_figure_is_caught_per_unit_or_as_a_subtotal():
+    ref = {"unconverted_amounts": [650, 1300], "currency": "EUR"}
+    per_unit = [{"label": "Flights", "category": "flights", "amount": 650, "quantity": 2}]
+    subtotal = [{"label": "Flights", "category": "flights", "amount": 1300}]
+    converted = [{"label": "Flights", "category": "flights", "amount": 598, "quantity": 2}]
+    assert harness.foreign_amounts_converted(_budget(per_unit), ref)["score"] == 0
+    assert harness.foreign_amounts_converted(_budget(subtotal), ref)["score"] == 0
+    assert harness.foreign_amounts_converted(_budget(converted), ref)["score"] == 1
+
+
+def test_paid_flights_must_be_marked_confirmed():
+    ref = {"confirmed_categories": ["flights"]}
+    paid = [{"label": "Flights", "category": "flights", "amount": 890, "estimated": False}]
+    unmarked = [{"label": "Flights", "category": "flights", "amount": 890}]
+    assert harness.booked_lines_confirmed(_budget(paid), ref)["score"] == 1
+    assert harness.booked_lines_confirmed(_budget(unmarked), ref)["score"] == 0
+    assert harness.booked_lines_confirmed(_budget(LINES[1:]), ref)["comment"] == (
+        "no ['flights'] line costed"
+    )
+
+
+def test_a_budget_nobody_gave_fails_at_any_level():
+    ref = {"budget_given": False}
+    # The Rome run's shape: costed against a "reference line" of $1500.
+    invented = {
+        "tool_calls": [
+            {
+                "agent": "main",
+                "name": "summarize_budget",
+                "args": {"items": [], "budget_total": 1500},
+            }
+        ]
+    }
+    assert harness.budget_not_invented(invented, ref) == {
+        "score": 0,
+        "comment": "costed against [1500]",
+    }
+    none_given = _outputs(("summarize_budget", {"items": LINES}))
+    assert harness.budget_not_invented(none_given, ref)["score"] == 1
+    assert harness.budget_not_invented(_outputs(), ref)["score"] is None
+    assert harness.budget_not_invented(invented, {"budget_total": 1500})["score"] is None
+
+
+def test_an_analyst_that_invents_a_budget_fails_the_no_budget_total():
+    # Today's tool cannot total a plan without a budget, so this is the only
+    # call it accepts, and it is the wrong one.
+    ref = {"budget_total": None, "expected_total": 1610, "currency": "USD"}
+    result = harness.budget_total(_budget(LINES), ref)
+    assert (
+        result["score"] == 0 and "against 2000.0; expected 1610 against None" in result["comment"]
+    )
+
+
+# --- repetitions -------------------------------------------------------------
+
+
+def _row(key: str, **scores: float | None) -> dict:
+    from types import SimpleNamespace as NS
+
+    from langsmith.evaluation import EvaluationResult
+
+    return {
+        "example": NS(metadata={"key": key}, id=key),
+        "run": NS(error=None, outputs={"usage": {}}),
+        "evaluation_results": {
+            "results": [EvaluationResult(key=k, score=v) for k, v in scores.items()]
+        },
+    }
+
+
+def test_pass_rates_average_each_check_across_repetitions():
+    rows = [
+        _row("yen-ceiling", forbidden_arguments=1, rubric=1.0),
+        _row("yen-ceiling", forbidden_arguments=0, rubric=0.5),
+        _row("yen-ceiling", forbidden_arguments=1, rubric=None),
+    ]
+    assert harness.pass_rates(rows) == [
+        "  pass rates:",
+        "    yen-ceiling over 3 runs: forbidden_arguments=0.67 (3), rubric=0.75 (2)",
+    ]
+    assert harness.pass_rates(rows[:1]) == []
+
+
+def test_repeated_runs_never_share_a_transcript():
+    # Shared, every repetition would be served the first run, and three
+    # identical scores would read as a stable pass rate.
+    assert harness.agent_target(1) is harness.run_agent_shared
+    assert harness.agent_target(3) is harness.run_agent
