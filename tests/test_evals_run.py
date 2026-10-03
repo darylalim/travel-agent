@@ -173,11 +173,258 @@ def test_the_dispatcher_hands_over_the_brief_verbatim_and_once():
     assert not after.tool_calls
 
 
-def test_every_scored_dataset_maps_to_a_real_subagent_and_has_evaluators():
+def test_every_dataset_is_scored_and_each_subagent_one_is_a_real_subagent():
     roster = {subagent["name"] for subagent in build_subagents([])}
     assert set(harness.SUBAGENT_FOR.values()) <= roster
-    assert set(harness.SUBAGENT_FOR) <= set(load_datasets())
-    assert set(harness.EVALUATORS) == set(harness.SUBAGENT_FOR)
+    # Every dataset file, so a fifth one has to decide how it is run.
+    assert {*harness.SUBAGENT_FOR, *harness.AGENT_DATASETS} == set(load_datasets())
+    assert set(harness.EVALUATORS) == set(load_datasets())
+    assert not set(harness.SUBAGENT_FOR) & set(harness.AGENT_DATASETS)
+
+
+# --- whole-agent run ---------------------------------------------------------
+
+
+def _from(model: str, message: AIMessage, total: int, out: int) -> AIMessage:
+    message.response_metadata = {"model_name": model}
+    return _billed(message, total, 0, 0, out)
+
+
+def test_the_agent_run_tags_each_call_with_its_agent_and_turn(scripted_subagent):
+    # One script serves the main agent and the subagent alike; the run is
+    # sequential, so they consume it in this order.
+    items = [{"label": "Food", "category": "food", "amount": 10, "quantity": 2}]
+    scripted_subagent(
+        _from(
+            "claude-opus-5-5",
+            _call("task", subagent_type="budget-analyst", description="Cost it."),
+            9000,
+            200,
+        ),
+        _from(
+            "claude-haiku-4-5",
+            _call("summarize_budget", items=items, budget_total=100),
+            3000,
+            100,
+        ),
+        _from("claude-haiku-4-5", AIMessage("Total $20, fits."), 3200, 50),
+        _call("write_file", file_path="/trip/itinerary.md", content="# Plan"),
+        AIMessage("Here is your plan."),
+    )
+    outputs = harness.run_agent(BRIEF)
+
+    assert [(c["agent"], c["step"], c["name"]) for c in outputs["tool_calls"]] == [
+        ("main", 1, "task"),
+        ("subagent", 1, "summarize_budget"),  # made during the turn that delegated
+        ("main", 2, "write_file"),
+    ]
+    assert outputs["response"] == "Here is your plan."
+    assert outputs["files"] == {"/trip/itinerary.md": "# Plan"}
+    # The judge sees the subagent's raw tool result as well as the prose the
+    # main agent got back, which is all a main-agent transcript would hold.
+    results = {(r["agent"], r["name"]): r["content"] for r in outputs["tool_results"]}
+    assert '"total_estimated": 20.0' in results[("subagent", "summarize_budget")]
+    assert results[("main", "task")] == "Total $20, fits."
+    assert outputs["usage"] == {
+        "claude-opus-5-5": {
+            "model_calls": 1,
+            "input_tokens": 9000,
+            "cache_read": 0,
+            "cache_creation": 0,
+            "output_tokens": 200,
+        },
+        "claude-haiku-4-5": {
+            "model_calls": 2,
+            "input_tokens": 6200,
+            "cache_read": 0,
+            "cache_creation": 0,
+            "output_tokens": 150,
+        },
+    }
+    assert outputs["subject"] == "agent"
+
+
+def test_a_request_in_two_datasets_runs_once(monkeypatch: pytest.MonkeyPatch):
+    runs = []
+
+    def fake_run(inputs: dict) -> dict:
+        runs.append(inputs)
+        return {"tool_calls": [{"agent": "main", "step": 1, "name": "task", "args": {}}]}
+
+    monkeypatch.setattr(harness, "run_agent", fake_run)
+    monkeypatch.setattr(harness, "_agent_runs", {})
+    first = harness.run_agent_shared(BRIEF)
+    first["tool_calls"].clear()  # an evaluator that mutates must not reach the cache
+    second = harness.run_agent_shared({"messages": [dict(BRIEF["messages"][0])]})
+    assert len(runs) == 1
+    assert "reused" not in first and second["reused"] is True
+    assert second["tool_calls"] == [{"agent": "main", "step": 1, "name": "task", "args": {}}]
+
+
+def test_a_reused_run_does_not_print_its_tokens_twice():
+    assert harness._usage_lines({"reused": True, "usage": {"m": {}}}) == [
+        "same run as an earlier dataset in this process; tokens counted there"
+    ]
+    per_model = {"b": dict.fromkeys(harness.USAGE_FIELDS, 1), "a": {}}
+    lines = harness._usage_lines({"usage": per_model})
+    assert lines[0].startswith("a: model_calls=0") and lines[1].startswith("b: model_calls=1")
+
+
+def test_final_response_without_the_judge_is_refused_before_anything_runs(capsys):
+    with pytest.raises(SystemExit):
+        harness.main(["final_response", "--no-judge"])
+    assert "only by the judge" in capsys.readouterr().err
+
+
+# --- trajectory evaluators ---------------------------------------------------
+
+TRAJECTORY_REF = {
+    "required_subagents": ["availability-scout"],
+    "forbidden_subagents": ["destination-researcher"],
+    "ordered_subagents": [],
+    "required_any_of": [
+        {
+            "subagents": ["budget-analyst"],
+            "tools": ["summarize_budget"],
+            "after_subagent": "availability-scout",
+        }
+    ],
+    "required_tools": ["task"],
+    "forbidden_tools": ["delete"],
+    "required_file_writes": ["/trip/itinerary.md"],
+    "forbidden_file_reads": ["/memories/traveler_profile.md"],
+}
+
+
+def _trip(*turns: list[tuple[str, dict]]) -> dict:
+    """Main-agent calls, one list per model turn."""
+    calls = [
+        {"agent": "main", "step": step, "name": name, "args": args}
+        for step, turn in enumerate(turns, 1)
+        for name, args in turn
+    ]
+    return {"tool_calls": calls, "response": "", "files": {}}
+
+
+def _task(subagent: str) -> tuple[str, dict]:
+    return ("task", {"subagent_type": subagent, "description": "brief"})
+
+
+SCORED_TRIP = _trip(
+    [_task("availability-scout")],
+    [("summarize_budget", {"items": [], "budget_total": 4000})],
+    [("write_file", {"file_path": "/trip/itinerary.md", "content": "# Plan"})],
+)
+
+
+def test_a_trip_costed_after_scouting_passes_every_trajectory_check():
+    for evaluator in harness.EVALUATORS["trajectory"]:
+        assert evaluator(SCORED_TRIP, TRAJECTORY_REF)["score"] == 1, evaluator
+
+
+def test_costing_in_the_same_turn_as_the_scout_is_not_after_it():
+    # Listed second, but run alongside the scout: the analyst never saw its prices.
+    parallel = _trip(
+        [_task("availability-scout"), _task("budget-analyst")],
+        [("write_file", {"file_path": "/trip/itinerary.md"})],
+    )
+    result = harness.delegation_order(parallel, TRAJECTORY_REF)
+    assert result["score"] == 0
+    assert (
+        "budget-analyst or summarize_budget in a turn after availability-scout"
+        in (result["comment"])
+    )
+
+
+def test_a_subagents_own_calls_do_not_count_for_the_main_agent():
+    # The scout searching is not the main agent searching, and the analyst
+    # calling summarize_budget is the analyst's call, not a direct one.
+    run = _trip([_task("availability-scout")])
+    run["tool_calls"] += [
+        {"agent": "subagent", "step": 2, "name": "summarize_budget", "args": {}},
+        {
+            "agent": "subagent",
+            "step": 2,
+            "name": "read_file",
+            "args": {"file_path": "/memories/traveler_profile.md"},
+        },
+    ]
+    assert harness.delegation_order(run, TRAJECTORY_REF)["score"] == 0
+    assert harness.file_access(run, TRAJECTORY_REF)["comment"] == (
+        "never wrote ['/trip/itinerary.md']"
+    )
+
+
+def test_ordered_subagents_are_a_subsequence_across_turns():
+    ref = {
+        **TRAJECTORY_REF,
+        "ordered_subagents": ["destination-researcher", "availability-scout"],
+        "required_any_of": [],
+    }
+    in_order = _trip([_task("destination-researcher")], [_task("availability-scout")])
+    reversed_ = _trip([_task("availability-scout")], [_task("destination-researcher")])
+    together = _trip([_task("destination-researcher"), _task("availability-scout")])
+    assert harness.delegation_order(in_order, ref)["score"] == 1
+    assert harness.delegation_order(reversed_, ref)["score"] == 0
+    assert harness.delegation_order(together, ref)["score"] == 0
+
+
+def test_delegation_and_tools_report_both_kinds_of_failure():
+    run = _trip([_task("destination-researcher"), ("delete", {"file_path": "/trip/x"})])
+    delegated = harness.delegation(run, TRAJECTORY_REF)
+    assert delegated["score"] == 0
+    assert "never delegated to ['availability-scout']" in delegated["comment"]
+    assert "forbidden ['destination-researcher']" in delegated["comment"]
+    assert harness.tool_use(run, TRAJECTORY_REF) == {
+        "score": 0,
+        "comment": "called forbidden ['delete']",
+    }
+
+
+def test_an_edit_counts_as_a_write_and_a_profile_read_fails():
+    run = _trip(
+        [("read_file", {"file_path": "/memories/traveler_profile.md"})],
+        [("edit_file", {"file_path": "/trip/itinerary.md", "old_string": "a", "new_string": "b"})],
+    )
+    assert harness.file_access(run, TRAJECTORY_REF) == {
+        "score": 0,
+        "comment": "read ['/memories/traveler_profile.md']",
+    }
+
+
+def test_no_ordering_in_the_reference_is_not_applicable():
+    ref = {**TRAJECTORY_REF, "required_any_of": []}
+    assert harness.delegation_order(_trip(), ref)["score"] is None
+
+
+def _ideal_trip(reference: dict) -> dict:
+    """The shortest main-agent trajectory a reference describes."""
+    turns: list[list[tuple[str, dict]]] = []
+    ordered = reference["ordered_subagents"]
+    for name in [*ordered, *(s for s in reference["required_subagents"] if s not in ordered)]:
+        turns.append([_task(name)])
+    for group in reference["required_any_of"]:
+        tools = group.get("tools", [])
+        turns.append([(tools[0], {})] if tools else [_task(group["subagents"][0])])
+    called = {name for turn in turns for name, _ in turn}
+    turns += [[(tool, {})] for tool in reference["required_tools"] if tool not in called]
+    turns += [[("write_file", {"file_path": p})] for p in reference["required_file_writes"]]
+    return _trip(*turns)
+
+
+@pytest.mark.parametrize(
+    "example",
+    load_datasets()["trajectory"]["examples"],
+    ids=lambda e: e["key"],
+)
+def test_every_trajectory_reference_is_reachable(example):
+    # A reference no run can meet still scores, just always wrong, and a low
+    # score reads as a worse agent. The dataset tests check its names; this
+    # checks the evaluators can actually award it full marks.
+    reference = example["outputs"]
+    ideal = _ideal_trip(reference)
+    for evaluator in harness.EVALUATORS["trajectory"]:
+        assert evaluator(ideal, reference)["score"] in {1, None}, evaluator
 
 
 # --- availability-scout evaluators -------------------------------------------
@@ -372,6 +619,24 @@ def test_rubric_scores_the_share_of_criteria_met(monkeypatch: pytest.MonkeyPatch
     prompt = judge.prompts[0]
     assert "Total $1610." in prompt and "summarize_budget" in prompt and "/trip/budget.md" in prompt
     assert '"free_cancellation": false' in prompt
+
+
+def test_the_judge_names_what_it_grades_without_rewording_the_subagent_prompt(monkeypatch):
+    judge = _FixedJudge(True)
+    monkeypatch.setattr(harness, "_judge", lambda: judge)
+    ref = {"criteria": ["a"]}
+    harness.rubric(BRIEF, _budget(LINES), ref)
+    harness.rubric(BRIEF, {**_budget(LINES), "subject": "agent"}, ref)
+    subagent_prompt, agent_prompt = judge.prompts
+    # The subagent experiments already in LangSmith were graded on this text.
+    assert subagent_prompt.startswith(
+        "You are grading one run of a travel-planning subagent against a rubric."
+    )
+    assert "the subagent claims about the data" in subagent_prompt
+    assert agent_prompt.startswith(
+        "You are grading one run of a travel-planning agent against a rubric."
+    )
+    assert "subagent" not in agent_prompt.split("<brief>")[0]
 
 
 def test_a_grade_with_the_wrong_number_of_verdicts_is_not_a_score(monkeypatch):

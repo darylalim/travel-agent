@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
-uv run pytest                            # 285 tests, ~4s, no network, no model calls
+uv run pytest                            # 303 tests, ~4s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -23,6 +23,7 @@ uv run python -m evals.upload --dry-run  # validate the LangSmith eval datasets
 uv run python -m evals.upload            # upload any not already in LangSmith
 uv run python -m evals.run budget_analyst --limit 1 --no-judge   # cheapest real run
 uv run python -m evals.run budget_analyst availability_scout     # spends real tokens
+uv run python -m evals.run trajectory --limit 1                  # one full trip, ~$1
 ```
 
 `ruff check --fix` is never run here, and `/astral:ruff` will suggest it. There
@@ -655,8 +656,8 @@ rejects. When they pass, move them forward. The upload never overwrites an
 existing dataset, because past experiments are scored against the examples they
 ran on. Upload a changed dataset under a new name instead.
 
-`evals/run.py` scores the two subagent datasets. A scripted `Dispatcher` sits
-in the main agent's seat and makes one `task` call with the brief. That is why
+`evals/run.py` scores all four. For the two subagent datasets a scripted
+`Dispatcher` sits in the main agent's seat and makes one `task` call with the brief. That is why
 `build_agent` accepts a built model as well as an id string: the subagent then
 runs on its real model through deepagents' own middleware stack. A subagent
 rebuilt by hand would score a stack nobody runs. Four things in it fail
@@ -683,6 +684,32 @@ reference is reachable. The first full scout run scored three examples below 1,
 and all three were the harness's fault: two criteria no run could meet, and an
 evaluator that read only the first search. Read the comments the summary prints
 before reading anything into a score.
+
+`trajectory` and `final_response` run the whole agent through `run_agent`:
+`build_agent()` on its default model, with a fresh store per example so no run
+meets a profile another one wrote. Three things there are easy to undo:
+
+- **Every captured call carries `agent` and `step`,** the main agent's model
+  turn. Trajectory evaluators read only `agent == "main"`, since a subagent
+  calling `summarize_budget` is not the main agent costing the trip, and they
+  order by `step`, never list position. Two `task` calls in one turn run side by
+  side, so an analyst briefed alongside the scout never saw its prices.
+  `test_costing_in_the_same_turn_as_the_scout_is_not_after_it` pins that.
+- **File checks read the calls, not the final state.** `/memories/` routes to
+  the store, so a profile write never appears in the state's `files`.
+- **A request is run once per process** (`run_agent_shared`). Four requests
+  appear in both datasets, so running the two together scores one transcript
+  twice and pays for it once. The reused row says so instead of printing its
+  tokens again.
+
+The judge prompt names what it grades through `{subject}`. A subagent run
+leaves it as "subagent", so those datasets keep the exact prompt their earlier
+experiments were graded on. `final_response --no-judge` is refused, because the
+judge is its only evaluator. Without `TAVILY_API_KEY`, examples marked
+`requires_web_search` are skipped, since they would measure the missing key.
+`test_every_trajectory_reference_is_reachable` builds the shortest run each
+reference describes and requires full marks, so a reference no run can meet
+fails here rather than as a low score.
 
 `main()` sets `TRAVEL_AGENT_PROVIDER=sample-data` over `.env`, because every
 rubric expects the sample-data label. `pytest` imports `evals` through

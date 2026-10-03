@@ -1,14 +1,23 @@
-"""Run the subagent datasets against the real models and score them in LangSmith.
+"""Run the evaluation datasets against the real models and score them in LangSmith.
 
     uv run python -m evals.run budget_analyst --limit 1 --no-judge   # cheapest smoke test
     uv run python -m evals.run budget_analyst availability_scout
+    uv run python -m evals.run trajectory --limit 1                  # one full trip
+    uv run python -m evals.run trajectory final_response
 
-Each example runs one subagent on its real model, through the real graph. A
-scripted `Dispatcher` takes the main agent's seat: it makes a single `task` call
-carrying the example's brief and then stops. That way the subagent gets exactly
-what production gives it, with deepagents' own middleware stack, the filesystem
-and `CurrentDateMiddleware`. A subagent rebuilt by hand would drift from that,
-and a drifted harness scores a stack nobody runs.
+The two subagent datasets run one subagent each on its real model, through the
+real graph. A scripted `Dispatcher` takes the main agent's seat: it makes a
+single `task` call carrying the example's brief and then stops. That way the
+subagent gets exactly what production gives it, with deepagents' own middleware
+stack, the filesystem and `CurrentDateMiddleware`. A subagent rebuilt by hand
+would drift from that, and a drifted harness scores a stack nobody runs.
+
+`trajectory` and `final_response` run the whole agent instead: `build_agent()`
+with its default model and effort, exactly as the CLI builds it, on a fresh
+checkpointer and store so no example meets a traveler profile an earlier one
+wrote. Several requests appear in both datasets, so one process runs each
+request once and scores the same transcript in both. That halves the cost of
+the overlap and makes the two scores describe one run.
 
 Tool calls are captured **during** the stream, with `subgraphs=True`, for the
 reason `ui.py` gives: deepagents folds a subagent back into the parent without
@@ -27,7 +36,7 @@ import json
 import os
 import sys
 import uuid
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from functools import cache
 from typing import Any
 
@@ -47,6 +56,8 @@ SUBAGENT_FOR = {
     "availability_scout": "availability-scout",
     "budget_analyst": "budget-analyst",
 }
+# Dataset file stems scored by running the whole agent, main model included.
+AGENT_DATASETS = ("final_response", "trajectory")
 
 # Different from the main agent's model, so no model grades its own transcript.
 # Sonnet 5.5 rejects forced `tool_choice`, which LangChain's default structured
@@ -171,6 +182,179 @@ def run_subagent(subagent: str, inputs: dict) -> dict:
         "files": {path: file_data_to_string(data) for path, data in files.items()},
         "usage": usage,
     }
+
+
+def run_agent(inputs: dict) -> dict:
+    """Run the whole agent on a request and return what the evaluators read.
+
+    `tool_calls` holds every call at every level, in order. Each is tagged
+    with `agent` ("main" or "subagent") and `step`, the main agent's model turn
+    it belongs to; a subagent's calls carry the turn that delegated to it.
+    Trajectory evaluators read only the main agent's calls, and order them by
+    `step`: calls made in one turn run concurrently, so position within a turn
+    says nothing about what one call could see of another's result.
+
+    `response` is the main agent's last reply. `usage` is keyed by model,
+    since a full trip spans three of them at different prices.
+    """
+    from travel_agent.agent import build_agent
+
+    agent = build_agent(checkpointer=MemorySaver(), store=InMemoryStore())
+    config = {"configurable": {"thread_id": f"eval-{uuid.uuid4().hex}"}}
+    tool_calls: list[dict] = []
+    tool_results: list[dict] = []
+    response = ""
+    usage: dict[str, dict] = {}
+    step = 0
+    stream = agent.stream(copy.deepcopy(inputs), config, stream_mode="updates", subgraphs=True)
+    for namespace, update in stream:
+        level = "subagent" if namespace else "main"
+        for node, value in (update or {}).items():
+            messages = value.get("messages", []) if isinstance(value, dict) else []
+            for message in messages if isinstance(messages, list) else [messages]:
+                if node == "model" and isinstance(message, AIMessage):
+                    if not namespace:
+                        step += 1
+                        response = message.text
+                    tool_calls += [
+                        {"agent": level, "step": step, "name": c["name"], "args": c["args"]}
+                        for c in message.tool_calls
+                    ]
+                    if message.usage_metadata:
+                        model = message.response_metadata.get("model_name", "unknown")
+                        _add_usage(usage.setdefault(model, dict.fromkeys(USAGE_FIELDS, 0)), message)
+                elif isinstance(message, ToolMessage):
+                    tool_results.append(
+                        {"agent": level, "name": message.name, "content": message.text}
+                    )
+    files = agent.get_state(config).values.get("files", {})
+    return {
+        "subject": "agent",  # how the judge refers to what it is grading
+        "response": response,
+        "tool_calls": tool_calls,
+        "tool_results": tool_results,
+        "files": {path: file_data_to_string(data) for path, data in files.items()},
+        "usage": usage,
+    }
+
+
+_agent_runs: dict[str, dict] = {}
+
+
+def run_agent_shared(inputs: dict) -> dict:
+    """`run_agent`, run once per distinct request for the life of the process.
+
+    Datasets are evaluated one after another, so a request the first one ran
+    is never in flight when the second asks for it. A reused run is marked, so
+    the summary does not read its tokens as a second spend.
+    """
+    key = json.dumps(inputs, sort_keys=True)
+    if key in _agent_runs:
+        return copy.deepcopy(_agent_runs[key]) | {"reused": True}
+    outputs = run_agent(inputs)
+    _agent_runs[key] = outputs
+    return copy.deepcopy(outputs)
+
+
+# --- trajectory ----------------------------------------------------------------
+
+
+def _main_calls(outputs: dict) -> list[dict]:
+    return [c for c in outputs["tool_calls"] if c["agent"] == "main"]
+
+
+def _delegations(outputs: dict) -> list[tuple[int, str]]:
+    """(step, subagent) for each `task` call the main agent made."""
+    return [
+        (c["step"], c["args"].get("subagent_type", ""))
+        for c in _main_calls(outputs)
+        if c["name"] == "task"
+    ]
+
+
+def _verdict(problems: list[str], passed: str) -> dict:
+    return {"score": int(not problems), "comment": "; ".join(problems) or passed}
+
+
+def delegation(outputs: dict, reference_outputs: dict) -> dict:
+    """Every required subagent was delegated to, and no forbidden one."""
+    used = {name for _, name in _delegations(outputs)}
+    problems = []
+    if missing := sorted(set(reference_outputs["required_subagents"]) - used):
+        problems.append(f"never delegated to {missing}")
+    if forbidden := sorted(set(reference_outputs["forbidden_subagents"]) & used):
+        problems.append(f"delegated to forbidden {forbidden}")
+    return _verdict(problems, f"delegated to {sorted(used)}")
+
+
+def delegation_order(outputs: dict, reference_outputs: dict) -> dict:
+    """`ordered_subagents` happened in order, and each `required_any_of` was met.
+
+    "After" means a later model turn. A scout and an analyst briefed in the
+    same turn run side by side, so the analyst never saw the scout's prices,
+    however the two calls are listed.
+    """
+    ordered, any_of = reference_outputs["ordered_subagents"], reference_outputs["required_any_of"]
+    if not ordered and not any_of:
+        return {"score": None, "comment": "no ordering to check"}
+    delegations, problems = _delegations(outputs), []
+    last = 0
+    for name in ordered:
+        steps = [s for s, n in delegations if n == name and s > last]
+        if not steps:
+            problems.append(f"{name} not delegated after turn {last}")
+            break
+        last = min(steps)
+    for group in any_of:
+        subagents, tools = group.get("subagents", []), group.get("tools", [])
+        options = " or ".join([*subagents, *tools])
+        after = group.get("after_subagent")
+        start = min((s for s, n in delegations if n == after), default=None) if after else 0
+        if start is None:
+            problems.append(f"{after} never delegated, so {options} cannot follow it")
+            continue
+        met = any(
+            c["step"] > start
+            and (
+                c["name"] in tools
+                or (c["name"] == "task" and c["args"].get("subagent_type") in subagents)
+            )
+            for c in _main_calls(outputs)
+        )
+        if not met:
+            problems.append(f"no {options}" + (f" in a turn after {after}" if after else ""))
+    return _verdict(problems, "in order")
+
+
+def tool_use(outputs: dict, reference_outputs: dict) -> dict:
+    """The main agent called every required tool itself, and no forbidden one."""
+    used = {c["name"] for c in _main_calls(outputs)}
+    problems = []
+    if missing := sorted(set(reference_outputs["required_tools"]) - used):
+        problems.append(f"never called {missing}")
+    if forbidden := sorted(set(reference_outputs["forbidden_tools"]) & used):
+        problems.append(f"called forbidden {forbidden}")
+    return _verdict(problems, f"called {sorted(used)}")
+
+
+def file_access(outputs: dict, reference_outputs: dict) -> dict:
+    """Required files were written and forbidden ones not read, by the main agent.
+
+    Read off the calls rather than the final state: `/memories/` routes to the
+    store, so a profile write never appears in the state's `files`.
+    """
+    calls = _main_calls(outputs)
+
+    def paths(*names: str) -> set:
+        return {c["args"].get("file_path") for c in calls if c["name"] in names}
+
+    problems = []
+    written = paths("write_file", "edit_file")
+    if missing := sorted(set(reference_outputs["required_file_writes"]) - written):
+        problems.append(f"never wrote {missing}")
+    if read := sorted(set(reference_outputs["forbidden_file_reads"]) & paths("read_file")):
+        problems.append(f"read {read}")
+    return _verdict(problems, f"wrote {sorted(p for p in written if p)}")
 
 
 # --- availability-scout ------------------------------------------------------
@@ -354,12 +538,12 @@ class RubricGrade(BaseModel):
 
 
 JUDGE_PROMPT = """\
-You are grading one run of a travel-planning subagent against a rubric.
+You are grading one run of a travel-planning {subject} against a rubric.
 
 Judge each criterion independently and only on the evidence below. A criterion
-about something the subagent said is met only if its response says it; a
+about something the {subject} said is met only if its response says it; a
 criterion about a tool call is met only if the tool calls show it. Check what
-the subagent claims about the data against the tool results it was given: a
+the {subject} claims about the data against the tool results it was given: a
 claim the results support is correct, even if a criterion warns against making
 it without support. Do not give credit for intent. When the evidence is silent,
 the criterion is not met.
@@ -414,6 +598,9 @@ def rubric(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
     if not criteria:
         return {"score": None, "comment": "no criteria"}
     prompt = JUDGE_PROMPT.format(
+        # "subagent" unless the run says otherwise, so the subagent datasets
+        # keep grading on the exact prompt their earlier experiments used.
+        subject=outputs.get("subject", "subagent"),
         brief=inputs["messages"][-1]["content"],
         tool_calls=json.dumps(outputs["tool_calls"], indent=1, default=str),
         tool_results="\n\n".join(
@@ -432,10 +619,27 @@ def rubric(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
     return {"score": met / len(criteria), "comment": "\n".join(failed) or "all criteria met"}
 
 
-EVALUATORS = {
+# Evaluators take some of `inputs`, `outputs` and `reference_outputs`, by name.
+EVALUATORS: dict[str, list[Callable[..., dict]]] = {
     "availability_scout": [search_arguments, cabin_as_briefed, forbidden_tools_unused, rubric],
     "budget_analyst": [budget_total, budget_currency, due_at_accommodation_excluded, rubric],
+    "trajectory": [delegation, delegation_order, tool_use, file_access],
+    "final_response": [rubric],
 }
+
+
+def _usage_lines(outputs: dict) -> list[str]:
+    """Token counts: one line for a subagent run, one per model for a whole trip."""
+    if outputs.get("reused"):
+        return ["same run as an earlier dataset in this process; tokens counted there"]
+    usage = outputs.get("usage", {})
+
+    def counts(totals: dict) -> str:
+        return " ".join(f"{field}={totals.get(field, 0)}" for field in USAGE_FIELDS)
+
+    if usage and all(isinstance(v, dict) for v in usage.values()):
+        return [f"{model}: {counts(totals)}" for model, totals in sorted(usage.items())]
+    return [counts(usage)]
 
 
 def summarize(rows: Iterable[Any]) -> list[str]:
@@ -457,9 +661,7 @@ def summarize(rows: Iterable[Any]) -> list[str]:
             f"{r.key}={'n/a' if r.score is None else round(r.score, 2)}"
             for r in row["evaluation_results"]["results"]
         )
-        usage = run.outputs.get("usage", {})
-        tokens = " ".join(f"{field}={usage.get(field, 0)}" for field in USAGE_FIELDS)
-        lines.append(f"  {key}: {scores}\n    {tokens}")
+        lines.append(f"  {key}: {scores}\n    " + "\n    ".join(_usage_lines(run.outputs)))
         for r in row["evaluation_results"]["results"]:
             if r.score is not None and r.score < 1 and r.comment:
                 lines.append(f"    {r.key}: " + r.comment.replace("\n", "\n      "))
@@ -468,31 +670,64 @@ def summarize(rows: Iterable[Any]) -> list[str]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("datasets", nargs="+", choices=sorted(SUBAGENT_FOR))
+    parser.add_argument("datasets", nargs="+", choices=sorted([*SUBAGENT_FOR, *AGENT_DATASETS]))
     parser.add_argument("--limit", type=int, help="Run only the first N examples of each.")
     parser.add_argument("--no-judge", action="store_true", help="Skip the LLM rubric judge.")
     parser.add_argument("--concurrency", type=int, default=2)
     args = parser.parse_args(argv)
+    if args.no_judge and "final_response" in args.datasets:
+        # The judge is its only evaluator: every trip would be paid for and none scored.
+        parser.error("final_response is scored only by the judge; drop --no-judge")
 
     from dotenv import load_dotenv
 
     load_dotenv()
     os.environ["TRAVEL_AGENT_PROVIDER"] = "sample-data"
+    has_web_search = bool(os.getenv("TAVILY_API_KEY"))
 
     from langsmith import Client, evaluate
 
-    from travel_agent.config import SUBAGENT_MODELS
+    from travel_agent.config import DEFAULT_EFFORT, DEFAULT_MODEL, SUBAGENT_MODELS
 
     client = Client()
     datasets = load_datasets()
     for stem in args.datasets:
-        subagent, name = SUBAGENT_FOR[stem], datasets[stem]["name"]
+        name = datasets[stem]["name"]
         evaluators = [e for e in EVALUATORS[stem] if not (args.no_judge and e is rubric)]
         examples = list(client.list_examples(dataset_name=name, limit=args.limit))
-        print(f"{name}: {len(examples)} examples on {SUBAGENT_MODELS[subagent].model}")
+        metadata: dict[str, Any] = {
+            "judge": None if args.no_judge else JUDGE_MODEL,
+            "provider": "sample-data",
+        }
+        if stem in SUBAGENT_FOR:
+            subagent = SUBAGENT_FOR[stem]
+            print(f"{name}: {len(examples)} examples on {SUBAGENT_MODELS[subagent].model}")
+            metadata |= {
+                "subagent": subagent,
+                "model": SUBAGENT_MODELS[subagent].model,
+                "effort": SUBAGENT_MODELS[subagent].effort,
+            }
 
-        def target(inputs: dict, subagent: str = subagent) -> dict:
-            return run_subagent(subagent, inputs)
+            def target(inputs: dict, subagent: str = subagent) -> dict:
+                return run_subagent(subagent, inputs)
+
+        else:
+            # Without Tavily the researcher has no tools, so an example that
+            # needs it measures the missing key, not the agent.
+            if not has_web_search:
+                needs = [e for e in examples if (e.metadata or {}).get("requires_web_search")]
+                if needs:
+                    keys = [(e.metadata or {}).get("key", e.id) for e in needs]
+                    print(f"{name}: skipping {keys}: TAVILY_API_KEY is not set")
+                    examples = [e for e in examples if e not in needs]
+            print(f"{name}: {len(examples)} examples on the whole agent ({DEFAULT_MODEL})")
+            metadata |= {
+                "model": DEFAULT_MODEL,
+                "effort": DEFAULT_EFFORT,
+                "subagent_models": {n: s.model for n, s in SUBAGENT_MODELS.items()},
+                "web_search": has_web_search,
+            }
+            target = run_agent_shared
 
         results = evaluate(
             target,
@@ -500,13 +735,7 @@ def main(argv: list[str] | None = None) -> int:
             evaluators=evaluators,
             experiment_prefix=stem,
             max_concurrency=args.concurrency,
-            metadata={
-                "subagent": subagent,
-                "model": SUBAGENT_MODELS[subagent].model,
-                "effort": SUBAGENT_MODELS[subagent].effort,
-                "judge": None if args.no_judge else JUDGE_MODEL,
-                "provider": "sample-data",
-            },
+            metadata=metadata,
         )
         print(f"  experiment: {results.experiment_name}")
         print(*summarize(results), sep="\n")
