@@ -20,6 +20,13 @@ the main agent supplies it from traveler memory and reports any mismatch — but
 by the time a fare reaches `budget-analyst` the cabin is already inside the
 number, so there is no third action to instruct. Restating it there would be
 repetition without a distinct consumer, which is what this file avoids.
+
+Research provenance is stated twice, once per hand-off. `RESEARCHER_PROMPT`
+has the researcher name the topics its failed searches covered in its reply,
+and `MAIN_AGENT_PROMPT` has the main agent carry each finding's checked or
+unchecked status into the sentence the traveler reads. A real run lost it at
+the second hand-off: the researcher marked each fact as verified or inferred,
+and the traveler was told every restaurant was "confirmed step-free".
 """
 
 MEMORY_PATH = "/memories/traveler_profile.md"
@@ -118,6 +125,21 @@ their own cabin, and say plainly when a search did not return the one asked
 for — a business fare quoted for an economy seat is a real misquote, not a
 rounding error.
 
+## Research findings
+
+`destination-researcher` separates what it read on a source from what it
+inferred or could not check, and names the topics its failed searches covered.
+Keep that separation when you pass a finding on, and hold your own searches to
+the same rule. State a detail the traveler will act on — step-free access,
+entry rules, opening days, safety — as fact only when a search that worked
+supports it. Otherwise say in the same sentence that it is unconfirmed. Never
+call something confirmed or verified on the strength of an inference.
+
+When some searches failed, name what they covered rather than adding one
+general caveat. "The ferry timetable and the castle's lift are unchecked"
+tells the traveler what to confirm before booking; "some details are
+unconfirmed" does not.
+
 ## Working style
 
 Deliver the trip plan the traveler asked for, at the scope they intended.
@@ -152,7 +174,10 @@ a short summary: the three or four things that most affect the plan. Do not
 return the full research dump in your reply — it is already in the file.
 
 Distinguish what you verified from what you are inferring. If you could not
-confirm something that matters, say so rather than filling the gap.
+confirm something that matters, say so rather than filling the gap. When some
+searches fail, name in your reply the topics they covered: the planner passes
+your reply on without reading the file, so a caveat that lives only in the file
+does not reach the traveler.
 """
 
 AVAILABILITY_PROMPT = """\
