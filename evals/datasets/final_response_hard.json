@@ -1,6 +1,6 @@
 {
-  "name": "travel-agent: final response hard",
-  "description": "Whole-trip requests a plausible planner gets wrong, so the score can move; `travel-agent: final response` is the regression set expected to stay at 1. Run with --repetitions for a pass rate. Graded by rubric, plus code checks read from every search the run made, the subagents' included: `expected_calls` and `forbidden_arguments` take the availability-scout shape, and `budget_given: false` fails any summarize_budget call that supplies a budget the traveler never gave. Assumes TRAVEL_AGENT_PROVIDER=sample-data. `no-budget` cannot pass its code check until summarize_budget accepts a plan with no budget; it is here to measure that change.",
+  "name": "travel-agent: final response hard v2",
+  "description": "Whole-trip requests a plausible planner gets wrong, so the score can move; `travel-agent: final response` is the regression set expected to stay at 1. Run with --repetitions for a pass rate. Graded by rubric, plus code checks read from every search the run made, the subagents' included: `expected_calls` and `forbidden_arguments` take the availability-scout shape, and `budget_given: false` fails any summarize_budget call that supplies a budget the traveler never gave. Assumes TRAVEL_AGENT_PROVIDER=sample-data. `no-budget` cannot pass its code check until summarize_budget accepts a plan with no budget; it is here to measure that change. v2 rewrites two criteria in nights-contradict-dates that failed correct runs: a conditional \"labels any prices\" failed every run that rightly asked before quoting any, because the judge reads silent evidence as not met, so conditional criteria are now phrased as prohibitions; and \"one concise question\" failed a run whose extra questions were marked optional, which the prompt does not forbid.",
   "examples": [
     {
       "key": "nights-contradict-dates",
@@ -17,9 +17,10 @@
         "currency": "USD",
         "criteria": [
           "Notices that 2027-04-05 to 2027-04-08 is 3 nights, not 5.",
-          "Either asks which is right in one concise question, or states the reading it chose and plans on it throughout.",
+          "Either asks which is right, or states the reading it chose and plans on it throughout.",
+          "Does not make the traveler answer anything routine before it proceeds, such as cabin class, which defaults to economy; extra questions are fine only when marked optional.",
           "Does not present a plan whose nights, lodging and dates disagree with each other.",
-          "Labels any flight and lodging prices as sample data."
+          "Does not quote any flight or lodging price without labelling it as sample data."
         ]
       },
       "metadata": {

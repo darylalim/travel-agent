@@ -734,6 +734,13 @@ undo:
   the tool accepts a plan with no budget, so the marker is removed instead of
   left to excuse a real failure.
 
+**Write a conditional rubric criterion as a prohibition.** `JUDGE_PROMPT`
+reads silent evidence as not met, so "Labels any prices as sample data" fails
+every run that rightly asks a question before quoting a price, while "Does not
+quote any price without labelling it" passes it. `final response hard v2`
+exists because of that. The regression `tokyo-no-origin` still carries the old
+wording and only passes because the agent happens to quote prices.
+
 `main()` sets `TRAVEL_AGENT_PROVIDER=sample-data` over `.env`, because every
 rubric expects the sample-data label. `pytest` imports `evals` through
 `pythonpath = ["."]` in `pyproject.toml`. The harness is not part of the wheel.
