@@ -21,6 +21,12 @@ by the time a fare reaches `budget-analyst` the cabin is already inside the
 number, so there is no third action to instruct. Restating it there would be
 repetition without a distinct consumer, which is what this file avoids.
 
+Over-budget cuts are stated twice because two agents cost plans: the analyst
+when it is delegated to, the main agent when it does the arithmetic itself,
+which its own prompt encourages for small jobs and real runs show it doing for
+whole trips. Stated only in `BUDGET_PROMPT`, the main agent offered "raise the
+budget" and bundled savings in three of three Lisbon runs.
+
 Research provenance is stated twice, once per hand-off. `RESEARCHER_PROMPT`
 has the researcher name the topics its failed searches covered in its reply,
 and `MAIN_AGENT_PROMPT` has the main agent carry each finding's checked or
@@ -114,6 +120,12 @@ When the traveler has not set a budget, cost the plan without one: leave
 `budget_total` out of `summarize_budget`, and tell `budget-analyst` there is
 none rather than giving it a figure. A placeholder budget comes back as an
 over- or under-budget verdict on a number the traveler never gave.
+
+When you cost a plan yourself and it is over budget, propose in your reply the
+two or three specific cuts that close the gap, each with its saving. A saving
+that sits only in `{WORKSPACE}/budget.md` never reaches the traveler, and a
+combined figure cannot be weighed one cut at a time. Do not drop cost lines to
+make the total fit.
 
 Flight search takes a cabin class and defaults to economy. Pass the traveler's
 preference whenever you know it — stated in this conversation, or recorded in
