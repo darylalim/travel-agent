@@ -16,7 +16,8 @@ class ModelSpec(NamedTuple):
     """A provider-prefixed model id and the effort to run it at.
 
     `effort=None` sends no effort at all, leaving the model on its own default.
-    That is required, not just allowed, for Haiku 4.5: it rejects the parameter.
+    That is required, not just allowed, for Haiku 4.5, which rejects the
+    parameter. Haiku 5.5 accepts it.
     """
 
     model: str
@@ -36,19 +37,19 @@ DEFAULT_EFFORT: Effort = "medium"
 #
 # - The researcher reads the most (raw search results) and needs the least
 #   judgment, so it takes the cheaper model at reduced effort.
-# - The scout stays at "high", Sonnet 5.5's own default. Its cost is mostly
-#   input (offer payloads), which effort does not touch, so "medium" saves
-#   little; it also makes fewer, more consolidated calls, and the alternate
-#   airports and shifted dates it would drop are what surface a nonstop or a
-#   cheaper day. Try "medium" if the scout is slow — fewer Duffel round trips —
-#   and check it still varies its queries. Effort is not the guard on carrying
-#   `warning` through; the tool docstrings and AVAILABILITY_PROMPT are.
+# - The scout stays at "high", Sonnet 5.5's own default. "medium" was measured
+#   and rejected: it cost about a fifth less, but stopped trying the alternate
+#   airports and shifted dates that surface a nonstop or a cheaper day. Scores
+#   barely show that, so compare search counts before trying it again. Effort
+#   is not the guard on carrying `warning` through; the tool docstrings and
+#   AVAILABILITY_PROMPT are.
 # - The analyst hands every figure to `summarize_budget` and mostly arranges
-#   cost lines, which Haiku handles.
+#   cost lines, which Haiku handles. "medium" is Haiku 5.5's own default, written
+#   out for the same reason as `DEFAULT_EFFORT`.
 SUBAGENT_MODELS: dict[str, ModelSpec] = {
     "destination-researcher": ModelSpec("anthropic:claude-sonnet-5-5", "medium"),
     "availability-scout": ModelSpec("anthropic:claude-sonnet-5-5", "high"),
-    "budget-analyst": ModelSpec("anthropic:claude-haiku-4-5", None),
+    "budget-analyst": ModelSpec("anthropic:claude-haiku-5-5", "medium"),
 }
 
 # Thinking is always on for Opus 5.5 and counts against this ceiling, so keep

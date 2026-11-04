@@ -69,9 +69,7 @@ API_VERSION = "v2"
 DUFFEL_TEST_DISCLAIMER = (
     "These offers come from Duffel test mode. The airline names are real, but "
     "the flights, schedules, availability and fares are fictional test data — "
-    "these are not real prices and none of it can be booked. Say so explicitly "
-    "when you use these figures, and do not imply the airlines themselves are "
-    "not genuine."
+    "these are not real prices and none of it can be booked."
 )
 
 # Duffel caps supplier_timeout at 2-60s and defaults to 20s. Our HTTP timeout

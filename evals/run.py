@@ -52,6 +52,7 @@ import uuid
 from collections.abc import Callable, Iterable
 from datetime import date
 from functools import cache
+from pathlib import Path
 from typing import Any
 
 from deepagents.backends.utils import file_data_to_string
@@ -83,6 +84,8 @@ SCRIPTED_DATASETS = frozenset({"availability_scout_scripted", "final_response_sc
 # Sonnet 5.5 rejects forced `tool_choice`, which LangChain's default structured
 # output relies on, so the judge uses `method="json_schema"`. That asks for
 # native structured output (`output_config.format`) instead.
+RESULTS_DIR = Path(__file__).parent / "results"
+
 JUDGE_MODEL = "anthropic:claude-sonnet-5-5"
 JUDGE_EFFORT = "medium"
 # Server-side refusal fallback: if Sonnet 5.5 refuses to grade a transcript, the
@@ -577,6 +580,29 @@ def refreshed_expiring_offer(outputs: dict, reference_outputs: dict) -> dict:
     return _verdict([] if len(runs) >= 2 else [f"searched {len(runs)} time(s)"], "searched again")
 
 
+def varied_thin_search(outputs: dict, reference_outputs: dict) -> dict:
+    """A thin first search was varied, and the reply names what that found.
+
+    The prompt only asks for variety when the first pass is thin, so fewer
+    searches is right everywhere else and no other example can show it going.
+    The comment carries the counts, for comparing effort levels.
+    """
+    varied_search = reference_outputs.get("varied_search")
+    if not varied_search:
+        return {"score": None, "comment": "no thin search in this example"}
+    briefed, names = varied_search["briefed"], varied_search["better_offer"]
+    calls = [
+        _with_defaults("search_flights", c["args"])
+        for c in outputs["tool_calls"]
+        if c["name"] == "search_flights"
+    ]
+    varied = [c for c in calls if not all(_same(f, v, c.get(f)) for f, v in briefed.items())]
+    problems = [] if varied else [f"{len(calls)} search(es), none varied"]
+    if not any(name in outputs["response"] for name in names):
+        problems.append(f"reply does not name {names[0]}")
+    return _verdict(problems, f"{len(varied)} of {len(calls)} searches varied")
+
+
 # --- budget-analyst ----------------------------------------------------------
 
 
@@ -826,6 +852,7 @@ EVALUATORS: dict[str, list[Callable[..., dict]]] = {
         cabin_as_briefed,
         forbidden_tools_unused,
         refreshed_expiring_offer,
+        varied_thin_search,
         rubric,
     ],
     "final_response_scripted": [search_arguments, searches_not_in_past, rubric],
@@ -903,6 +930,36 @@ def pass_rates(rows: Iterable[Any]) -> list[str]:
         )
         lines.append(f"    {key} over {count} runs: {means or 'nothing scored'}")
     return lines
+
+
+def save_results(
+    rows: Iterable[Any], experiment: str, metadata: dict, directory: Path = RESULTS_DIR
+) -> Path:
+    """Write a run's transcripts and scores to disk, and return the file.
+
+    LangSmith is not a safe only copy. Over its trace limit it answers 429, the
+    run still exits 0 and prints its scores, and the transcripts are gone, so
+    the only way back to them is paying for the run again. Passing comments are
+    kept too, since the summary drops them and they carry the search counts.
+    """
+    records = [
+        {
+            "key": _key(row["example"]),
+            "inputs": row["example"].inputs,
+            "outputs": row["run"].outputs,
+            "error": row["run"].error,
+            "scores": [
+                {"key": r.key, "score": r.score, "comment": r.comment}
+                for r in row["evaluation_results"]["results"]
+            ],
+        }
+        for row in rows
+    ]
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / f"{experiment}.json"
+    document = {"experiment": experiment, "metadata": metadata, "runs": records}
+    path.write_text(json.dumps(document, indent=2, default=str))
+    return path
 
 
 def agent_target(repetitions: int) -> Callable[[dict], dict]:
@@ -1039,7 +1096,9 @@ def main(argv: list[str] | None = None) -> int:
             metadata=metadata,
         )
         print(f"  experiment: {results.experiment_name}")
-        rows = list(results)  # read twice below
+        rows = list(results)  # read more than once below
+        # First, so a failure printing the summary cannot lose a paid run.
+        print(f"  saved: {save_results(rows, results.experiment_name, metadata)}")
         print(*summarize(rows), *pass_rates(rows), sep="\n")
     return 0
 
