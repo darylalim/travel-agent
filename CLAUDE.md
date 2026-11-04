@@ -204,6 +204,11 @@ maintained in one place. Five enforcement points must stay in agreement:
    under "Streamlit UI" — the naive way to fetch those fields returns nothing,
    silently.
 
+`warning` has two readers, because point 5 skips the model: the Trip page shows
+it word for word. So a warning states facts and gives no instructions. "Tell the
+traveler this explicitly" sat on the page for the traveler to read until a
+browser check caught it. Instructions to the model belong to point 4.
+
 Point 4 is the subtle one. `synthetic` is not a property of the provider:
 Duffel in *test mode* returns fictional fares for flights and routes lodging to
 `SampleProvider`, so both are synthetic under a provider named `duffel` — while

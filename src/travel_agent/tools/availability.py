@@ -51,14 +51,15 @@ DEFAULT_CABIN: CabinClass = "economy"
 # `column_order` is a whitelist that silently hides any key it does not name.
 MIXED_CABIN = "mixed"
 
+# Warnings state facts and give no instructions: the Trip page shows them to the
+# traveler word for word. Telling the model to pass them on is the job of the
+# tool docstrings and `prompts.py`.
 SAMPLE_DISCLAIMER = (
     "These are synthetic sample offers, not live availability. Prices, times, "
-    "and seat/room counts are illustrative only and nothing here is bookable. "
-    "Tell the traveler this explicitly when you use these figures."
+    "and seat/room counts are illustrative only and nothing here is bookable."
 )
 _GENERIC_SYNTHETIC_WARNING = (
-    "Some of these offers are synthetic and do not reflect real availability "
-    "or real prices. Say so explicitly when you use them."
+    "Some of these offers are synthetic and do not reflect real availability or real prices."
 )
 
 
