@@ -920,6 +920,29 @@ def test_an_offer_seconds_from_expiry_must_be_searched_again():
     assert harness.refreshed_expiring_offer(_outputs(sea), {})["score"] is None
 
 
+def test_a_thin_stay_search_counts_a_new_date_or_area_but_not_a_lifted_ceiling():
+    where = {"location": "Edinburgh", "check_in": "2027-08-21", "check_out": "2027-08-25"}
+    ref = {
+        "varied_search": {
+            "tool": "search_stays",
+            "briefed": where,
+            "better_offer": ["Harbour Bunkhouse"],
+        }
+    }
+    first = ("search_stays", {**where, "max_nightly_rate": 50})
+
+    def score(*calls: tuple[str, dict]) -> dict:
+        found = {**_outputs(first, *calls), "response": "Harbour Bunkhouse is  a night."}
+        return harness.varied_thin_search(found, ref)
+
+    assert score(("search_stays", {**where, "check_in": "2027-08-22"}))["score"] == 1
+    # `_same` reads this as Edinburgh, and a Leith-only run would look unvaried.
+    assert score(("search_stays", {**where, "location": "Leith, Edinburgh"}))["score"] == 1
+    # What `medium` did: the same inventory with the limit taken off.
+    assert score(("search_stays", {**where, "max_nightly_rate": None}))["score"] == 0
+    assert score(("search_stays", {**where, "location": "Edinburgh, UK"}))["score"] == 0
+
+
 def test_a_thin_search_must_be_varied_and_the_better_offer_named():
     briefed = {"origin": "ORD", "destination": "NRT", "depart_date": "2027-04-12"}
     ref = {"varied_search": {"briefed": briefed, "better_offer": ["ANA", "All Nippon"]}}

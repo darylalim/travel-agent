@@ -1,6 +1,6 @@
 {
-  "name": "travel-agent: availability-scout scripted v3",
-  "description": "Inventory sample data never produces, served by scripted tools (evals/scripted.py): a business search answered in premium economy, a round trip in mixed cabins, an offer seconds from expiry, and live flights beside sample lodging. Each example's `scripted_tools` metadata says what the searches return; a search it does not script gets sample data. Same reference shape as the scout hard set, plus `expiring_search`, a search that must be run at least twice. Run with --repetitions for a pass rate. v2 gives every scripted live flight a real carrier, a realistic duration and a realistic fare. v1 kept the sample data's fictional carriers, six-hour transpacific nonstops and $238 fares, and the main agent rightly doubted 'live' offers that looked like that, so the example measured whether it notices fake data rather than how it labels real data. v3 adds `thin-first-search`, the one example that needs a varied search to succeed, and `varied_search`, its reference. Its last rule has an empty match so that any other search, a shifted date included, still gets live offers rather than falling through to sample fares.",
+  "name": "travel-agent: availability-scout scripted v4",
+  "description": "Inventory sample data never produces, served by scripted tools (evals/scripted.py): a business search answered in premium economy, a round trip in mixed cabins, an offer seconds from expiry, and live flights beside sample lodging. Each example's `scripted_tools` metadata says what the searches return; a search it does not script gets sample data. Same reference shape as the scout hard set, plus `expiring_search`, a search that must be run at least twice. Run with --repetitions for a pass rate. v2 gives every scripted live flight a real carrier, a realistic duration and a realistic fare. v1 kept the sample data's fictional carriers, six-hour transpacific nonstops and $238 fares, and the main agent rightly doubted 'live' offers that looked like that, so the example measured whether it notices fake data rather than how it labels real data. v3 adds `thin-first-search`, the one example that needs a varied search to succeed, and `varied_search`, its reference. Its last rule has an empty match so that any other search, a shifted date included, still gets live offers rather than falling through to sample fares. v4 adds `thin-stay-search`, the lodging counterpart: `medium` lost shifted dates and nearby areas on the hard set's Edinburgh example, where sample data had nothing better to find and no score moved. Here a shifted date or Leith finds a stay under the ceiling, and lifting the ceiling does not. `finds` lists searches that reach it, for the tests.",
   "examples": [
     {
       "key": "business-comes-back-premium",
@@ -291,6 +291,152 @@
                   {"carrier": "Delta Air Lines", "stops": 1, "duration_minutes": 985, "fare_per_traveler": 1655.0, "expires_in_seconds": 1800},
                   {"carrier": "Korean Air", "stops": 1, "duration_minutes": 1020, "fare_per_traveler": 1720.0, "expires_in_seconds": 1800},
                   {"carrier": "China Airlines", "stops": 1, "duration_minutes": 1180, "fare_per_traveler": 1610.0, "expires_in_seconds": 1800}
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "thin-stay-search",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Lodging only, the traveler already has flights. Edinburgh, check in 2027-08-21, check out 2027-08-25, 1 guest, maximum $50 per night. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "expected_calls": {
+          "search_stays": {
+            "location": "Edinburgh",
+            "check_in": "2027-08-21",
+            "check_out": "2027-08-25",
+            "guests": 1,
+            "max_nightly_rate": 50
+          }
+        },
+        "forbidden_tools": [
+          "search_flights"
+        ],
+        "varied_search": {
+          "tool": "search_stays",
+          "briefed": {
+            "location": "Edinburgh",
+            "check_in": "2027-08-21",
+            "check_out": "2027-08-25"
+          },
+          "better_offer": [
+            "Harbour Bunkhouse"
+          ],
+          "finds": [
+            {
+              "location": "Leith, Edinburgh",
+              "check_in": "2027-08-21",
+              "check_out": "2027-08-25",
+              "guests": 1,
+              "max_nightly_rate": 50
+            },
+            {
+              "location": "Edinburgh",
+              "check_in": "2027-08-22",
+              "check_out": "2027-08-25",
+              "guests": 1,
+              "max_nightly_rate": 50
+            }
+          ]
+        },
+        "criteria": [
+          "Says that the search as briefed returned no stay at or under $50 a night.",
+          "Does not present Harbour Bunkhouse as meeting the brief without saying how its dates or area differ from the brief.",
+          "Does not show a stay above $50 without marking it as above the ceiling.",
+          "Does not quote any stay without labelling it as sample data."
+        ]
+      },
+      "metadata": {
+        "behaviour": [
+          "search-variety",
+          "empty-result",
+          "lodging",
+          "data-honesty"
+        ],
+        "trap": "The briefed search returns nothing, and lifting the ceiling on the same dates only shows dearer stays. That is a plausible answer, and it is all `medium` tried in the hard set's Edinburgh example. Only a shifted date or a nearby area finds a stay under the ceiling.",
+        "dates_intentionally_past": false,
+        "scripted_tools": {
+          "stays": {
+            "source": "sample-data",
+            "synthetic": true,
+            "rules": [
+              {
+                "match": {
+                  "location": "Leith"
+                },
+                "offers": [
+                  {
+                    "name": "Harbour Bunkhouse, private room",
+                    "kind": "hostel",
+                    "nightly_rate": 46.0,
+                    "guest_rating": 7.9,
+                    "free_cancellation": true
+                  },
+                  {
+                    "name": "Shore Street Hotel",
+                    "kind": "hotel",
+                    "nightly_rate": 118.0,
+                    "guest_rating": 8.3,
+                    "free_cancellation": false
+                  }
+                ]
+              },
+              {
+                "match": {
+                  "location": "Edinburgh",
+                  "check_in": "2027-08-21",
+                  "check_out": "2027-08-25"
+                },
+                "offers": [
+                  {
+                    "name": "Grassmarket Inn",
+                    "kind": "guesthouse",
+                    "nightly_rate": 92.0,
+                    "guest_rating": 8.1,
+                    "free_cancellation": false
+                  },
+                  {
+                    "name": "Royal Mile Rooms",
+                    "kind": "hotel",
+                    "nightly_rate": 128.0,
+                    "guest_rating": 8.4,
+                    "free_cancellation": true
+                  },
+                  {
+                    "name": "Castle View Apartments",
+                    "kind": "apartment",
+                    "nightly_rate": 176.0,
+                    "guest_rating": 8.7,
+                    "free_cancellation": true
+                  }
+                ]
+              },
+              {
+                "match": {},
+                "offers": [
+                  {
+                    "name": "Harbour Bunkhouse, private room",
+                    "kind": "hostel",
+                    "nightly_rate": 46.0,
+                    "guest_rating": 7.9,
+                    "free_cancellation": true
+                  },
+                  {
+                    "name": "Grassmarket Inn",
+                    "kind": "guesthouse",
+                    "nightly_rate": 92.0,
+                    "guest_rating": 8.1,
+                    "free_cancellation": false
+                  }
                 ]
               }
             ]

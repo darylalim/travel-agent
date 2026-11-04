@@ -167,6 +167,8 @@ class ScriptedProvider(SampleProvider):
         # total that disagrees with its own per-traveler fare.
         if "fare_per_traveler" in patch and "total_fare" not in patch:
             offer["total_fare"] = round(patch["fare_per_traveler"] * offer["travelers"], 2)
+        if "nightly_rate" in patch and "total_cost" not in patch:
+            offer["total_cost"] = round(patch["nightly_rate"] * offer["nights"], 2)
         if "expires_in_seconds" in patch and "expires_at" not in patch:
             offer["expires_at"] = _seconds_from_now(patch["expires_in_seconds"])
         return offer
@@ -194,7 +196,10 @@ class ScriptedProvider(SampleProvider):
         return self._respond("flights", args, base)
 
     def search_stays(self, location, check_in, check_out, guests, max_nightly_rate) -> list[dict]:
-        base = super().search_stays(location, check_in, check_out, guests, max_nightly_rate)
+        # The ceiling comes off the base and goes on the answer. Applied first, a
+        # ceiling below every sample rate leaves a patch no offer to start from,
+        # and a scripted stay above the ceiling would come back anyway.
+        base = super().search_stays(location, check_in, check_out, guests, None)
         args = {
             "location": location,
             "check_in": check_in,
@@ -202,7 +207,14 @@ class ScriptedProvider(SampleProvider):
             "guests": guests,
             "max_nightly_rate": max_nightly_rate,
         }
-        return self._respond("stays", args, base)
+        found = self._respond("stays", args, base)
+        if max_nightly_rate is None:
+            return found
+        return [
+            offer
+            for offer in found
+            if offer["currency"] != "USD" or offer["nightly_rate"] <= max_nightly_rate
+        ]
 
 
 availability._PROVIDERS[PROVIDER] = ScriptedProvider
