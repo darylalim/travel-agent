@@ -2,10 +2,9 @@
 
 [![CI](https://github.com/darylalim/travel-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/darylalim/travel-agent/actions/workflows/ci.yml)
 
-Travel planning agent on Deep Agents. Research destinations and search flight and lodging inventory via Duffel.
+Multi-agent travel planner on Deep Agents. Researches destinations, searches flights and stays via Duffel, and builds a costed day-by-day itinerary. Planning only: it never books.
 
-It gathers options, builds a day-by-day itinerary, costs it against a budget,
-and remembers traveler preferences across conversations.
+It also remembers traveler preferences across conversations.
 
 Two things it will not do:
 
