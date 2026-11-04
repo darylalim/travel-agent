@@ -265,3 +265,9 @@ that already shipped.
 MIT — see [LICENSE](LICENSE). The stack it builds on is permissive throughout:
 `deepagents`, `langchain` and `langgraph` are MIT, `httpx` and `python-dotenv`
 BSD-3-Clause, `streamlit` Apache-2.0.
+
+The dev environment is the exception. `langgraph-cli[inmem]`, which runs
+`langgraph dev`, brings in `langgraph-api` and `langgraph-runtime-inmem`
+(Elastic-2.0, which restricts offering the software to others as a hosted or
+managed service) and `forbiddenfruit` (metadata lists both GPLv3+ and MIT). None
+of them is a runtime dependency.

@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
 
-uv run pytest                            # 451 tests, ~4s, no network, no model calls
+uv run pytest                            # 465 tests, ~4s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -664,10 +664,11 @@ A test about the past-date check sets its own `today` on top.
 
 ### Evaluation datasets
 
-`evals/datasets/` holds seven LangSmith datasets: final responses graded by
+`evals/datasets/` holds nine LangSmith datasets: final responses graded by
 rubric, main-agent trajectories, and single-step references for
 `availability-scout` and `budget-analyst`, plus a `_hard` set for each of the
-final-response, scout and analyst sets. They assume
+final-response, scout and analyst sets and a `_scripted` set for the
+final-response and scout sets. They assume
 `TRAVEL_AGENT_PROVIDER=sample-data`, so every rubric expects the sample-data
 label. Against a live token that expectation is wrong, not the agent.
 
@@ -685,7 +686,7 @@ rejects. When they pass, move them forward. The upload never overwrites an
 existing dataset, because past experiments are scored against the examples they
 ran on. Upload a changed dataset under a new name instead.
 
-`evals/run.py` scores all four. For the two subagent datasets a scripted
+`evals/run.py` scores all nine. For the subagent datasets a scripted
 `Dispatcher` sits in the main agent's seat and makes one `task` call with the brief. That is why
 `build_agent` accepts a built model as well as an id string: the subagent then
 runs on its real model through deepagents' own middleware stack. A subagent
@@ -781,7 +782,7 @@ seconds from expiry, live flights beside sample lodging, or research that
 partly fails, and Duffel and Tavily cannot be told to. An example's
 `scripted_tools` metadata scripts flights, stays or web search. A
 `ScriptedProvider` registered as `scripted` serves it, and
-`build_agent(search_tools=…)` takes a `ScriptedSearch`. Six things there are
+`build_agent(search_tools=…)` takes a `ScriptedSearch`. Seven things there are
 easy to undo:
 
 - **A script reaches its run through a `ContextVar`,** set around the stream in
@@ -811,6 +812,12 @@ easy to undo:
   the agent notices fake data, not how it labels real data. A live flight patch
   sets a real carrier, duration and fare, and `total_fare` is derived from the
   fare so the two cannot disagree.
+- **`thin-first-search` is necessary, not sufficient.** Its last rule has an
+  empty match, so a shifted date stays on live offers rather than sample fares
+  beside them. It passed identically at `high` and `medium`, while other
+  examples lost their varied searches, because offers that plainly miss the
+  brief prompt a retry at either level. Compare search counts across
+  `evals/results/` too.
 
 `main()` sets `TRAVEL_AGENT_PROVIDER=sample-data` over `.env`, because every
 rubric expects the sample-data label, except on a `_scripted` set, which runs
@@ -850,8 +857,13 @@ in the diff instead of shifting effort silently. The level was chosen, not
 measured: the main agent mostly delegates and synthesises, and `prompts.py`
 already counters over-thinking. If itineraries degrade, compare against `high` on
 a few real trips before raising it. Subagents take theirs from
-`SUBAGENT_MODELS` — Sonnet 5.5 for the researcher and the scout, Haiku 4.5 for
+`SUBAGENT_MODELS` — Sonnet 5.5 for the researcher and the scout, Haiku 5.5 for
 the budget analyst.
+
+Requests go out on API version `2026-10-21` through `anthropic` 2.x, where any
+`temperature`, `top_p` or `top_k` is a 400. Nothing here sets one, and
+`test_the_analyst_request_carries_its_effort_and_no_sampling` checks the built
+payload. Don't add one to tune a role.
 
 - `agent.py` builds the clients and hands them to `build_subagents`. Don't pass
   model-id strings in the `SubAgent` spec instead: deepagents resolves a string
@@ -859,21 +871,26 @@ the budget analyst.
 - A subagent missing from `SUBAGENT_MODELS` silently inherits the main model.
   `test_models.py` pins the keys to the roster, so renaming a subagent is a red
   test rather than a quiet upgrade to Opus.
-- Haiku 4.5 rejects `effort`, so its spec carries `None` and `_chat_model` omits
-  the kwarg. For the same reason the CLI only applies `DEFAULT_EFFORT` when
-  `--model` is left at its default.
-- Haiku 4.5 is the one model here that **does** match a built-in `HarnessProfile`,
-  so the budget analyst's prompt gets deepagents' generic Claude suffix appended
-  (parallel tool calls, "investigate before answering", post-tool-result
-  reflection). That last one is a mild version of the verification scaffolding
-  this section warns against. It is accepted because the analyst has one tool
-  and short turns. Move the analyst off Haiku, or opt out of the profile, if it
-  starts over-iterating.
-- The scout stays at `high`, Sonnet 5.5's own default, and lowering it buys
-  little. Its cost is mostly input (offer payloads, up to 20 per search), which
-  effort does not change. Lower effort also means fewer, more consolidated
-  calls, and the queries it would drop are the alternate airports and shifted
-  dates that surface a nonstop or a cheaper day. Don't cite the data-honesty
+- Haiku 4.5 rejects `effort`, so a spec for it carries `None` and `_chat_model`
+  omits the kwarg. Haiku 5.5 accepts it. For the same reason the CLI only applies
+  `DEFAULT_EFFORT` when `--model` is left at its default.
+- The analyst moved to Haiku 5.5 at `medium` on measurement: the hard traps held
+  and the mixed-currency rubric rose. `lisbon-over` now scores 0.75 for four
+  cuts rather than two or three, accepted on purpose. The prompts ask for two or
+  three cuts that close the gap, which cannot always both hold, and Haiku 4.5
+  passed by keeping to three and leaving $760 uncovered.
+- No model here matches a built-in `HarnessProfile` any more, so every agent's
+  prompt is the whole prompt. Only `claude-haiku-4-5` ever did, and moving the
+  analyst dropped the generic Claude suffix it appended.
+- The main agent usually costs a plan itself, so a whole-agent pass says little
+  about the analyst: it ran in none of the 18 runs after the move. Judge an
+  analyst change on its own datasets.
+- The scout stays at `high`, Sonnet 5.5's own default, and `medium` was measured
+  and rejected. It cost about a fifth less per run, but stopped trying shifted
+  dates and nearby areas: on a lodging search with no results it tried neither
+  in 0 of 3 runs, and one business search that came back downgraded made a
+  single search. Sample data had nothing better to find, so scores barely moved,
+  and the loss only shows in search counts. Don't cite the data-honesty
   invariant as the reason, though. Carrying `warning` through is
   instruction-following, which the tool docstrings and `AVAILABILITY_PROMPT`
   govern, not thinking depth. The Trip page doesn't depend on the scout's prose
