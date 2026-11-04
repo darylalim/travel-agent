@@ -16,7 +16,8 @@ class ModelSpec(NamedTuple):
     """A provider-prefixed model id and the effort to run it at.
 
     `effort=None` sends no effort at all, leaving the model on its own default.
-    That is required, not just allowed, for Haiku 4.5: it rejects the parameter.
+    That is required, not just allowed, for Haiku 4.5, which rejects the
+    parameter. Haiku 5.5 accepts it.
     """
 
     model: str
@@ -44,11 +45,12 @@ DEFAULT_EFFORT: Effort = "medium"
 #   and check it still varies its queries. Effort is not the guard on carrying
 #   `warning` through; the tool docstrings and AVAILABILITY_PROMPT are.
 # - The analyst hands every figure to `summarize_budget` and mostly arranges
-#   cost lines, which Haiku handles.
+#   cost lines, which Haiku handles. "medium" is Haiku 5.5's own default, written
+#   out for the same reason as `DEFAULT_EFFORT`.
 SUBAGENT_MODELS: dict[str, ModelSpec] = {
     "destination-researcher": ModelSpec("anthropic:claude-sonnet-5-5", "medium"),
     "availability-scout": ModelSpec("anthropic:claude-sonnet-5-5", "high"),
-    "budget-analyst": ModelSpec("anthropic:claude-haiku-4-5", None),
+    "budget-analyst": ModelSpec("anthropic:claude-haiku-5-5", "medium"),
 }
 
 # Thinking is always on for Opus 5.5 and counts against this ceiling, so keep
