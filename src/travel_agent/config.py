@@ -42,7 +42,9 @@ DEFAULT_EFFORT: Effort = "medium"
 #   airports and shifted dates that surface a nonstop or a cheaper day. Scores
 #   barely show that, so compare search counts before trying it again. Effort
 #   is not the guard on carrying `warning` through; the tool docstrings and
-#   AVAILABILITY_PROMPT are.
+#   AVAILABILITY_PROMPT are. Haiku 5.5 was measured and rejected as well: a
+#   sixth of the scout's cost, but about a tenth off a whole trip, for twice
+#   the searches.
 # - The analyst hands every figure to `summarize_budget` and mostly arranges
 #   cost lines, which Haiku handles. "medium" is Haiku 5.5's own default, written
 #   out for the same reason as `DEFAULT_EFFORT`.
