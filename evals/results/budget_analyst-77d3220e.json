@@ -1,0 +1,104 @@
+{
+  "experiment": "budget_analyst-77d3220e",
+  "metadata": {
+    "judge": null,
+    "provider": "sample-data",
+    "repetitions": 1,
+    "subagent": "budget-analyst",
+    "model": "anthropic:claude-haiku-5-5",
+    "effort": "medium"
+  },
+  "runs": [
+    {
+      "key": "due-at-accommodation-is-a-caveat",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a $2000 USD budget, 1 traveler, 4 nights. Flights: $450 return. Lodging: $960 total_cost for the 4 nights; the provider also reports $85 due_at_accommodation, and it is not known whether that is already inside the $960. Food: $50 per day for 4 days. Figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "The estimated total is **$1,610.00**, which fits the $2,000 budget with $390.00 left (80.5% used).\n\nLargest line items:\n1. Lodging, 4 nights: $960.00\n2. Flights, return: $450.00\n3. Food, $50/day for 4 days: $200.00\n\nAll three figures are sample data, not live prices, so the total is an estimate rather than a quote.\n\nThe $85 due at the accommodation is not in the total. It is unclear whether the provider's $960 already includes it. If it is extra, the total becomes $1,695.00 and $305.00 remains, still within budget. Confirm with the provider.\n\nThe breakdown is written to `/trip/budget.md`.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "Flights, return, 1 traveler (sample data)",
+                  "category": "flights",
+                  "amount": 450,
+                  "quantity": 1,
+                  "estimated": true
+                },
+                {
+                  "label": "Lodging, 4 nights total (sample data)",
+                  "category": "lodging",
+                  "amount": 960,
+                  "quantity": 1,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, $50/day for 4 days (sample data)",
+                  "category": "food",
+                  "amount": 50,
+                  "quantity": 4,
+                  "estimated": true
+                }
+              ],
+              "budget_total": 2000,
+              "currency": "USD"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Trip Budget Breakdown\n\n**Travelers:** 1  \n**Length:** 4 nights  \n**Budget:** $2,000 USD  \n**Currency:** USD (no conversion applied)\n\n**All figures are sample data, not live prices. Treat the total as an estimate, not a quote.**\n\n## Cost lines\n\n| Category | Item | Unit amount | Qty | Subtotal |\n|---|---|---|---|---|\n| Flights | Return flight, 1 traveler (sample data) | $450.00 | 1 | $450.00 |\n| Lodging | 4 nights total (sample data) | $960.00 | 1 | $960.00 |\n| Food | $50/day for 4 days (sample data) | $50.00 | 4 | $200.00 |\n| **Total** | | | | **$1,610.00** |\n\n## By category\n\n- Flights: $450.00\n- Lodging: $960.00\n- Food: $200.00\n- Activities, transport, fees, other: $0.00 (no lines provided)\n\n## Result\n\n- **Estimated total:** $1,610.00\n- **Remaining against $2,000:** $390.00 (80.5% of budget used)\n- **Status:** Within budget\n\n## Largest line items\n\n1. Lodging, 4 nights: $960.00\n2. Flights, return: $450.00\n3. Food, 4 days: $200.00\n\n## Caveat on the total: $85 due at accommodation\n\nThe provider reports $85.00 due at the accommodation. It is not known whether this is already included in the $960.00 lodging figure. It is **not** added to the total above.\n\n- If it is already included: total stays at $1,610.00, remaining $390.00.\n- If it is additional: total would be $1,695.00, remaining $305.00. The plan would still be within budget.\n\nConfirm with the provider before relying on the lodging figure.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"USD\", \"budget_total\": 2000.0, \"total_estimated\": 1610.0, \"remaining\": 390.0, \"over_budget\": false, \"overage\": 0.0, \"percent_of_budget_used\": 80.5, \"by_category\": {\"lodging\": 960.0, \"flights\": 450.0, \"food\": 200.0}, \"largest_line_items\": [{\"label\": \"Lodging, 4 nights total (sample data)\", \"category\": \"lodging\", \"unit_amount\": 960.0, \"quantity\": 1, \"subtotal\": 960.0, \"estimated\": true}, {\"label\": \"Flights, return, 1 traveler (sample data)\", \"category\": \"flights\", \"unit_amount\": 450.0, \"quantity\": 1, \"subtotal\": 450.0, \"estimated\": true}, {\"label\": \"Food, $50/day for 4 days (sample data)\", \"category\": \"food\", \"unit_amount\": 50.0, \"quantity\": 4, \"subtotal\": 200.0, \"estimated\": true}], \"all_lines_estimated\": true, \"line_count\": 3}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Trip Budget Breakdown\n\n**Travelers:** 1  \n**Length:** 4 nights  \n**Budget:** $2,000 USD  \n**Currency:** USD (no conversion applied)\n\n**All figures are sample data, not live prices. Treat the total as an estimate, not a quote.**\n\n## Cost lines\n\n| Category | Item | Unit amount | Qty | Subtotal |\n|---|---|---|---|---|\n| Flights | Return flight, 1 traveler (sample data) | $450.00 | 1 | $450.00 |\n| Lodging | 4 nights total (sample data) | $960.00 | 1 | $960.00 |\n| Food | $50/day for 4 days (sample data) | $50.00 | 4 | $200.00 |\n| **Total** | | | | **$1,610.00** |\n\n## By category\n\n- Flights: $450.00\n- Lodging: $960.00\n- Food: $200.00\n- Activities, transport, fees, other: $0.00 (no lines provided)\n\n## Result\n\n- **Estimated total:** $1,610.00\n- **Remaining against $2,000:** $390.00 (80.5% of budget used)\n- **Status:** Within budget\n\n## Largest line items\n\n1. Lodging, 4 nights: $960.00\n2. Flights, return: $450.00\n3. Food, 4 days: $200.00\n\n## Caveat on the total: $85 due at accommodation\n\nThe provider reports $85.00 due at the accommodation. It is not known whether this is already included in the $960.00 lodging figure. It is **not** added to the total above.\n\n- If it is already included: total stays at $1,610.00, remaining $390.00.\n- If it is additional: total would be $1,695.00, remaining $305.00. The plan would still be within budget.\n\nConfirm with the provider before relying on the lodging figure.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 16446,
+          "cache_read": 10135,
+          "cache_creation": 6303,
+          "output_tokens": 1555
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": 1,
+          "comment": "total 1610.0 against 2000.0; expected 1610 against 2000"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "USD"
+        },
+        {
+          "key": "due_at_accommodation_excluded",
+          "score": 1,
+          "comment": "kept out"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1168 @@
+{
+  "experiment": "availability_scout_hard-220853f8",
+  "metadata": {
+    "judge": "anthropic:claude-sonnet-5-5",
+    "provider": "sample-data",
+    "repetitions": 3,
+    "subagent": "availability-scout",
+    "model": "anthropic:claude-sonnet-5-5",
+    "effort": "medium"
+  },
+  "runs": [
+    {
+      "key": "yen-ceiling",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Lodging only, the traveler already has flights. Kyoto, check in 2027-11-20, check out 2027-11-23, 2 guests, maximum \u00a520,000 per night. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote the candidates to `/trip/options.md`. All five offers are **sample data**. They are illustrative figures, not real availability, and none of them can be booked.\n\nThe offers are quoted in USD, so the tool couldn't apply your \u00a520,000 cap directly. I assumed about \u00a5150 per USD, which puts the cap near $133 a night. That rate is my assumption, not a live one.\n\nOnly two of the five offers fit the cap:\n- **Best on price:** the budget hostel private room is $100.90 a night, or $302.70 for the 3 nights. It is rated 7.8 and has free cancellation.\n- **Best on convenience and quality:** the quiet guesthouse is $122.30 a night, or $366.90 total. It is rated 9.1 but is non-refundable.\n\nThe tradeoff is about $64 more in total for a much higher rating, in exchange for giving up free cancellation.\n\nThe other three are over budget:\n- Business district hotel: $141.70 a night.\n- Riverside apartment: $165.10 a night.\n- Central boutique hotel: $190.50 a night.",
+        "tool_calls": [
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Kyoto",
+              "check_in": "2027-11-20",
+              "check_out": "2027-11-23",
+              "guests": 2
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# Kyoto lodging, 2027-11-20 to 2027-11-23 (3 nights), 2 guests\n\n**Source: sample-data. All figures are synthetic and illustrative. Nothing here is real availability or bookable.**\n\nBudget: \u00a520,000/night maximum. The offers are quoted in USD, so the budget cap could not be applied by the tool in yen. I assumed roughly \u00a5150 per USD, which makes the cap about $133/night. This is an assumption, not a live rate.\n\n## Within budget (about $133/night or less)\n| Name | Type | Nightly (USD) | Total (USD) | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | 100.90 | 302.70 | 7.8 | Yes |\n| Quiet guesthouse | guesthouse | 122.30 | 366.90 | 9.1 | No |\n\n## Over budget (for reference)\n| Name | Type | Nightly (USD) | Total (USD) | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Business district hotel | hotel | 141.70 | 425.10 | 8.2 | Yes |\n| Riverside apartment | apartment | 165.10 | 495.30 | 8.6 | No |\n| Central boutique hotel | hotel | 190.50 | 571.50 | 8.9 | Yes |\n\nNo `due_at_accommodation` figures were reported. These offers carry no expiry times because they are sample data.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 5, \"count\": 5, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Budget hostel, private room (Kyoto)\", \"kind\": \"hostel\", \"location\": \"Kyoto\", \"check_in\": \"2027-11-20\", \"check_out\": \"2027-11-23\", \"nights\": 3, \"guests\": 2, \"nightly_rate\": 100.9, \"total_cost\": 302.7, \"guest_rating\": 7.8, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Quiet guesthouse (Kyoto)\", \"kind\": \"guesthouse\", \"location\": \"Kyoto\", \"check_in\": \"2027-11-20\", \"check_out\": \"2027-11-23\", \"nights\": 3, \"guests\": 2, \"nightly_rate\": 122.3, \"total_cost\": 366.9, \"guest_rating\": 9.1, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Business district hotel (Kyoto)\", \"kind\": \"hotel\", \"location\": \"Kyoto\", \"check_in\": \"2027-11-20\", \"check_out\": \"2027-11-23\", \"nights\": 3, \"guests\": 2, \"nightly_rate\": 141.7, \"total_cost\": 425.1, \"guest_rating\": 8.2, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Riverside apartment (Kyoto)\", \"kind\": \"apartment\", \"location\": \"Kyoto\", \"check_in\": \"2027-11-20\", \"check_out\": \"2027-11-23\", \"nights\": 3, \"guests\": 2, \"nightly_rate\": 165.1, \"total_cost\": 495.3, \"guest_rating\": 8.6, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Central boutique hotel (Kyoto)\", \"kind\": \"hotel\", \"location\": \"Kyoto\", \"check_in\": \"2027-11-20\", \"check_out\": \"2027-11-23\", \"nights\": 3, \"guests\": 2, \"nightly_rate\": 190.5, \"total_cost\": 571.5, \"guest_rating\": 8.9, \"free_cancellation\": true, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# Kyoto lodging, 2027-11-20 to 2027-11-23 (3 nights), 2 guests\n\n**Source: sample-data. All figures are synthetic and illustrative. Nothing here is real availability or bookable.**\n\nBudget: \u00a520,000/night maximum. The offers are quoted in USD, so the budget cap could not be applied by the tool in yen. I assumed roughly \u00a5150 per USD, which makes the cap about $133/night. This is an assumption, not a live rate.\n\n## Within budget (about $133/night or less)\n| Name | Type | Nightly (USD) | Total (USD) | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | 100.90 | 302.70 | 7.8 | Yes |\n| Quiet guesthouse | guesthouse | 122.30 | 366.90 | 9.1 | No |\n\n## Over budget (for reference)\n| Name | Type | Nightly (USD) | Total (USD) | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Business district hotel | hotel | 141.70 | 425.10 | 8.2 | Yes |\n| Riverside apartment | apartment | 165.10 | 495.30 | 8.6 | No |\n| Central boutique hotel | hotel | 190.50 | 571.50 | 8.9 | Yes |\n\nNo `due_at_accommodation` figures were reported. These offers carry no expiry times because they are sample data.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 20509,
+          "cache_read": 18559,
+          "cache_creation": 1942,
+          "output_tokens": 1255
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": null,
+          "comment": "no flight cabin briefed"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "forbidden_arguments",
+          "score": 1,
+          "comment": "none passed"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "checkin-before-arrival",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Two travelers, economy, LAX to SYD departing 2027-01-20 and returning 2027-02-03. The outbound flight crosses the date line and lands in Sydney on the morning of 2027-01-22. Lodging in Sydney for 2 guests, check in 2027-01-20, check out 2027-02-03. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote the candidates to `/trip/options.md`. All of it is sample data, meaning illustrative figures that can't be booked. Flights and lodging both came from sample data.\n\n**Flights** (economy, total for 2, departing 01-20 and returning 02-03)\n- **Cheapest:** Northwind at $1,172.76. It has 2 stops and a 10h19 duration.\n- **Most convenient:** Anser Airways at $1,687.04. It's nonstop, departs 15:39, and takes 6h39.\n- **Middle option:** Meridian Air at $1,245.38 with 1 stop. That's only $73 more than the cheapest, and it saves two stops' worth of connections compared with Northwind.\n- **Duration caveat:** These durations look too short for LAX\u2013SYD, so don't rely on them.\n\n**Lodging**\n- **Check-in date:** Your flight lands on 01-22, so a 01-20 check-in pays for two nights nobody uses. I searched both dates.\n- **Cheapest from 01-22:** The budget hostel private room at $741 for 12 nights. It's rated 7.8 and has no free cancellation.\n- **Best overall from 01-22:** The quiet guesthouse at $879. It's rated 9.1 and has free cancellation.\n- **Your requested 01-20 dates:** The guesthouse costs $2,229.50 and the hostel $1,802.50. The sample rates for those dates are oddly higher per night than for the 01-22 search.\n\n**Tradeoff:** Nonstop Anser costs about $514 more than Northwind, and it saves roughly 3.5 hours of travel each way, going by the sample durations. Those durations are unreliable, so the real saving may differ. Moving check-in to 01-22 cuts the lodging cost sharply.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "LAX",
+              "destination": "SYD",
+              "depart_date": "2027-01-20",
+              "return_date": "2027-02-03",
+              "travelers": 2,
+              "cabin": "economy"
+            }
+          },
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Sydney",
+              "check_in": "2027-01-20",
+              "check_out": "2027-02-03",
+              "guests": 2
+            }
+          },
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Sydney",
+              "check_in": "2027-01-22",
+              "check_out": "2027-02-03",
+              "guests": 2
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# LAX\u2013SYD options, 2 travelers, economy\n\nALL DATA BELOW IS SAMPLE DATA (synthetic, illustrative, NOT bookable). Flights and lodging both come from sample-data.\n\n## Flights (depart 2027-01-20, return 2027-02-03, economy, total for 2)\n| Carrier | Depart | Stops | Duration | Per person | Total |\n|---|---|---|---|---|---|\n| Northwind | 09:53 | 2 | 10h19 | $586.38 | $1,172.76 |\n| Meridian Air | 10:46 | 1 | 8h29 | $622.69 | $1,245.38 |\n| Anser Airways | 15:39 | 0 | 6h39 | $843.52 | $1,687.04 |\n| Blue Corridor | 15:00 | 0 | 7h24 | $912.52 | $1,825.04 |\n(Durations as given by the sample data; they look implausibly short for LAX\u2013SYD, so treat as illustrative.)\n\n## Lodging note\nOutbound lands morning of 2027-01-22, so a 01-20 check-in pays for 2 nights nobody uses. Both were searched.\n\n### Check-in 2027-01-22 -> 02-03 (12 nights) \u2014 recommended\n| Stay | Nightly | Total | Rating | Free cancel |\n|---|---|---|---|---|\n| Budget hostel, private room | $61.75 | $741.00 | 7.8 | no |\n| Quiet guesthouse | $73.25 | $879.00 | 9.1 | yes |\n| Business district hotel | $86.75 | $1,041.00 | 8.2 | no |\n| Riverside apartment | $95.25 | $1,143.00 | 8.6 | yes |\n| Central boutique hotel | $111.75 | $1,341.00 | 8.9 | no |\n\n### Check-in 2027-01-20 -> 02-03 (14 nights, as requested)\n| Stay | Nightly | Total | Rating | Free cancel |\n|---|---|---|---|---|\n| Budget hostel, private room | $128.75 | $1,802.50 | 7.8 | no |\n| Quiet guesthouse | $159.25 | $2,229.50 | 9.1 | yes |\n| Business district hotel | $193.75 | $2,712.50 | 8.2 | no |\n| Riverside apartment | $222.25 | $3,111.50 | 8.6 | yes |\n| Central boutique hotel | $254.75 | $3,566.50 | 8.9 | no |\n(Sample nightly rates differ oddly between the two searches; illustrative only.)\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 5, \"count\": 5, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Budget hostel, private room (Sydney)\", \"kind\": \"hostel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-20\", \"check_out\": \"2027-02-03\", \"nights\": 14, \"guests\": 2, \"nightly_rate\": 128.75, \"total_cost\": 1802.5, \"guest_rating\": 7.8, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Quiet guesthouse (Sydney)\", \"kind\": \"guesthouse\", \"location\": \"Sydney\", \"check_in\": \"2027-01-20\", \"check_out\": \"2027-02-03\", \"nights\": 14, \"guests\": 2, \"nightly_rate\": 159.25, \"total_cost\": 2229.5, \"guest_rating\": 9.1, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Business district hotel (Sydney)\", \"kind\": \"hotel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-20\", \"check_out\": \"2027-02-03\", \"nights\": 14, \"guests\": 2, \"nightly_rate\": 193.75, \"total_cost\": 2712.5, \"guest_rating\": 8.2, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Riverside apartment (Sydney)\", \"kind\": \"apartment\", \"location\": \"Sydney\", \"check_in\": \"2027-01-20\", \"check_out\": \"2027-02-03\", \"nights\": 14, \"guests\": 2, \"nightly_rate\": 222.25, \"total_cost\": 3111.5, \"guest_rating\": 8.6, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Central boutique hotel (Sydney)\", \"kind\": \"hotel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-20\", \"check_out\": \"2027-02-03\", \"nights\": 14, \"guests\": 2, \"nightly_rate\": 254.75, \"total_cost\": 3566.5, \"guest_rating\": 8.9, \"free_cancellation\": false, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Northwind\", \"origin\": \"LAX\", \"destination\": \"SYD\", \"depart_date\": \"2027-01-20\", \"return_date\": \"2027-02-03\", \"depart_time_local\": \"09:53\", \"stops\": 2, \"duration_minutes\": 619, \"cabin\": \"economy\", \"fare_per_traveler\": 586.38, \"total_fare\": 1172.76, \"travelers\": 2, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Meridian Air\", \"origin\": \"LAX\", \"destination\": \"SYD\", \"depart_date\": \"2027-01-20\", \"return_date\": \"2027-02-03\", \"depart_time_local\": \"10:46\", \"stops\": 1, \"duration_minutes\": 509, \"cabin\": \"economy\", \"fare_per_traveler\": 622.69, \"total_fare\": 1245.38, \"travelers\": 2, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Anser Airways\", \"origin\": \"LAX\", \"destination\": \"SYD\", \"depart_date\": \"2027-01-20\", \"return_date\": \"2027-02-03\", \"depart_time_local\": \"15:39\", \"stops\": 0, \"duration_minutes\": 399, \"cabin\": \"economy\", \"fare_per_traveler\": 843.52, \"total_fare\": 1687.04, \"travelers\": 2, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Blue Corridor\", \"origin\": \"LAX\", \"destination\": \"SYD\", \"depart_date\": \"2027-01-20\", \"return_date\": \"2027-02-03\", \"depart_time_local\": \"15:00\", \"stops\": 0, \"duration_minutes\": 444, \"cabin\": \"economy\", \"fare_per_traveler\": 912.52, \"total_fare\": 1825.04, \"travelers\": 2, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\", \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 5, \"count\": 5, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Budget hostel, private room (Sydney)\", \"kind\": \"hostel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-22\", \"check_out\": \"2027-02-03\", \"nights\": 12, \"guests\": 2, \"nightly_rate\": 61.75, \"total_cost\": 741.0, \"guest_rating\": 7.8, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Quiet guesthouse (Sydney)\", \"kind\": \"guesthouse\", \"location\": \"Sydney\", \"check_in\": \"2027-01-22\", \"check_out\": \"2027-02-03\", \"nights\": 12, \"guests\": 2, \"nightly_rate\": 73.25, \"total_cost\": 879.0, \"guest_rating\": 9.1, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Business district hotel (Sydney)\", \"kind\": \"hotel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-22\", \"check_out\": \"2027-02-03\", \"nights\": 12, \"guests\": 2, \"nightly_rate\": 86.75, \"total_cost\": 1041.0, \"guest_rating\": 8.2, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Riverside apartment (Sydney)\", \"kind\": \"apartment\", \"location\": \"Sydney\", \"check_in\": \"2027-01-22\", \"check_out\": \"2027-02-03\", \"nights\": 12, \"guests\": 2, \"nightly_rate\": 95.25, \"total_cost\": 1143.0, \"guest_rating\": 8.6, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Central boutique hotel (Sydney)\", \"kind\": \"hotel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-22\", \"check_out\": \"2027-02-03\", \"nights\": 12, \"guests\": 2, \"nightly_rate\": 111.75, \"total_cost\": 1341.0, \"guest_rating\": 8.9, \"free_cancellation\": false, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# LAX\u2013SYD options, 2 travelers, economy\n\nALL DATA BELOW IS SAMPLE DATA (synthetic, illustrative, NOT bookable). Flights and lodging both come from sample-data.\n\n## Flights (depart 2027-01-20, return 2027-02-03, economy, total for 2)\n| Carrier | Depart | Stops | Duration | Per person | Total |\n|---|---|---|---|---|---|\n| Northwind | 09:53 | 2 | 10h19 | $586.38 | $1,172.76 |\n| Meridian Air | 10:46 | 1 | 8h29 | $622.69 | $1,245.38 |\n| Anser Airways | 15:39 | 0 | 6h39 | $843.52 | $1,687.04 |\n| Blue Corridor | 15:00 | 0 | 7h24 | $912.52 | $1,825.04 |\n(Durations as given by the sample data; they look implausibly short for LAX\u2013SYD, so treat as illustrative.)\n\n## Lodging note\nOutbound lands morning of 2027-01-22, so a 01-20 check-in pays for 2 nights nobody uses. Both were searched.\n\n### Check-in 2027-01-22 -> 02-03 (12 nights) \u2014 recommended\n| Stay | Nightly | Total | Rating | Free cancel |\n|---|---|---|---|---|\n| Budget hostel, private room | $61.75 | $741.00 | 7.8 | no |\n| Quiet guesthouse | $73.25 | $879.00 | 9.1 | yes |\n| Business district hotel | $86.75 | $1,041.00 | 8.2 | no |\n| Riverside apartment | $95.25 | $1,143.00 | 8.6 | yes |\n| Central boutique hotel | $111.75 | $1,341.00 | 8.9 | no |\n\n### Check-in 2027-01-20 -> 02-03 (14 nights, as requested)\n| Stay | Nightly | Total | Rating | Free cancel |\n|---|---|---|---|---|\n| Budget hostel, private room | $128.75 | $1,802.50 | 7.8 | no |\n| Quiet guesthouse | $159.25 | $2,229.50 | 9.1 | yes |\n| Business district hotel | $193.75 | $2,712.50 | 8.2 | no |\n| Riverside apartment | $222.25 | $3,111.50 | 8.6 | yes |\n| Central boutique hotel | $254.75 | $3,566.50 | 8.9 | no |\n(Sample nightly rates differ oddly between the two searches; illustrative only.)\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 24885,
+          "cache_read": 20606,
+          "cache_creation": 4271,
+          "output_tokens": 2065
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['economy']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "forbidden_arguments",
+          "score": null,
+          "comment": "no values ruled out"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "ceiling-below-everything",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Lodging only, the traveler already has flights. Edinburgh, check in 2027-08-14, check out 2027-08-18, 1 guest, maximum $50 per night. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I found nothing in Edinburgh at $50 a night or less for 14\u201318 Aug 2027. The search with that cap returned 0 offers. I wrote the results to `/trip/options.md`.\n\nAll the figures are sample data. They are illustrative only, not live availability, and not bookable.\n\nI also ran the search without the cap. The five offers it returned all cost well over $50 a night:\n- **Cheapest:** a private room in a budget hostel at $151.19 a night ($604.76 for 4 nights). It has a 7.8 rating and no free cancellation.\n- **Best on convenience:** a quiet guesthouse at $184.73 a night ($738.92 total). It has the highest rating (9.1) and free cancellation.\n\nThe guesthouse costs about $134 more in total than the hostel. In exchange you get a better rating and a refundable booking.\n\nThe other three offers cost $222\u2013$297 a night. None of the results listed any amount due at the accommodation.\n\nThe $50 cap doesn't look realistic for this city and these dates, even on the sample data. If you can raise the budget or move the dates, I can search again.",
+        "tool_calls": [
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Edinburgh",
+              "check_in": "2027-08-14",
+              "check_out": "2027-08-18",
+              "guests": 1,
+              "max_nightly_rate": 50
+            }
+          },
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Edinburgh",
+              "check_in": "2027-08-14",
+              "check_out": "2027-08-18",
+              "guests": 1
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# Edinburgh lodging, 2027-08-14 to 2027-08-18 (4 nights, 1 guest)\n\nSource: sample-data (synthetic, illustrative only, NOT bookable, no live availability).\n\n## Result against the $50/night cap\nNo offers at or under $50/night. The capped search returned 0 results.\n\n## Uncapped results (all over budget; all USD)\n| Name | Type | Nightly | Total | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | 151.19 | 604.76 | 7.8 | No |\n| Quiet guesthouse | guesthouse | 184.73 | 738.92 | 9.1 | Yes |\n| Business district hotel | hotel | 222.27 | 889.08 | 8.2 | No |\n| Riverside apartment | apartment | 260.81 | 1043.24 | 8.6 | Yes |\n| Central boutique hotel | hotel | 297.35 | 1189.40 | 8.9 | No |\n\nNo due_at_accommodation figures were reported.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [], \"total_found\": 0, \"count\": 0, \"offers\": [], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 5, \"count\": 5, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Budget hostel, private room (Edinburgh)\", \"kind\": \"hostel\", \"location\": \"Edinburgh\", \"check_in\": \"2027-08-14\", \"check_out\": \"2027-08-18\", \"nights\": 4, \"guests\": 1, \"nightly_rate\": 151.19, \"total_cost\": 604.76, \"guest_rating\": 7.8, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Quiet guesthouse (Edinburgh)\", \"kind\": \"guesthouse\", \"location\": \"Edinburgh\", \"check_in\": \"2027-08-14\", \"check_out\": \"2027-08-18\", \"nights\": 4, \"guests\": 1, \"nightly_rate\": 184.73, \"total_cost\": 738.92, \"guest_rating\": 9.1, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Business district hotel (Edinburgh)\", \"kind\": \"hotel\", \"location\": \"Edinburgh\", \"check_in\": \"2027-08-14\", \"check_out\": \"2027-08-18\", \"nights\": 4, \"guests\": 1, \"nightly_rate\": 222.27, \"total_cost\": 889.08, \"guest_rating\": 8.2, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Riverside apartment (Edinburgh)\", \"kind\": \"apartment\", \"location\": \"Edinburgh\", \"check_in\": \"2027-08-14\", \"check_out\": \"2027-08-18\", \"nights\": 4, \"guests\": 1, \"nightly_rate\": 260.81, \"total_cost\": 1043.24, \"guest_rating\": 8.6, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Central boutique hotel (Edinburgh)\", \"kind\": \"hotel\", \"location\": \"Edinburgh\", \"check_in\": \"2027-08-14\", \"check_out\": \"2027-08-18\", \"nights\": 4, \"guests\": 1, \"nightly_rate\": 297.35, \"total_cost\": 1189.4, \"guest_rating\": 8.9, \"free_cancellation\": false, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# Edinburgh lodging, 2027-08-14 to 2027-08-18 (4 nights, 1 guest)\n\nSource: sample-data (synthetic, illustrative only, NOT bookable, no live availability).\n\n## Result against the $50/night cap\nNo offers at or under $50/night. The capped search returned 0 results.\n\n## Uncapped results (all over budget; all USD)\n| Name | Type | Nightly | Total | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | 151.19 | 604.76 | 7.8 | No |\n| Quiet guesthouse | guesthouse | 184.73 | 738.92 | 9.1 | Yes |\n| Business district hotel | hotel | 222.27 | 889.08 | 8.2 | No |\n| Riverside apartment | apartment | 260.81 | 1043.24 | 8.6 | Yes |\n| Central boutique hotel | hotel | 297.35 | 1189.40 | 8.9 | No |\n\nNo due_at_accommodation figures were reported.\n"
+        },
+        "usage": {
+          "model_calls": 4,
+          "input_tokens": 26781,
+          "cache_read": 24851,
+          "cache_creation": 1920,
+          "output_tokens": 1114
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": null,
+          "comment": "no flight cabin briefed"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "forbidden_arguments",
+          "score": null,
+          "comment": "no values ruled out"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "open-jaw-multi-city",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One traveler, economy. Chicago O'Hare (ORD) to Paris CDG on 2027-09-03, Paris CDG to Rome FCO on 2027-09-08, and Rome FCO back to ORD on 2027-09-13. Flights only; lodging is handled separately. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote the candidates to `/trip/options.md`. All of the figures are synthetic sample data (`sample-data`). They are illustrative only, not live availability, and you can't book them. Every offer came back in economy, and there was no cabin note. Prices are one-way fares in USD for one traveler.\n\n- **Best on price:** $1,795.22 in total. It uses Anser Airways on ORD\u2013CDG ($692.98) and CDG\u2013FCO ($656.90), and Northwind on FCO\u2013ORD ($445.34). Every leg has 2 stops.\n- **Best on convenience:** $2,586.88 in total, with nonstops on all three legs. It uses Northwind on ORD\u2013CDG ($1,009.92) and CDG\u2013FCO ($953.60), and Anser Airways on FCO\u2013ORD ($623.36).\n- **Middle option:** $1,907.47 in total, with 1 stop on each leg. It uses Blue Corridor on ORD\u2013CDG and CDG\u2013FCO, and Meridian Air on FCO\u2013ORD.\n- **Tradeoff:** The nonstop trip costs about $790 more than the cheapest one. In return you skip 2 connections on every leg. The cheapest trip also has long travel days, such as 11.5 hours on ORD\u2013CDG.\n\nSome of the sample durations look implausible. For example, the 2-stop FCO\u2013ORD flight is listed at 8h07. Treat the durations as rough placeholders.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "ORD",
+              "destination": "CDG",
+              "depart_date": "2027-09-03"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "CDG",
+              "destination": "FCO",
+              "depart_date": "2027-09-08"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "FCO",
+              "destination": "ORD",
+              "depart_date": "2027-09-13"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# Flight options: ORD -> CDG -> FCO -> ORD (1 traveler, economy)\n\n**ALL FIGURES BELOW ARE SYNTHETIC SAMPLE DATA (source: sample-data). They are illustrative only, not live availability, and not bookable.** All offers came back in economy. There was no cabin_note. Prices are in USD, one-way, per traveler.\n\n## Leg 1: ORD -> CDG, 2027-09-03\n| Carrier | Depart | Stops | Duration | Fare |\n|---|---|---|---|---|\n| Anser Airways | 07:03 | 2 | 11h29 | $692.98 |\n| Blue Corridor | 15:56 | 1 | 9h39 | $740.99 |\n| Northwind | 10:49 | 0 | 7h49 | $1009.92 |\n| Meridian Air | 18:10 | 0 | 8h34 | $1078.92 |\n\n## Leg 2: CDG -> FCO, 2027-09-08\n| Carrier | Depart | Stops | Duration | Fare |\n|---|---|---|---|---|\n| Anser Airways | 07:19 | 2 | 11h45 | $656.90 |\n| Blue Corridor | 08:12 | 1 | 9h55 | $700.95 |\n| Northwind | 11:05 | 0 | 8h05 | $953.60 |\n| Meridian Air | 07:26 | 0 | 8h50 | $1022.60 |\n\n## Leg 3: FCO -> ORD, 2027-09-13\n| Carrier | Depart | Stops | Duration | Fare |\n|---|---|---|---|---|\n| Northwind | 20:41 | 2 | 8h07 | $445.34 |\n| Meridian Air | 19:34 | 1 | 6h17 | $466.17 |\n| Anser Airways | 18:27 | 0 | 4h27 | $623.36 |\n| Blue Corridor | 12:48 | 0 | 5h12 | $692.36 |\n\n## Combinations\n- **Cheapest:** Anser (leg 1) + Anser (leg 2) + Northwind (leg 3) = **$1,795.22**. It has 2, 2 and 2 stops.\n- **Most convenient (all nonstop, fastest):** Northwind (leg 1) + Northwind (leg 2) + Anser (leg 3) = **$2,586.88**.\n- **Middle option:** Blue Corridor (leg 1) + Blue Corridor (leg 2) + Meridian Air (leg 3) = $1,907.47. It has 1 stop on every leg.\n\nThe sample data shows durations that look implausible: a 2-stop FCO-ORD trip at 8h07 is longer than the nonstop but shorter than a transatlantic norm. Treat these as rough placeholders.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Anser Airways\", \"origin\": \"CDG\", \"destination\": \"FCO\", \"depart_date\": \"2027-09-08\", \"return_date\": null, \"depart_time_local\": \"07:19\", \"stops\": 2, \"duration_minutes\": 705, \"cabin\": \"economy\", \"fare_per_traveler\": 656.9, \"total_fare\": 656.9, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Blue Corridor\", \"origin\": \"CDG\", \"destination\": \"FCO\", \"depart_date\": \"2027-09-08\", \"return_date\": null, \"depart_time_local\": \"08:12\", \"stops\": 1, \"duration_minutes\": 595, \"cabin\": \"economy\", \"fare_per_traveler\": 700.95, \"total_fare\": 700.95, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Northwind\", \"origin\": \"CDG\", \"destination\": \"FCO\", \"depart_date\": \"2027-09-08\", \"return_date\": null, \"depart_time_local\": \"11:05\", \"stops\": 0, \"duration_minutes\": 485, \"cabin\": \"economy\", \"fare_per_traveler\": 953.6, \"total_fare\": 953.6, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Meridian Air\", \"origin\": \"CDG\", \"destination\": \"FCO\", \"depart_date\": \"2027-09-08\", \"return_date\": null, \"depart_time_local\": \"07:26\", \"stops\": 0, \"duration_minutes\": 530, \"cabin\": \"economy\", \"fare_per_traveler\": 1022.6, \"total_fare\": 1022.6, \"travelers\": 1, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\", \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Anser Airways\", \"origin\": \"ORD\", \"destination\": \"CDG\", \"depart_date\": \"2027-09-03\", \"return_date\": null, \"depart_time_local\": \"07:03\", \"stops\": 2, \"duration_minutes\": 689, \"cabin\": \"economy\", \"fare_per_traveler\": 692.98, \"total_fare\": 692.98, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Blue Corridor\", \"origin\": \"ORD\", \"destination\": \"CDG\", \"depart_date\": \"2027-09-03\", \"return_date\": null, \"depart_time_local\": \"15:56\", \"stops\": 1, \"duration_minutes\": 579, \"cabin\": \"economy\", \"fare_per_traveler\": 740.99, \"total_fare\": 740.99, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Northwind\", \"origin\": \"ORD\", \"destination\": \"CDG\", \"depart_date\": \"2027-09-03\", \"return_date\": null, \"depart_time_local\": \"10:49\", \"stops\": 0, \"duration_minutes\": 469, \"cabin\": \"economy\", \"fare_per_traveler\": 1009.92, \"total_fare\": 1009.92, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Meridian Air\", \"origin\": \"ORD\", \"destination\": \"CDG\", \"depart_date\": \"2027-09-03\", \"return_date\": null, \"depart_time_local\": \"18:10\", \"stops\": 0, \"duration_minutes\": 514, \"cabin\": \"economy\", \"fare_per_traveler\": 1078.92, \"total_fare\": 1078.92, \"travelers\": 1, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\", \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Northwind\", \"origin\": \"FCO\", \"destination\": \"ORD\", \"depart_date\": \"2027-09-13\", \"return_date\": null, \"depart_time_local\": \"20:41\", \"stops\": 2, \"duration_minutes\": 487, \"cabin\": \"economy\", \"fare_per_traveler\": 445.34, \"total_fare\": 445.34, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Meridian Air\", \"origin\": \"FCO\", \"destination\": \"ORD\", \"depart_date\": \"2027-09-13\", \"return_date\": null, \"depart_time_local\": \"19:34\", \"stops\": 1, \"duration_minutes\": 377, \"cabin\": \"economy\", \"fare_per_traveler\": 466.17, \"total_fare\": 466.17, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Anser Airways\", \"origin\": \"FCO\", \"destination\": \"ORD\", \"depart_date\": \"2027-09-13\", \"return_date\": null, \"depart_time_local\": \"18:27\", \"stops\": 0, \"duration_minutes\": 267, \"cabin\": \"economy\", \"fare_per_traveler\": 623.36, \"total_fare\": 623.36, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Blue Corridor\", \"origin\": \"FCO\", \"destination\": \"ORD\", \"depart_date\": \"2027-09-13\", \"return_date\": null, \"depart_time_local\": \"12:48\", \"stops\": 0, \"duration_minutes\": 312, \"cabin\": \"economy\", \"fare_per_traveler\": 692.36, \"total_fare\": 692.36, \"travelers\": 1, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\", \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# Flight options: ORD -> CDG -> FCO -> ORD (1 traveler, economy)\n\n**ALL FIGURES BELOW ARE SYNTHETIC SAMPLE DATA (source: sample-data). They are illustrative only, not live availability, and not bookable.** All offers came back in economy. There was no cabin_note. Prices are in USD, one-way, per traveler.\n\n## Leg 1: ORD -> CDG, 2027-09-03\n| Carrier | Depart | Stops | Duration | Fare |\n|---|---|---|---|---|\n| Anser Airways | 07:03 | 2 | 11h29 | $692.98 |\n| Blue Corridor | 15:56 | 1 | 9h39 | $740.99 |\n| Northwind | 10:49 | 0 | 7h49 | $1009.92 |\n| Meridian Air | 18:10 | 0 | 8h34 | $1078.92 |\n\n## Leg 2: CDG -> FCO, 2027-09-08\n| Carrier | Depart | Stops | Duration | Fare |\n|---|---|---|---|---|\n| Anser Airways | 07:19 | 2 | 11h45 | $656.90 |\n| Blue Corridor | 08:12 | 1 | 9h55 | $700.95 |\n| Northwind | 11:05 | 0 | 8h05 | $953.60 |\n| Meridian Air | 07:26 | 0 | 8h50 | $1022.60 |\n\n## Leg 3: FCO -> ORD, 2027-09-13\n| Carrier | Depart | Stops | Duration | Fare |\n|---|---|---|---|---|\n| Northwind | 20:41 | 2 | 8h07 | $445.34 |\n| Meridian Air | 19:34 | 1 | 6h17 | $466.17 |\n| Anser Airways | 18:27 | 0 | 4h27 | $623.36 |\n| Blue Corridor | 12:48 | 0 | 5h12 | $692.36 |\n\n## Combinations\n- **Cheapest:** Anser (leg 1) + Anser (leg 2) + Northwind (leg 3) = **$1,795.22**. It has 2, 2 and 2 stops.\n- **Most convenient (all nonstop, fastest):** Northwind (leg 1) + Northwind (leg 2) + Anser (leg 3) = **$2,586.88**.\n- **Middle option:** Blue Corridor (leg 1) + Blue Corridor (leg 2) + Meridian Air (leg 3) = $1,907.47. It has 1 stop on every leg.\n\nThe sample data shows durations that look implausible: a 2-stop FCO-ORD trip at 8h07 is longer than the nonstop but shorter than a transatlantic norm. Treat these as rough placeholders.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 24029,
+          "cache_read": 20101,
+          "cache_creation": 3920,
+          "output_tokens": 1894
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['economy', 'economy', 'economy']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "forbidden_arguments",
+          "score": null,
+          "comment": "no values ruled out"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "yen-ceiling",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Lodging only, the traveler already has flights. Kyoto, check in 2027-11-20, check out 2027-11-23, 2 guests, maximum \u00a520,000 per night. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote the candidates to `/trip/options.md`. All five offers are sample data. They are illustrative figures, not real availability, and none of them can be booked.\n\nThe offers are priced in USD, so I couldn't apply the \u00a520,000 cap in the search. I assumed about \u00a5150 per USD, which makes the cap roughly $133 a night. That rate is my assumption and should be checked.\n\n- **Best on price:** the budget hostel with a private room is $100.90 a night, $302.70 for the stay. It has a 7.8 rating and free cancellation.\n- **Best on convenience and quality:** the quiet guesthouse is $122.30 a night, $366.90 total. It has a 9.1 rating but is non-refundable. That is the stated policy, not an unknown one.\n- **Tradeoff:** the guesthouse costs about $64 more for the stay and has a much better rating. The hostel is cheaper and lets you cancel.\n\nBoth of these fit the budget. The other three are over it. The cheapest of them is the business hotel at $141.70 a night, which has free cancellation. No offer listed an amount due at the accommodation.",
+        "tool_calls": [
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Kyoto",
+              "check_in": "2027-11-20",
+              "check_out": "2027-11-23",
+              "guests": 2
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# Kyoto lodging, 2027-11-20 to 2027-11-23 (3 nights, 2 guests)\n\n**Source: sample-data. All figures are synthetic and illustrative. Nothing here is real availability or bookable.**\n\nBudget: \u00a520,000/night maximum. The offers are quoted in USD, so the search's rate cap could not be applied in yen. I assumed roughly \u00a5150 per USD, which makes the cap about $133/night. This rate is my assumption and should be checked.\n\n## Within budget\n| Name | Type | Nightly | Total (3 nights) | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | $100.90 | $302.70 | 7.8 | Yes |\n| Quiet guesthouse | guesthouse | $122.30 | $366.90 | 9.1 | No (policy is stated as false) |\n\n## Over budget (for reference)\n| Name | Type | Nightly | Total | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Business district hotel | hotel | $141.70 | $425.10 | 8.2 | Yes |\n| Riverside apartment | apartment | $165.10 | $495.30 | 8.6 | No |\n| Central boutique hotel | hotel | $190.50 | $571.50 | 8.9 | Yes |\n\nNo `due_at_accommodation` figures were reported. The offers carry no expiry because they are sample data.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 5, \"count\": 5, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Budget hostel, private room (Kyoto)\", \"kind\": \"hostel\", \"location\": \"Kyoto\", \"check_in\": \"2027-11-20\", \"check_out\": \"2027-11-23\", \"nights\": 3, \"guests\": 2, \"nightly_rate\": 100.9, \"total_cost\": 302.7, \"guest_rating\": 7.8, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Quiet guesthouse (Kyoto)\", \"kind\": \"guesthouse\", \"location\": \"Kyoto\", \"check_in\": \"2027-11-20\", \"check_out\": \"2027-11-23\", \"nights\": 3, \"guests\": 2, \"nightly_rate\": 122.3, \"total_cost\": 366.9, \"guest_rating\": 9.1, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Business district hotel (Kyoto)\", \"kind\": \"hotel\", \"location\": \"Kyoto\", \"check_in\": \"2027-11-20\", \"check_out\": \"2027-11-23\", \"nights\": 3, \"guests\": 2, \"nightly_rate\": 141.7, \"total_cost\": 425.1, \"guest_rating\": 8.2, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Riverside apartment (Kyoto)\", \"kind\": \"apartment\", \"location\": \"Kyoto\", \"check_in\": \"2027-11-20\", \"check_out\": \"2027-11-23\", \"nights\": 3, \"guests\": 2, \"nightly_rate\": 165.1, \"total_cost\": 495.3, \"guest_rating\": 8.6, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Central boutique hotel (Kyoto)\", \"kind\": \"hotel\", \"location\": \"Kyoto\", \"check_in\": \"2027-11-20\", \"check_out\": \"2027-11-23\", \"nights\": 3, \"guests\": 2, \"nightly_rate\": 190.5, \"total_cost\": 571.5, \"guest_rating\": 8.9, \"free_cancellation\": true, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# Kyoto lodging, 2027-11-20 to 2027-11-23 (3 nights, 2 guests)\n\n**Source: sample-data. All figures are synthetic and illustrative. Nothing here is real availability or bookable.**\n\nBudget: \u00a520,000/night maximum. The offers are quoted in USD, so the search's rate cap could not be applied in yen. I assumed roughly \u00a5150 per USD, which makes the cap about $133/night. This rate is my assumption and should be checked.\n\n## Within budget\n| Name | Type | Nightly | Total (3 nights) | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | $100.90 | $302.70 | 7.8 | Yes |\n| Quiet guesthouse | guesthouse | $122.30 | $366.90 | 9.1 | No (policy is stated as false) |\n\n## Over budget (for reference)\n| Name | Type | Nightly | Total | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Business district hotel | hotel | $141.70 | $425.10 | 8.2 | Yes |\n| Riverside apartment | apartment | $165.10 | $495.30 | 8.6 | No |\n| Central boutique hotel | hotel | $190.50 | $571.50 | 8.9 | Yes |\n\nNo `due_at_accommodation` figures were reported. The offers carry no expiry because they are sample data.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 20443,
+          "cache_read": 18661,
+          "cache_creation": 1774,
+          "output_tokens": 1246
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": null,
+          "comment": "no flight cabin briefed"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "forbidden_arguments",
+          "score": 1,
+          "comment": "none passed"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "checkin-before-arrival",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Two travelers, economy, LAX to SYD departing 2027-01-20 and returning 2027-02-03. The outbound flight crosses the date line and lands in Sydney on the morning of 2027-01-22. Lodging in Sydney for 2 guests, check in 2027-01-20, check out 2027-02-03. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote the candidates to `/trip/options.md`. All flight and lodging figures are sample data, so they are illustrative and not bookable. Every flight came back in economy.\n\n**Check-in date:** You asked for check-in on 01-20, but the flight lands on the morning of 01-22. That would pay for two nights nobody uses. I searched both ranges and recommend 01-22 to 02-03, which is 12 nights.\n\n**Flights (2 travelers, total):**\n- **Cheapest:** Northwind, $1,172.76, with 2 stops.\n- **Most convenient:** Anser Airways, $1,687.04, nonstop and leaving at 15:39. Blue Corridor is also nonstop but costs more, at $1,825.04.\n- **Middle option:** Meridian Air, $1,245.38, with 1 stop.\n- **Tradeoff:** Going nonstop costs about $514 more than the cheapest option. The sample durations (399\u2013619 minutes) look too short for LAX\u2013SYD, so don't rely on them.\n\n**Lodging for 12 nights (01-22 to 02-03):**\n- **Cheapest:** Budget hostel private room, $741. It is rated 7.8 and has no free cancellation.\n- **Best value and convenience:** Quiet guesthouse, $879. It is rated 9.1 and has free cancellation.\n- **Tradeoff:** The guesthouse costs $138 more than the hostel. It has the best rating and is refundable.\n\nThe 14-night search (01-20 to 02-03) came back much more expensive per night, from $128.75 for the hostel to $254.75 for the boutique hotel. The sample rates for the two ranges don't line up, so treat those figures as unreliable too.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "LAX",
+              "destination": "SYD",
+              "depart_date": "2027-01-20",
+              "return_date": "2027-02-03",
+              "travelers": 2,
+              "cabin": "economy"
+            }
+          },
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Sydney",
+              "check_in": "2027-01-20",
+              "check_out": "2027-02-03",
+              "guests": 2
+            }
+          },
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Sydney",
+              "check_in": "2027-01-22",
+              "check_out": "2027-02-03",
+              "guests": 2
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# LAX\u2013SYD options, 2 travelers, economy (all SAMPLE DATA \u2013 illustrative, not bookable)\n\n## Flights (source: sample-data; depart 2027-01-20, return 2027-02-03; all economy)\n| Carrier | Dep | Stops | Duration | Per traveler | Total (2) |\n|---|---|---|---|---|---|\n| Northwind | 09:53 | 2 | 619 min | $586.38 | $1,172.76 |\n| Meridian Air | 10:46 | 1 | 509 min | $622.69 | $1,245.38 |\n| Anser Airways | 15:39 | 0 | 399 min | $843.52 | $1,687.04 |\n| Blue Corridor | 15:00 | 0 | 444 min | $912.52 | $1,825.04 |\nNote: durations as returned by the sample data look short for LAX-SYD; treat with caution.\n\n## Lodging (source: sample-data)\nFlight lands morning of 2027-01-22, so nights of 01-20 and 01-21 would be unused. Two date ranges searched.\n\n### Check-in 2027-01-22 -> 02-03 (12 nights) \u2013 recommended\n| Name | Nightly | Total | Rating | Free cancel |\n|---|---|---|---|---|\n| Budget hostel, private room | $61.75 | $741.00 | 7.8 | no |\n| Quiet guesthouse | $73.25 | $879.00 | 9.1 | yes |\n| Business district hotel | $86.75 | $1,041.00 | 8.2 | no |\n| Riverside apartment | $95.25 | $1,143.00 | 8.6 | yes |\n| Central boutique hotel | $111.75 | $1,341.00 | 8.9 | no |\n\n### Check-in 2027-01-20 -> 02-03 (14 nights, as requested)\n| Name | Nightly | Total | Rating | Free cancel |\n|---|---|---|---|---|\n| Budget hostel, private room | $128.75 | $1,802.50 | 7.8 | no |\n| Quiet guesthouse | $159.25 | $2,229.50 | 9.1 | yes |\n| Business district hotel | $193.75 | $2,712.50 | 8.2 | no |\n| Riverside apartment | $222.25 | $3,111.50 | 8.6 | yes |\n| Central boutique hotel | $254.75 | $3,566.50 | 8.9 | no |\n(Sample rates oddly differ between the two ranges; only illustrative.)\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 5, \"count\": 5, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Budget hostel, private room (Sydney)\", \"kind\": \"hostel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-20\", \"check_out\": \"2027-02-03\", \"nights\": 14, \"guests\": 2, \"nightly_rate\": 128.75, \"total_cost\": 1802.5, \"guest_rating\": 7.8, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Quiet guesthouse (Sydney)\", \"kind\": \"guesthouse\", \"location\": \"Sydney\", \"check_in\": \"2027-01-20\", \"check_out\": \"2027-02-03\", \"nights\": 14, \"guests\": 2, \"nightly_rate\": 159.25, \"total_cost\": 2229.5, \"guest_rating\": 9.1, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Business district hotel (Sydney)\", \"kind\": \"hotel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-20\", \"check_out\": \"2027-02-03\", \"nights\": 14, \"guests\": 2, \"nightly_rate\": 193.75, \"total_cost\": 2712.5, \"guest_rating\": 8.2, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Riverside apartment (Sydney)\", \"kind\": \"apartment\", \"location\": \"Sydney\", \"check_in\": \"2027-01-20\", \"check_out\": \"2027-02-03\", \"nights\": 14, \"guests\": 2, \"nightly_rate\": 222.25, \"total_cost\": 3111.5, \"guest_rating\": 8.6, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Central boutique hotel (Sydney)\", \"kind\": \"hotel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-20\", \"check_out\": \"2027-02-03\", \"nights\": 14, \"guests\": 2, \"nightly_rate\": 254.75, \"total_cost\": 3566.5, \"guest_rating\": 8.9, \"free_cancellation\": false, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Northwind\", \"origin\": \"LAX\", \"destination\": \"SYD\", \"depart_date\": \"2027-01-20\", \"return_date\": \"2027-02-03\", \"depart_time_local\": \"09:53\", \"stops\": 2, \"duration_minutes\": 619, \"cabin\": \"economy\", \"fare_per_traveler\": 586.38, \"total_fare\": 1172.76, \"travelers\": 2, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Meridian Air\", \"origin\": \"LAX\", \"destination\": \"SYD\", \"depart_date\": \"2027-01-20\", \"return_date\": \"2027-02-03\", \"depart_time_local\": \"10:46\", \"stops\": 1, \"duration_minutes\": 509, \"cabin\": \"economy\", \"fare_per_traveler\": 622.69, \"total_fare\": 1245.38, \"travelers\": 2, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Anser Airways\", \"origin\": \"LAX\", \"destination\": \"SYD\", \"depart_date\": \"2027-01-20\", \"return_date\": \"2027-02-03\", \"depart_time_local\": \"15:39\", \"stops\": 0, \"duration_minutes\": 399, \"cabin\": \"economy\", \"fare_per_traveler\": 843.52, \"total_fare\": 1687.04, \"travelers\": 2, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Blue Corridor\", \"origin\": \"LAX\", \"destination\": \"SYD\", \"depart_date\": \"2027-01-20\", \"return_date\": \"2027-02-03\", \"depart_time_local\": \"15:00\", \"stops\": 0, \"duration_minutes\": 444, \"cabin\": \"economy\", \"fare_per_traveler\": 912.52, \"total_fare\": 1825.04, \"travelers\": 2, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\", \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 5, \"count\": 5, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Budget hostel, private room (Sydney)\", \"kind\": \"hostel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-22\", \"check_out\": \"2027-02-03\", \"nights\": 12, \"guests\": 2, \"nightly_rate\": 61.75, \"total_cost\": 741.0, \"guest_rating\": 7.8, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Quiet guesthouse (Sydney)\", \"kind\": \"guesthouse\", \"location\": \"Sydney\", \"check_in\": \"2027-01-22\", \"check_out\": \"2027-02-03\", \"nights\": 12, \"guests\": 2, \"nightly_rate\": 73.25, \"total_cost\": 879.0, \"guest_rating\": 9.1, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Business district hotel (Sydney)\", \"kind\": \"hotel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-22\", \"check_out\": \"2027-02-03\", \"nights\": 12, \"guests\": 2, \"nightly_rate\": 86.75, \"total_cost\": 1041.0, \"guest_rating\": 8.2, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Riverside apartment (Sydney)\", \"kind\": \"apartment\", \"location\": \"Sydney\", \"check_in\": \"2027-01-22\", \"check_out\": \"2027-02-03\", \"nights\": 12, \"guests\": 2, \"nightly_rate\": 95.25, \"total_cost\": 1143.0, \"guest_rating\": 8.6, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Central boutique hotel (Sydney)\", \"kind\": \"hotel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-22\", \"check_out\": \"2027-02-03\", \"nights\": 12, \"guests\": 2, \"nightly_rate\": 111.75, \"total_cost\": 1341.0, \"guest_rating\": 8.9, \"free_cancellation\": false, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# LAX\u2013SYD options, 2 travelers, economy (all SAMPLE DATA \u2013 illustrative, not bookable)\n\n## Flights (source: sample-data; depart 2027-01-20, return 2027-02-03; all economy)\n| Carrier | Dep | Stops | Duration | Per traveler | Total (2) |\n|---|---|---|---|---|---|\n| Northwind | 09:53 | 2 | 619 min | $586.38 | $1,172.76 |\n| Meridian Air | 10:46 | 1 | 509 min | $622.69 | $1,245.38 |\n| Anser Airways | 15:39 | 0 | 399 min | $843.52 | $1,687.04 |\n| Blue Corridor | 15:00 | 0 | 444 min | $912.52 | $1,825.04 |\nNote: durations as returned by the sample data look short for LAX-SYD; treat with caution.\n\n## Lodging (source: sample-data)\nFlight lands morning of 2027-01-22, so nights of 01-20 and 01-21 would be unused. Two date ranges searched.\n\n### Check-in 2027-01-22 -> 02-03 (12 nights) \u2013 recommended\n| Name | Nightly | Total | Rating | Free cancel |\n|---|---|---|---|---|\n| Budget hostel, private room | $61.75 | $741.00 | 7.8 | no |\n| Quiet guesthouse | $73.25 | $879.00 | 9.1 | yes |\n| Business district hotel | $86.75 | $1,041.00 | 8.2 | no |\n| Riverside apartment | $95.25 | $1,143.00 | 8.6 | yes |\n| Central boutique hotel | $111.75 | $1,341.00 | 8.9 | no |\n\n### Check-in 2027-01-20 -> 02-03 (14 nights, as requested)\n| Name | Nightly | Total | Rating | Free cancel |\n|---|---|---|---|---|\n| Budget hostel, private room | $128.75 | $1,802.50 | 7.8 | no |\n| Quiet guesthouse | $159.25 | $2,229.50 | 9.1 | yes |\n| Business district hotel | $193.75 | $2,712.50 | 8.2 | no |\n| Riverside apartment | $222.25 | $3,111.50 | 8.6 | yes |\n| Central boutique hotel | $254.75 | $3,566.50 | 8.9 | no |\n(Sample rates oddly differ between the two ranges; only illustrative.)\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 24839,
+          "cache_read": 20793,
+          "cache_creation": 4038,
+          "output_tokens": 1998
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['economy']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "forbidden_arguments",
+          "score": null,
+          "comment": "no values ruled out"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "ceiling-below-everything",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Lodging only, the traveler already has flights. Edinburgh, check in 2027-08-14, check out 2027-08-18, 1 guest, maximum $50 per night. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I found nothing in Edinburgh at $50 a night or less for 14\u201318 August 2027. The search with that cap returned 0 offers. All the lodging data is sample data, so it is illustrative and not bookable.\n\nI ran the search again without the cap and got five sample offers. The cheapest is $151.19 a night, three times your limit.\n\n- **Best on price:** the budget hostel private room, at $151.19 a night ($604.76 for 4 nights). Its guest rating is 7.8, and it has no free cancellation.\n- **Best on convenience and quality:** the quiet guesthouse, at $184.73 a night ($738.92 total). It is rated 9.1 and has free cancellation.\n- **Tradeoff:** the guesthouse costs about $134 more over the stay. In return you get a higher rating and the option to cancel.\n\nThe other three offers cost $222 to $297 a night. None of the offers lists a payment due at the accommodation.\n\nTo get closer to $50 a night, the traveler would need to raise the budget a lot, shift the dates, or look outside Edinburgh. The options are written to `/trip/options.md`.",
+        "tool_calls": [
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Edinburgh",
+              "check_in": "2027-08-14",
+              "check_out": "2027-08-18",
+              "guests": 1,
+              "max_nightly_rate": 50
+            }
+          },
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Edinburgh",
+              "check_in": "2027-08-14",
+              "check_out": "2027-08-18",
+              "guests": 1
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# Edinburgh lodging, 2027-08-14 to 2027-08-18 (4 nights, 1 guest, max $50/night)\n\nSource: sample-data (SYNTHETIC). These figures are illustrative only and are not bookable.\n\n## Result: nothing within $50/night\nThe search with the $50/night cap returned 0 offers. An uncapped search returned 5 sample offers, all well over budget:\n\n| Name | Type | Nightly (USD) | Total (USD) | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | 151.19 | 604.76 | 7.8 | No |\n| Quiet guesthouse | guesthouse | 184.73 | 738.92 | 9.1 | Yes |\n| Business district hotel | hotel | 222.27 | 889.08 | 8.2 | No |\n| Riverside apartment | apartment | 260.81 | 1043.24 | 8.6 | Yes |\n| Central boutique hotel | hotel | 297.35 | 1189.40 | 8.9 | No |\n\nNo offer reported `due_at_accommodation`.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [], \"total_found\": 0, \"count\": 0, \"offers\": [], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 5, \"count\": 5, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Budget hostel, private room (Edinburgh)\", \"kind\": \"hostel\", \"location\": \"Edinburgh\", \"check_in\": \"2027-08-14\", \"check_out\": \"2027-08-18\", \"nights\": 4, \"guests\": 1, \"nightly_rate\": 151.19, \"total_cost\": 604.76, \"guest_rating\": 7.8, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Quiet guesthouse (Edinburgh)\", \"kind\": \"guesthouse\", \"location\": \"Edinburgh\", \"check_in\": \"2027-08-14\", \"check_out\": \"2027-08-18\", \"nights\": 4, \"guests\": 1, \"nightly_rate\": 184.73, \"total_cost\": 738.92, \"guest_rating\": 9.1, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Business district hotel (Edinburgh)\", \"kind\": \"hotel\", \"location\": \"Edinburgh\", \"check_in\": \"2027-08-14\", \"check_out\": \"2027-08-18\", \"nights\": 4, \"guests\": 1, \"nightly_rate\": 222.27, \"total_cost\": 889.08, \"guest_rating\": 8.2, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Riverside apartment (Edinburgh)\", \"kind\": \"apartment\", \"location\": \"Edinburgh\", \"check_in\": \"2027-08-14\", \"check_out\": \"2027-08-18\", \"nights\": 4, \"guests\": 1, \"nightly_rate\": 260.81, \"total_cost\": 1043.24, \"guest_rating\": 8.6, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Central boutique hotel (Edinburgh)\", \"kind\": \"hotel\", \"location\": \"Edinburgh\", \"check_in\": \"2027-08-14\", \"check_out\": \"2027-08-18\", \"nights\": 4, \"guests\": 1, \"nightly_rate\": 297.35, \"total_cost\": 1189.4, \"guest_rating\": 8.9, \"free_cancellation\": false, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# Edinburgh lodging, 2027-08-14 to 2027-08-18 (4 nights, 1 guest, max $50/night)\n\nSource: sample-data (SYNTHETIC). These figures are illustrative only and are not bookable.\n\n## Result: nothing within $50/night\nThe search with the $50/night cap returned 0 offers. An uncapped search returned 5 sample offers, all well over budget:\n\n| Name | Type | Nightly (USD) | Total (USD) | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | 151.19 | 604.76 | 7.8 | No |\n| Quiet guesthouse | guesthouse | 184.73 | 738.92 | 9.1 | Yes |\n| Business district hotel | hotel | 222.27 | 889.08 | 8.2 | No |\n| Riverside apartment | apartment | 260.81 | 1043.24 | 8.6 | Yes |\n| Central boutique hotel | hotel | 297.35 | 1189.40 | 8.9 | No |\n\nNo offer reported `due_at_accommodation`.\n"
+        },
+        "usage": {
+          "model_calls": 4,
+          "input_tokens": 26813,
+          "cache_read": 25274,
+          "cache_creation": 1529,
+          "output_tokens": 1147
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": null,
+          "comment": "no flight cabin briefed"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "forbidden_arguments",
+          "score": null,
+          "comment": "no values ruled out"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "open-jaw-multi-city",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One traveler, economy. Chicago O'Hare (ORD) to Paris CDG on 2027-09-03, Paris CDG to Rome FCO on 2027-09-08, and Rome FCO back to ORD on 2027-09-13. Flights only; lodging is handled separately. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I searched all three legs and wrote the candidates to `/trip/options.md`. Every fare is **sample data**: illustrative figures, not live availability and not bookable. All offers came back in economy, and no cabin note was returned.\n\n- **Best on price:** USD 1,795.22 in total.\n  - ORD to CDG: Anser Airways, USD 692.98, 2 stops.\n  - CDG to FCO: Anser Airways, USD 656.90, 2 stops.\n  - FCO to ORD: Northwind, USD 445.34, 2 stops.\n- **Best on convenience:** USD 2,586.88 in total, nonstop on every leg.\n  - ORD to CDG: Northwind, USD 1,009.92.\n  - CDG to FCO: Northwind, USD 953.60.\n  - FCO to ORD: Anser Airways, USD 623.36.\n- **Tradeoff:** The nonstop trip costs about USD 792 more. In return you skip six connections in total, and the legs are much shorter.\n\nThe sample durations aren't realistic. For example, the 4h27 nonstop from Rome to Chicago isn't plausible. Treat the durations as rough.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "ORD",
+              "destination": "CDG",
+              "depart_date": "2027-09-03"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "CDG",
+              "destination": "FCO",
+              "depart_date": "2027-09-08"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "FCO",
+              "destination": "ORD",
+              "depart_date": "2027-09-13"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# Flight options, 1 traveler, economy\n\n**All figures are SAMPLE DATA (synthetic, illustrative). Not live availability and not bookable.** All offers came back in economy cabin. No cabin_note was returned.\n\n## Leg 1: ORD to CDG, 2027-09-03\n| Carrier | Depart | Stops | Duration | Fare (USD) |\n|---|---|---|---|---|\n| Anser Airways | 07:03 | 2 | 11h29 | 692.98 |\n| Blue Corridor | 15:56 | 1 | 9h39 | 740.99 |\n| Northwind | 10:49 | 0 | 7h49 | 1009.92 |\n| Meridian Air | 18:10 | 0 | 8h34 | 1078.92 |\n\n## Leg 2: CDG to FCO, 2027-09-08\n| Carrier | Depart | Stops | Duration | Fare (USD) |\n|---|---|---|---|---|\n| Anser Airways | 07:19 | 2 | 11h45 | 656.90 |\n| Blue Corridor | 08:12 | 1 | 9h55 | 700.95 |\n| Northwind | 11:05 | 0 | 8h05 | 953.60 |\n| Meridian Air | 07:26 | 0 | 8h50 | 1022.60 |\n\n## Leg 3: FCO to ORD, 2027-09-13\n| Carrier | Depart | Stops | Duration | Fare (USD) |\n|---|---|---|---|---|\n| Northwind | 20:41 | 2 | 8h07 | 445.34 |\n| Meridian Air | 19:34 | 1 | 6h17 | 466.17 |\n| Anser Airways | 18:27 | 0 | 4h27 | 623.36 |\n| Blue Corridor | 12:48 | 0 | 5h12 | 692.36 |\n\n## Combined\n- Cheapest: Anser 692.98 + Anser 656.90 + Northwind 445.34 = **USD 1,795.22** (2, 2 and 2 stops)\n- Most convenient (nonstop on every leg, cheapest of those): Northwind 1009.92 + Northwind 953.60 + Anser 623.36 = **USD 2,586.88**\n- Difference: about USD 791.66 more for nonstops.\n\nNote: the sample durations are not realistic. For example, a 2-stop FCO to ORD is shorter than the nonstop ORD to CDG, and a 4h27 nonstop FCO to ORD is implausible. Treat the durations as rough.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Anser Airways\", \"origin\": \"CDG\", \"destination\": \"FCO\", \"depart_date\": \"2027-09-08\", \"return_date\": null, \"depart_time_local\": \"07:19\", \"stops\": 2, \"duration_minutes\": 705, \"cabin\": \"economy\", \"fare_per_traveler\": 656.9, \"total_fare\": 656.9, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Blue Corridor\", \"origin\": \"CDG\", \"destination\": \"FCO\", \"depart_date\": \"2027-09-08\", \"return_date\": null, \"depart_time_local\": \"08:12\", \"stops\": 1, \"duration_minutes\": 595, \"cabin\": \"economy\", \"fare_per_traveler\": 700.95, \"total_fare\": 700.95, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Northwind\", \"origin\": \"CDG\", \"destination\": \"FCO\", \"depart_date\": \"2027-09-08\", \"return_date\": null, \"depart_time_local\": \"11:05\", \"stops\": 0, \"duration_minutes\": 485, \"cabin\": \"economy\", \"fare_per_traveler\": 953.6, \"total_fare\": 953.6, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Meridian Air\", \"origin\": \"CDG\", \"destination\": \"FCO\", \"depart_date\": \"2027-09-08\", \"return_date\": null, \"depart_time_local\": \"07:26\", \"stops\": 0, \"duration_minutes\": 530, \"cabin\": \"economy\", \"fare_per_traveler\": 1022.6, \"total_fare\": 1022.6, \"travelers\": 1, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\", \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Anser Airways\", \"origin\": \"ORD\", \"destination\": \"CDG\", \"depart_date\": \"2027-09-03\", \"return_date\": null, \"depart_time_local\": \"07:03\", \"stops\": 2, \"duration_minutes\": 689, \"cabin\": \"economy\", \"fare_per_traveler\": 692.98, \"total_fare\": 692.98, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Blue Corridor\", \"origin\": \"ORD\", \"destination\": \"CDG\", \"depart_date\": \"2027-09-03\", \"return_date\": null, \"depart_time_local\": \"15:56\", \"stops\": 1, \"duration_minutes\": 579, \"cabin\": \"economy\", \"fare_per_traveler\": 740.99, \"total_fare\": 740.99, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Northwind\", \"origin\": \"ORD\", \"destination\": \"CDG\", \"depart_date\": \"2027-09-03\", \"return_date\": null, \"depart_time_local\": \"10:49\", \"stops\": 0, \"duration_minutes\": 469, \"cabin\": \"economy\", \"fare_per_traveler\": 1009.92, \"total_fare\": 1009.92, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Meridian Air\", \"origin\": \"ORD\", \"destination\": \"CDG\", \"depart_date\": \"2027-09-03\", \"return_date\": null, \"depart_time_local\": \"18:10\", \"stops\": 0, \"duration_minutes\": 514, \"cabin\": \"economy\", \"fare_per_traveler\": 1078.92, \"total_fare\": 1078.92, \"travelers\": 1, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\", \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Northwind\", \"origin\": \"FCO\", \"destination\": \"ORD\", \"depart_date\": \"2027-09-13\", \"return_date\": null, \"depart_time_local\": \"20:41\", \"stops\": 2, \"duration_minutes\": 487, \"cabin\": \"economy\", \"fare_per_traveler\": 445.34, \"total_fare\": 445.34, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Meridian Air\", \"origin\": \"FCO\", \"destination\": \"ORD\", \"depart_date\": \"2027-09-13\", \"return_date\": null, \"depart_time_local\": \"19:34\", \"stops\": 1, \"duration_minutes\": 377, \"cabin\": \"economy\", \"fare_per_traveler\": 466.17, \"total_fare\": 466.17, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Anser Airways\", \"origin\": \"FCO\", \"destination\": \"ORD\", \"depart_date\": \"2027-09-13\", \"return_date\": null, \"depart_time_local\": \"18:27\", \"stops\": 0, \"duration_minutes\": 267, \"cabin\": \"economy\", \"fare_per_traveler\": 623.36, \"total_fare\": 623.36, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Blue Corridor\", \"origin\": \"FCO\", \"destination\": \"ORD\", \"depart_date\": \"2027-09-13\", \"return_date\": null, \"depart_time_local\": \"12:48\", \"stops\": 0, \"duration_minutes\": 312, \"cabin\": \"economy\", \"fare_per_traveler\": 692.36, \"total_fare\": 692.36, \"travelers\": 1, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\", \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# Flight options, 1 traveler, economy\n\n**All figures are SAMPLE DATA (synthetic, illustrative). Not live availability and not bookable.** All offers came back in economy cabin. No cabin_note was returned.\n\n## Leg 1: ORD to CDG, 2027-09-03\n| Carrier | Depart | Stops | Duration | Fare (USD) |\n|---|---|---|---|---|\n| Anser Airways | 07:03 | 2 | 11h29 | 692.98 |\n| Blue Corridor | 15:56 | 1 | 9h39 | 740.99 |\n| Northwind | 10:49 | 0 | 7h49 | 1009.92 |\n| Meridian Air | 18:10 | 0 | 8h34 | 1078.92 |\n\n## Leg 2: CDG to FCO, 2027-09-08\n| Carrier | Depart | Stops | Duration | Fare (USD) |\n|---|---|---|---|---|\n| Anser Airways | 07:19 | 2 | 11h45 | 656.90 |\n| Blue Corridor | 08:12 | 1 | 9h55 | 700.95 |\n| Northwind | 11:05 | 0 | 8h05 | 953.60 |\n| Meridian Air | 07:26 | 0 | 8h50 | 1022.60 |\n\n## Leg 3: FCO to ORD, 2027-09-13\n| Carrier | Depart | Stops | Duration | Fare (USD) |\n|---|---|---|---|---|\n| Northwind | 20:41 | 2 | 8h07 | 445.34 |\n| Meridian Air | 19:34 | 1 | 6h17 | 466.17 |\n| Anser Airways | 18:27 | 0 | 4h27 | 623.36 |\n| Blue Corridor | 12:48 | 0 | 5h12 | 692.36 |\n\n## Combined\n- Cheapest: Anser 692.98 + Anser 656.90 + Northwind 445.34 = **USD 1,795.22** (2, 2 and 2 stops)\n- Most convenient (nonstop on every leg, cheapest of those): Northwind 1009.92 + Northwind 953.60 + Anser 623.36 = **USD 2,586.88**\n- Difference: about USD 791.66 more for nonstops.\n\nNote: the sample durations are not realistic. For example, a 2-stop FCO to ORD is shorter than the nonstop ORD to CDG, and a 4h27 nonstop FCO to ORD is implausible. Treat the durations as rough.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 23963,
+          "cache_read": 22900,
+          "cache_creation": 1055,
+          "output_tokens": 1738
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['economy', 'economy', 'economy']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "forbidden_arguments",
+          "score": null,
+          "comment": "no values ruled out"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "yen-ceiling",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Lodging only, the traveler already has flights. Kyoto, check in 2027-11-20, check out 2027-11-23, 2 guests, maximum \u00a520,000 per night. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote the candidates to `/trip/options.md`. All five offers are **sample data**. The prices are illustrative, and none of these stays is bookable.\n\nThe tool prices in USD. I assumed about \u00a5150 per dollar, which puts the \u00a520,000 cap at roughly $133 a night. That rate is my assumption, so check it against the current rate. Two of the five offers fit the cap:\n\n- **Best on price:** the budget hostel private room costs $100.9 a night, or $302.7 for the stay. It has a 7.8 rating and free cancellation.\n- **Best on convenience and quality:** the quiet guesthouse costs $122.3 a night, or $366.9 total. It has a 9.1 rating but is non-refundable. The tool reported cancellation as false for it, not as unknown.\n\nThe guesthouse costs about $64 more over the stay and is rated much higher. The hostel is cheaper and refundable. If the traveler's plans might change, the hostel is the safer choice.\n\nThe other three offers are over budget, at $141.7 to $190.5 a night. I listed them in the file for reference only.",
+        "tool_calls": [
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Kyoto",
+              "check_in": "2027-11-20",
+              "check_out": "2027-11-23",
+              "guests": 2
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# Kyoto lodging, 2027-11-20 to 2027-11-23 (3 nights), 2 guests\n\n**Source: sample-data. All figures are synthetic and illustrative. Nothing here is live availability or bookable.**\n\nBudget: max \u00a520,000/night. The search tool quotes USD, so I assumed about \u00a5150 per USD, which makes the cap about $133/night. This rate is my assumption, not a quoted one. Recheck it against the current rate.\n\n## Within budget\n| Name | Type | Nightly (USD) | Total (USD) | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | 100.9 | 302.7 | 7.8 | Yes |\n| Quiet guesthouse | guesthouse | 122.3 | 366.9 | 9.1 | No (field is present and false) |\n\n## Over budget (for reference)\n| Name | Type | Nightly (USD) | Total (USD) | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Business district hotel | hotel | 141.7 | 425.1 | 8.2 | Yes |\n| Riverside apartment | apartment | 165.1 | 495.3 | 8.6 | No |\n| Central boutique hotel | hotel | 190.5 | 571.5 | 8.9 | Yes |\n\nNo `due_at_accommodation` figures were reported. No offers had an expiry because they are sample data.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 5, \"count\": 5, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Budget hostel, private room (Kyoto)\", \"kind\": \"hostel\", \"location\": \"Kyoto\", \"check_in\": \"2027-11-20\", \"check_out\": \"2027-11-23\", \"nights\": 3, \"guests\": 2, \"nightly_rate\": 100.9, \"total_cost\": 302.7, \"guest_rating\": 7.8, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Quiet guesthouse (Kyoto)\", \"kind\": \"guesthouse\", \"location\": \"Kyoto\", \"check_in\": \"2027-11-20\", \"check_out\": \"2027-11-23\", \"nights\": 3, \"guests\": 2, \"nightly_rate\": 122.3, \"total_cost\": 366.9, \"guest_rating\": 9.1, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Business district hotel (Kyoto)\", \"kind\": \"hotel\", \"location\": \"Kyoto\", \"check_in\": \"2027-11-20\", \"check_out\": \"2027-11-23\", \"nights\": 3, \"guests\": 2, \"nightly_rate\": 141.7, \"total_cost\": 425.1, \"guest_rating\": 8.2, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Riverside apartment (Kyoto)\", \"kind\": \"apartment\", \"location\": \"Kyoto\", \"check_in\": \"2027-11-20\", \"check_out\": \"2027-11-23\", \"nights\": 3, \"guests\": 2, \"nightly_rate\": 165.1, \"total_cost\": 495.3, \"guest_rating\": 8.6, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Central boutique hotel (Kyoto)\", \"kind\": \"hotel\", \"location\": \"Kyoto\", \"check_in\": \"2027-11-20\", \"check_out\": \"2027-11-23\", \"nights\": 3, \"guests\": 2, \"nightly_rate\": 190.5, \"total_cost\": 571.5, \"guest_rating\": 8.9, \"free_cancellation\": true, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# Kyoto lodging, 2027-11-20 to 2027-11-23 (3 nights), 2 guests\n\n**Source: sample-data. All figures are synthetic and illustrative. Nothing here is live availability or bookable.**\n\nBudget: max \u00a520,000/night. The search tool quotes USD, so I assumed about \u00a5150 per USD, which makes the cap about $133/night. This rate is my assumption, not a quoted one. Recheck it against the current rate.\n\n## Within budget\n| Name | Type | Nightly (USD) | Total (USD) | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | 100.9 | 302.7 | 7.8 | Yes |\n| Quiet guesthouse | guesthouse | 122.3 | 366.9 | 9.1 | No (field is present and false) |\n\n## Over budget (for reference)\n| Name | Type | Nightly (USD) | Total (USD) | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Business district hotel | hotel | 141.7 | 425.1 | 8.2 | Yes |\n| Riverside apartment | apartment | 165.1 | 495.3 | 8.6 | No |\n| Central boutique hotel | hotel | 190.5 | 571.5 | 8.9 | Yes |\n\nNo `due_at_accommodation` figures were reported. No offers had an expiry because they are sample data.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 20470,
+          "cache_read": 18671,
+          "cache_creation": 1791,
+          "output_tokens": 1255
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": null,
+          "comment": "no flight cabin briefed"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "forbidden_arguments",
+          "score": 1,
+          "comment": "none passed"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "checkin-before-arrival",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Two travelers, economy, LAX to SYD departing 2027-01-20 and returning 2027-02-03. The outbound flight crosses the date line and lands in Sydney on the morning of 2027-01-22. Lodging in Sydney for 2 guests, check in 2027-01-20, check out 2027-02-03. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote the candidates to `/trip/options.md`. Every flight and lodging result came back as sample data, so the prices are illustrative and none of it is bookable.\n\n**Flights (economy, LAX\u2013SYD, 2 travelers, total fare)**\n- **Cheapest:** Northwind at $1,172.76. It has 2 stops and takes 10h19.\n- **Most convenient:** Anser Airways nonstop at $1,687.04. It leaves at 15:39 and takes 6h39.\n- **Middle option:** Meridian Air with 1 stop at $1,245.38. It saves about $440 over the nonstop and takes 8h29.\n- **Tradeoff:** Going nonstop costs about $514 more than the cheapest option and saves about 3.7 hours.\n\n**Lodging**\n- **Check-in date:** You asked for check-in on 01-20, but you land on 01-22. Booking from 01-20 would pay for two nights you won't use, so I searched both dates.\n- **Cheapest, check-in 01-22 (12 nights):** The budget hostel private room is $741, rated 7.8, with no free cancellation.\n- **Best value, check-in 01-22 (12 nights):** The quiet guesthouse is $879, rated 9.1, with free cancellation. It costs $138 more than the hostel.\n- **Check-in 01-20 (14 nights):** The same hostel costs $1,802.50 and the guesthouse $2,229.50. The sample data prices the two date ranges very differently, which looks like an oddity of the sample data.\n- **Extra fees:** No offer reported a separate amount due at the accommodation.\n\nI'd use the 01-22 check-in unless you need a room for the nights of 01-20 and 01-21.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "LAX",
+              "destination": "SYD",
+              "depart_date": "2027-01-20",
+              "return_date": "2027-02-03",
+              "travelers": 2,
+              "cabin": "economy"
+            }
+          },
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Sydney",
+              "check_in": "2027-01-20",
+              "check_out": "2027-02-03",
+              "guests": 2
+            }
+          },
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Sydney",
+              "check_in": "2027-01-22",
+              "check_out": "2027-02-03",
+              "guests": 2
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# LAX\u2013SYD options, 2 travelers, economy (ALL SAMPLE DATA \u2013 illustrative, NOT bookable)\n\n## Flights (source: sample-data; depart 2027-01-20, return 2027-02-03; all cabin: economy)\nOutbound lands in Sydney morning of 2027-01-22 (date line).\n| Carrier | Depart | Stops | Duration | Per traveler | Total (2) |\n|---|---|---|---|---|---|\n| Northwind | 09:53 | 2 | 10h19 | $586.38 | $1,172.76 |\n| Meridian Air | 10:46 | 1 | 8h29 | $622.69 | $1,245.38 |\n| Anser Airways | 15:39 | 0 | 6h39 | $843.52 | $1,687.04 |\n| Blue Corridor | 15:00 | 0 | 7h24 | $912.52 | $1,825.04 |\n(Durations as reported by the sample data.)\n\n## Lodging (source: sample-data), 2 guests, check-out 2027-02-03\nNote: the requested check-in of 01-20 would pay for 2 nights before arrival (landing 01-22). Both searched.\n\n| Property | Rating | Free cancel | 01-20 in (14 n) total | 01-22 in (12 n) total |\n|---|---|---|---|---|\n| Budget hostel, private room | 7.8 | no | $1,802.50 | $741.00 |\n| Quiet guesthouse | 9.1 | yes | $2,229.50 | $879.00 |\n| Business district hotel | 8.2 | no | $2,712.50 | $1,041.00 |\n| Riverside apartment | 8.6 | yes | $3,111.50 | $1,143.00 |\n| Central boutique hotel | 8.9 | no | $3,566.50 | $1,341.00 |\nNo due_at_accommodation figures reported. The sample rates differ a lot between the two date ranges (e.g. $128.75 vs $61.75 per night for the hostel). That is an oddity of the sample data.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Northwind\", \"origin\": \"LAX\", \"destination\": \"SYD\", \"depart_date\": \"2027-01-20\", \"return_date\": \"2027-02-03\", \"depart_time_local\": \"09:53\", \"stops\": 2, \"duration_minutes\": 619, \"cabin\": \"economy\", \"fare_per_traveler\": 586.38, \"total_fare\": 1172.76, \"travelers\": 2, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Meridian Air\", \"origin\": \"LAX\", \"destination\": \"SYD\", \"depart_date\": \"2027-01-20\", \"return_date\": \"2027-02-03\", \"depart_time_local\": \"10:46\", \"stops\": 1, \"duration_minutes\": 509, \"cabin\": \"economy\", \"fare_per_traveler\": 622.69, \"total_fare\": 1245.38, \"travelers\": 2, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Anser Airways\", \"origin\": \"LAX\", \"destination\": \"SYD\", \"depart_date\": \"2027-01-20\", \"return_date\": \"2027-02-03\", \"depart_time_local\": \"15:39\", \"stops\": 0, \"duration_minutes\": 399, \"cabin\": \"economy\", \"fare_per_traveler\": 843.52, \"total_fare\": 1687.04, \"travelers\": 2, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Blue Corridor\", \"origin\": \"LAX\", \"destination\": \"SYD\", \"depart_date\": \"2027-01-20\", \"return_date\": \"2027-02-03\", \"depart_time_local\": \"15:00\", \"stops\": 0, \"duration_minutes\": 444, \"cabin\": \"economy\", \"fare_per_traveler\": 912.52, \"total_fare\": 1825.04, \"travelers\": 2, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\", \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 5, \"count\": 5, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Budget hostel, private room (Sydney)\", \"kind\": \"hostel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-22\", \"check_out\": \"2027-02-03\", \"nights\": 12, \"guests\": 2, \"nightly_rate\": 61.75, \"total_cost\": 741.0, \"guest_rating\": 7.8, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Quiet guesthouse (Sydney)\", \"kind\": \"guesthouse\", \"location\": \"Sydney\", \"check_in\": \"2027-01-22\", \"check_out\": \"2027-02-03\", \"nights\": 12, \"guests\": 2, \"nightly_rate\": 73.25, \"total_cost\": 879.0, \"guest_rating\": 9.1, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Business district hotel (Sydney)\", \"kind\": \"hotel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-22\", \"check_out\": \"2027-02-03\", \"nights\": 12, \"guests\": 2, \"nightly_rate\": 86.75, \"total_cost\": 1041.0, \"guest_rating\": 8.2, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Riverside apartment (Sydney)\", \"kind\": \"apartment\", \"location\": \"Sydney\", \"check_in\": \"2027-01-22\", \"check_out\": \"2027-02-03\", \"nights\": 12, \"guests\": 2, \"nightly_rate\": 95.25, \"total_cost\": 1143.0, \"guest_rating\": 8.6, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Central boutique hotel (Sydney)\", \"kind\": \"hotel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-22\", \"check_out\": \"2027-02-03\", \"nights\": 12, \"guests\": 2, \"nightly_rate\": 111.75, \"total_cost\": 1341.0, \"guest_rating\": 8.9, \"free_cancellation\": false, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 5, \"count\": 5, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Budget hostel, private room (Sydney)\", \"kind\": \"hostel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-20\", \"check_out\": \"2027-02-03\", \"nights\": 14, \"guests\": 2, \"nightly_rate\": 128.75, \"total_cost\": 1802.5, \"guest_rating\": 7.8, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Quiet guesthouse (Sydney)\", \"kind\": \"guesthouse\", \"location\": \"Sydney\", \"check_in\": \"2027-01-20\", \"check_out\": \"2027-02-03\", \"nights\": 14, \"guests\": 2, \"nightly_rate\": 159.25, \"total_cost\": 2229.5, \"guest_rating\": 9.1, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Business district hotel (Sydney)\", \"kind\": \"hotel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-20\", \"check_out\": \"2027-02-03\", \"nights\": 14, \"guests\": 2, \"nightly_rate\": 193.75, \"total_cost\": 2712.5, \"guest_rating\": 8.2, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Riverside apartment (Sydney)\", \"kind\": \"apartment\", \"location\": \"Sydney\", \"check_in\": \"2027-01-20\", \"check_out\": \"2027-02-03\", \"nights\": 14, \"guests\": 2, \"nightly_rate\": 222.25, \"total_cost\": 3111.5, \"guest_rating\": 8.6, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Central boutique hotel (Sydney)\", \"kind\": \"hotel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-20\", \"check_out\": \"2027-02-03\", \"nights\": 14, \"guests\": 2, \"nightly_rate\": 254.75, \"total_cost\": 3566.5, \"guest_rating\": 8.9, \"free_cancellation\": false, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# LAX\u2013SYD options, 2 travelers, economy (ALL SAMPLE DATA \u2013 illustrative, NOT bookable)\n\n## Flights (source: sample-data; depart 2027-01-20, return 2027-02-03; all cabin: economy)\nOutbound lands in Sydney morning of 2027-01-22 (date line).\n| Carrier | Depart | Stops | Duration | Per traveler | Total (2) |\n|---|---|---|---|---|---|\n| Northwind | 09:53 | 2 | 10h19 | $586.38 | $1,172.76 |\n| Meridian Air | 10:46 | 1 | 8h29 | $622.69 | $1,245.38 |\n| Anser Airways | 15:39 | 0 | 6h39 | $843.52 | $1,687.04 |\n| Blue Corridor | 15:00 | 0 | 7h24 | $912.52 | $1,825.04 |\n(Durations as reported by the sample data.)\n\n## Lodging (source: sample-data), 2 guests, check-out 2027-02-03\nNote: the requested check-in of 01-20 would pay for 2 nights before arrival (landing 01-22). Both searched.\n\n| Property | Rating | Free cancel | 01-20 in (14 n) total | 01-22 in (12 n) total |\n|---|---|---|---|---|\n| Budget hostel, private room | 7.8 | no | $1,802.50 | $741.00 |\n| Quiet guesthouse | 9.1 | yes | $2,229.50 | $879.00 |\n| Business district hotel | 8.2 | no | $2,712.50 | $1,041.00 |\n| Riverside apartment | 8.6 | yes | $3,111.50 | $1,143.00 |\n| Central boutique hotel | 8.9 | no | $3,566.50 | $1,341.00 |\nNo due_at_accommodation figures reported. The sample rates differ a lot between the two date ranges (e.g. $128.75 vs $61.75 per night for the hostel). That is an oddity of the sample data.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 24722,
+          "cache_read": 20813,
+          "cache_creation": 3901,
+          "output_tokens": 1869
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['economy']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "forbidden_arguments",
+          "score": null,
+          "comment": "no values ruled out"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "open-jaw-multi-city",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One traveler, economy. Chicago O'Hare (ORD) to Paris CDG on 2027-09-03, Paris CDG to Rome FCO on 2027-09-08, and Rome FCO back to ORD on 2027-09-13. Flights only; lodging is handled separately. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote the candidates to `/trip/options.md`. All the flight figures are **sample data (synthetic)**. They are illustrative only, not live availability, and can't be booked. Every offer came back in economy, as requested.\n\n- **Best on price:** $1,795.22 total. This is Anser Airways ORD\u2013CDG at $692.98, Anser CDG\u2013FCO at $656.90, and Northwind FCO\u2013ORD at $445.34. All three legs have 2 stops.\n- **Best on convenience:** $2,586.88 total, nonstop on every leg. This is Northwind ORD\u2013CDG at $1,009.92, Northwind CDG\u2013FCO at $953.60, and Anser FCO\u2013ORD at $623.36.\n- **Tradeoff:** the nonstop trip costs about $791.66 more. In exchange you avoid six stops across the three legs.\n\nThe sample durations aren't realistic for these routes, so treat them as placeholders.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "ORD",
+              "destination": "CDG",
+              "depart_date": "2027-09-03"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "CDG",
+              "destination": "FCO",
+              "depart_date": "2027-09-08"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "FCO",
+              "destination": "ORD",
+              "depart_date": "2027-09-13"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# Flight options: ORD -> CDG -> FCO -> ORD (1 traveler, economy)\n\n**ALL FIGURES BELOW ARE SYNTHETIC SAMPLE DATA (source: sample-data). They are illustrative only, not live availability, and not bookable.**\nAll offers came back in economy cabin (matches requested). No cabin_note. USD, per traveler.\n\n## Leg 1: ORD -> CDG, 2027-09-03\n| Carrier | Dep | Stops | Duration | Fare |\n|---|---|---|---|---|\n| Anser Airways | 07:03 | 2 | 11h29 | $692.98 |\n| Blue Corridor | 15:56 | 1 | 9h39 | $740.99 |\n| Northwind | 10:49 | 0 | 7h49 | $1009.92 |\n| Meridian Air | 18:10 | 0 | 8h34 | $1078.92 |\n\n## Leg 2: CDG -> FCO, 2027-09-08\n| Carrier | Dep | Stops | Duration | Fare |\n|---|---|---|---|---|\n| Anser Airways | 07:19 | 2 | 11h45 | $656.90 |\n| Blue Corridor | 08:12 | 1 | 9h55 | $700.95 |\n| Northwind | 11:05 | 0 | 8h05 | $953.60 |\n| Meridian Air | 07:26 | 0 | 8h50 | $1022.60 |\n\n## Leg 3: FCO -> ORD, 2027-09-13\n| Carrier | Dep | Stops | Duration | Fare |\n|---|---|---|---|---|\n| Northwind | 20:41 | 2 | 8h07 | $445.34 |\n| Meridian Air | 19:34 | 1 | 6h17 | $466.17 |\n| Anser Airways | 18:27 | 0 | 4h27 | $623.36 |\n| Blue Corridor | 12:48 | 0 | 5h12 | $692.36 |\n\n(Sample durations are not realistic for these routes; treat as illustrative.)\n\n## Combined\n- Cheapest: Anser (L1) + Anser (L2) + Northwind (L3) = **$1,795.22**, with 2, 2 and 2 stops.\n- Most convenient (all nonstop, cheapest nonstops): Northwind (L1) + Northwind (L2) + Anser (L3) = **$2,586.88**.\n- Tradeoff: about $791.66 more for nonstops on all three legs.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Anser Airways\", \"origin\": \"ORD\", \"destination\": \"CDG\", \"depart_date\": \"2027-09-03\", \"return_date\": null, \"depart_time_local\": \"07:03\", \"stops\": 2, \"duration_minutes\": 689, \"cabin\": \"economy\", \"fare_per_traveler\": 692.98, \"total_fare\": 692.98, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Blue Corridor\", \"origin\": \"ORD\", \"destination\": \"CDG\", \"depart_date\": \"2027-09-03\", \"return_date\": null, \"depart_time_local\": \"15:56\", \"stops\": 1, \"duration_minutes\": 579, \"cabin\": \"economy\", \"fare_per_traveler\": 740.99, \"total_fare\": 740.99, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Northwind\", \"origin\": \"ORD\", \"destination\": \"CDG\", \"depart_date\": \"2027-09-03\", \"return_date\": null, \"depart_time_local\": \"10:49\", \"stops\": 0, \"duration_minutes\": 469, \"cabin\": \"economy\", \"fare_per_traveler\": 1009.92, \"total_fare\": 1009.92, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Meridian Air\", \"origin\": \"ORD\", \"destination\": \"CDG\", \"depart_date\": \"2027-09-03\", \"return_date\": null, \"depart_time_local\": \"18:10\", \"stops\": 0, \"duration_minutes\": 514, \"cabin\": \"economy\", \"fare_per_traveler\": 1078.92, \"total_fare\": 1078.92, \"travelers\": 1, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\", \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Anser Airways\", \"origin\": \"CDG\", \"destination\": \"FCO\", \"depart_date\": \"2027-09-08\", \"return_date\": null, \"depart_time_local\": \"07:19\", \"stops\": 2, \"duration_minutes\": 705, \"cabin\": \"economy\", \"fare_per_traveler\": 656.9, \"total_fare\": 656.9, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Blue Corridor\", \"origin\": \"CDG\", \"destination\": \"FCO\", \"depart_date\": \"2027-09-08\", \"return_date\": null, \"depart_time_local\": \"08:12\", \"stops\": 1, \"duration_minutes\": 595, \"cabin\": \"economy\", \"fare_per_traveler\": 700.95, \"total_fare\": 700.95, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Northwind\", \"origin\": \"CDG\", \"destination\": \"FCO\", \"depart_date\": \"2027-09-08\", \"return_date\": null, \"depart_time_local\": \"11:05\", \"stops\": 0, \"duration_minutes\": 485, \"cabin\": \"economy\", \"fare_per_traveler\": 953.6, \"total_fare\": 953.6, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Meridian Air\", \"origin\": \"CDG\", \"destination\": \"FCO\", \"depart_date\": \"2027-09-08\", \"return_date\": null, \"depart_time_local\": \"07:26\", \"stops\": 0, \"duration_minutes\": 530, \"cabin\": \"economy\", \"fare_per_traveler\": 1022.6, \"total_fare\": 1022.6, \"travelers\": 1, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\", \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Northwind\", \"origin\": \"FCO\", \"destination\": \"ORD\", \"depart_date\": \"2027-09-13\", \"return_date\": null, \"depart_time_local\": \"20:41\", \"stops\": 2, \"duration_minutes\": 487, \"cabin\": \"economy\", \"fare_per_traveler\": 445.34, \"total_fare\": 445.34, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Meridian Air\", \"origin\": \"FCO\", \"destination\": \"ORD\", \"depart_date\": \"2027-09-13\", \"return_date\": null, \"depart_time_local\": \"19:34\", \"stops\": 1, \"duration_minutes\": 377, \"cabin\": \"economy\", \"fare_per_traveler\": 466.17, \"total_fare\": 466.17, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Anser Airways\", \"origin\": \"FCO\", \"destination\": \"ORD\", \"depart_date\": \"2027-09-13\", \"return_date\": null, \"depart_time_local\": \"18:27\", \"stops\": 0, \"duration_minutes\": 267, \"cabin\": \"economy\", \"fare_per_traveler\": 623.36, \"total_fare\": 623.36, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Blue Corridor\", \"origin\": \"FCO\", \"destination\": \"ORD\", \"depart_date\": \"2027-09-13\", \"return_date\": null, \"depart_time_local\": \"12:48\", \"stops\": 0, \"duration_minutes\": 312, \"cabin\": \"economy\", \"fare_per_traveler\": 692.36, \"total_fare\": 692.36, \"travelers\": 1, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\", \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# Flight options: ORD -> CDG -> FCO -> ORD (1 traveler, economy)\n\n**ALL FIGURES BELOW ARE SYNTHETIC SAMPLE DATA (source: sample-data). They are illustrative only, not live availability, and not bookable.**\nAll offers came back in economy cabin (matches requested). No cabin_note. USD, per traveler.\n\n## Leg 1: ORD -> CDG, 2027-09-03\n| Carrier | Dep | Stops | Duration | Fare |\n|---|---|---|---|---|\n| Anser Airways | 07:03 | 2 | 11h29 | $692.98 |\n| Blue Corridor | 15:56 | 1 | 9h39 | $740.99 |\n| Northwind | 10:49 | 0 | 7h49 | $1009.92 |\n| Meridian Air | 18:10 | 0 | 8h34 | $1078.92 |\n\n## Leg 2: CDG -> FCO, 2027-09-08\n| Carrier | Dep | Stops | Duration | Fare |\n|---|---|---|---|---|\n| Anser Airways | 07:19 | 2 | 11h45 | $656.90 |\n| Blue Corridor | 08:12 | 1 | 9h55 | $700.95 |\n| Northwind | 11:05 | 0 | 8h05 | $953.60 |\n| Meridian Air | 07:26 | 0 | 8h50 | $1022.60 |\n\n## Leg 3: FCO -> ORD, 2027-09-13\n| Carrier | Dep | Stops | Duration | Fare |\n|---|---|---|---|---|\n| Northwind | 20:41 | 2 | 8h07 | $445.34 |\n| Meridian Air | 19:34 | 1 | 6h17 | $466.17 |\n| Anser Airways | 18:27 | 0 | 4h27 | $623.36 |\n| Blue Corridor | 12:48 | 0 | 5h12 | $692.36 |\n\n(Sample durations are not realistic for these routes; treat as illustrative.)\n\n## Combined\n- Cheapest: Anser (L1) + Anser (L2) + Northwind (L3) = **$1,795.22**, with 2, 2 and 2 stops.\n- Most convenient (all nonstop, cheapest nonstops): Northwind (L1) + Northwind (L2) + Anser (L3) = **$2,586.88**.\n- Tradeoff: about $791.66 more for nonstops on all three legs.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 23944,
+          "cache_read": 22900,
+          "cache_creation": 1036,
+          "output_tokens": 1640
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['economy', 'economy', 'economy']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "forbidden_arguments",
+          "score": null,
+          "comment": "no values ruled out"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "ceiling-below-everything",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Lodging only, the traveler already has flights. Edinburgh, check in 2027-08-14, check out 2027-08-18, 1 guest, maximum $50 per night. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I found nothing within the $50/night cap. The search returned 0 offers, and I wrote the results to `/trip/options.md`.\n\nAll the lodging data is sample data. The figures are illustrative, not live availability, and none of it is bookable.\n\nI also ran the search without the cap to see what the market looks like. All five offers came back well over budget:\n\n- **Best on price:** the budget hostel private room, at $151.19 a night ($604.76 total). It has a 7.8 rating and no free cancellation. That is about three times the cap.\n- **Best on convenience:** the quiet guesthouse, at $184.73 a night ($738.92 total). It has a 9.1 rating and free cancellation.\n- **Tradeoff:** the guesthouse costs about $134 more over the stay. In return you get a much higher rating and a refundable booking.\n\nThe traveler would need to raise the budget to roughly $150 or more a night. Other options are shifting the dates or looking outside Edinburgh. Mid-August is festival season, which usually pushes Edinburgh prices up, so different dates might help.",
+        "tool_calls": [
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Edinburgh",
+              "check_in": "2027-08-14",
+              "check_out": "2027-08-18",
+              "guests": 1,
+              "max_nightly_rate": 50
+            }
+          },
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Edinburgh",
+              "check_in": "2027-08-14",
+              "check_out": "2027-08-18",
+              "guests": 1
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# Edinburgh lodging, 2027-08-14 to 2027-08-18 (4 nights, 1 guest)\n\nSource: sample-data. These figures are illustrative only, not live availability, and nothing here is bookable.\n\n## Result against the $50/night cap\nNo offers at or under $50/night. The capped search returned 0 results.\n\n## Closest offers (uncapped search, all over budget, USD)\n| Name | Type | Nightly | Total | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | 151.19 | 604.76 | 7.8 | No |\n| Quiet guesthouse | guesthouse | 184.73 | 738.92 | 9.1 | Yes |\n| Business district hotel | hotel | 222.27 | 889.08 | 8.2 | No |\n| Riverside apartment | apartment | 260.81 | 1043.24 | 8.6 | Yes |\n| Central boutique hotel | hotel | 297.35 | 1189.40 | 8.9 | No |\n\nNo `due_at_accommodation` figures were reported.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [], \"total_found\": 0, \"count\": 0, \"offers\": [], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 5, \"count\": 5, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Budget hostel, private room (Edinburgh)\", \"kind\": \"hostel\", \"location\": \"Edinburgh\", \"check_in\": \"2027-08-14\", \"check_out\": \"2027-08-18\", \"nights\": 4, \"guests\": 1, \"nightly_rate\": 151.19, \"total_cost\": 604.76, \"guest_rating\": 7.8, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Quiet guesthouse (Edinburgh)\", \"kind\": \"guesthouse\", \"location\": \"Edinburgh\", \"check_in\": \"2027-08-14\", \"check_out\": \"2027-08-18\", \"nights\": 4, \"guests\": 1, \"nightly_rate\": 184.73, \"total_cost\": 738.92, \"guest_rating\": 9.1, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Business district hotel (Edinburgh)\", \"kind\": \"hotel\", \"location\": \"Edinburgh\", \"check_in\": \"2027-08-14\", \"check_out\": \"2027-08-18\", \"nights\": 4, \"guests\": 1, \"nightly_rate\": 222.27, \"total_cost\": 889.08, \"guest_rating\": 8.2, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Riverside apartment (Edinburgh)\", \"kind\": \"apartment\", \"location\": \"Edinburgh\", \"check_in\": \"2027-08-14\", \"check_out\": \"2027-08-18\", \"nights\": 4, \"guests\": 1, \"nightly_rate\": 260.81, \"total_cost\": 1043.24, \"guest_rating\": 8.6, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Central boutique hotel (Edinburgh)\", \"kind\": \"hotel\", \"location\": \"Edinburgh\", \"check_in\": \"2027-08-14\", \"check_out\": \"2027-08-18\", \"nights\": 4, \"guests\": 1, \"nightly_rate\": 297.35, \"total_cost\": 1189.4, \"guest_rating\": 8.9, \"free_cancellation\": false, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# Edinburgh lodging, 2027-08-14 to 2027-08-18 (4 nights, 1 guest)\n\nSource: sample-data. These figures are illustrative only, not live availability, and nothing here is bookable.\n\n## Result against the $50/night cap\nNo offers at or under $50/night. The capped search returned 0 results.\n\n## Closest offers (uncapped search, all over budget, USD)\n| Name | Type | Nightly | Total | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | 151.19 | 604.76 | 7.8 | No |\n| Quiet guesthouse | guesthouse | 184.73 | 738.92 | 9.1 | Yes |\n| Business district hotel | hotel | 222.27 | 889.08 | 8.2 | No |\n| Riverside apartment | apartment | 260.81 | 1043.24 | 8.6 | Yes |\n| Central boutique hotel | hotel | 297.35 | 1189.40 | 8.9 | No |\n\nNo `due_at_accommodation` figures were reported.\n"
+        },
+        "usage": {
+          "model_calls": 4,
+          "input_tokens": 26803,
+          "cache_read": 26329,
+          "cache_creation": 464,
+          "output_tokens": 1119
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": null,
+          "comment": "no flight cabin briefed"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "forbidden_arguments",
+          "score": null,
+          "comment": "no values ruled out"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    }
+  ]
+}

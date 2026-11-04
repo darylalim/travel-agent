@@ -1,0 +1,425 @@
+{
+  "experiment": "budget_analyst-1d3a2f96",
+  "metadata": {
+    "judge": "anthropic:claude-sonnet-5-5",
+    "provider": "sample-data",
+    "repetitions": 1,
+    "subagent": "budget-analyst",
+    "model": "anthropic:claude-haiku-5-5",
+    "effort": "medium"
+  },
+  "runs": [
+    {
+      "key": "due-at-accommodation-is-a-caveat",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a $2000 USD budget, 1 traveler, 4 nights. Flights: $450 return. Lodging: $960 total_cost for the 4 nights; the provider also reports $85 due_at_accommodation, and it is not known whether that is already inside the $960. Food: $50 per day for 4 days. Figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "The plan fits the $2,000 USD budget. The estimated total is **$1,610.00**, which leaves **$390.00** remaining (80.5% of budget used).\n\nLargest line items:\n1. Lodging, 4 nights total: $960.00\n2. Return flight, 1 traveler: $450.00\n3. Food, $50/day \u00d7 4 days: $200.00\n\n**Caveat:** The lodging provider also reports $85.00 due at accommodation, and it is unknown whether that is already inside the $960.00. I left it out of the total and recorded it as a caveat. If it is separate, the total becomes $1,695.00 and $305.00 remains, so the plan still fits. Confirm this with the provider.\n\nAll figures are sample data, not live prices, so the total is an estimate and not a quote. No currency conversion was needed because everything is in USD.\n\nThe breakdown is written to `/trip/budget.md`.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "Return flight, 1 traveler (sample data)",
+                  "category": "flights",
+                  "amount": 450,
+                  "quantity": 1,
+                  "estimated": true
+                },
+                {
+                  "label": "Lodging, 4 nights total (sample data)",
+                  "category": "lodging",
+                  "amount": 960,
+                  "quantity": 1,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, $50/day x 4 days (sample data)",
+                  "category": "food",
+                  "amount": 50,
+                  "quantity": 4,
+                  "estimated": true
+                }
+              ],
+              "budget_total": 2000,
+              "currency": "USD"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Trip Budget Breakdown\n\n**Travelers:** 1\n**Length:** 4 nights\n**Budget:** $2,000.00 USD\n**Currency:** USD (no conversion applied)\n\n**Data status:** All figures are sample data, not live prices. Treat the total as an estimate, not a quote.\n\n## Cost lines\n\n| Category | Item | Unit amount | Qty | Subtotal |\n|---|---|---|---|---|\n| Flights | Return flight, 1 traveler (sample data) | $450.00 | 1 | $450.00 |\n| Lodging | Lodging, 4 nights total (sample data) | $960.00 | 1 | $960.00 |\n| Food | Food, $50/day x 4 days (sample data) | $50.00 | 4 | $200.00 |\n\n## Totals by category\n\n| Category | Subtotal |\n|---|---|\n| Flights | $450.00 |\n| Lodging | $960.00 |\n| Food | $200.00 |\n| **Total estimated** | **$1,610.00** |\n\n## Budget comparison\n\n- Total estimated: $1,610.00\n- Budget: $2,000.00\n- Remaining: $390.00\n- Share of budget used: 80.5%\n- Status: within budget\n\n## Caveat on the total: amount due at accommodation\n\nThe lodging provider also reports **$85.00 due at accommodation**. It is not known whether this is already included in the $960.00 lodging figure, so it is **not** added as a line item and is **not** included in the $1,610.00 total.\n\n- If the $85.00 is already inside the $960.00: total stays $1,610.00, remaining $390.00.\n- If the $85.00 is separate from the $960.00: total becomes $1,695.00, remaining $305.00. The plan still fits the budget.\n\nConfirm with the provider whether the $85.00 is part of the $960.00.\n\n## Over-budget cuts\n\nNot applicable. The plan is within budget, so no cuts are proposed.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"USD\", \"budget_total\": 2000.0, \"total_estimated\": 1610.0, \"remaining\": 390.0, \"over_budget\": false, \"overage\": 0.0, \"percent_of_budget_used\": 80.5, \"by_category\": {\"lodging\": 960.0, \"flights\": 450.0, \"food\": 200.0}, \"largest_line_items\": [{\"label\": \"Lodging, 4 nights total (sample data)\", \"category\": \"lodging\", \"unit_amount\": 960.0, \"quantity\": 1, \"subtotal\": 960.0, \"estimated\": true}, {\"label\": \"Return flight, 1 traveler (sample data)\", \"category\": \"flights\", \"unit_amount\": 450.0, \"quantity\": 1, \"subtotal\": 450.0, \"estimated\": true}, {\"label\": \"Food, $50/day x 4 days (sample data)\", \"category\": \"food\", \"unit_amount\": 50.0, \"quantity\": 4, \"subtotal\": 200.0, \"estimated\": true}], \"all_lines_estimated\": true, \"line_count\": 3}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Trip Budget Breakdown\n\n**Travelers:** 1\n**Length:** 4 nights\n**Budget:** $2,000.00 USD\n**Currency:** USD (no conversion applied)\n\n**Data status:** All figures are sample data, not live prices. Treat the total as an estimate, not a quote.\n\n## Cost lines\n\n| Category | Item | Unit amount | Qty | Subtotal |\n|---|---|---|---|---|\n| Flights | Return flight, 1 traveler (sample data) | $450.00 | 1 | $450.00 |\n| Lodging | Lodging, 4 nights total (sample data) | $960.00 | 1 | $960.00 |\n| Food | Food, $50/day x 4 days (sample data) | $50.00 | 4 | $200.00 |\n\n## Totals by category\n\n| Category | Subtotal |\n|---|---|\n| Flights | $450.00 |\n| Lodging | $960.00 |\n| Food | $200.00 |\n| **Total estimated** | **$1,610.00** |\n\n## Budget comparison\n\n- Total estimated: $1,610.00\n- Budget: $2,000.00\n- Remaining: $390.00\n- Share of budget used: 80.5%\n- Status: within budget\n\n## Caveat on the total: amount due at accommodation\n\nThe lodging provider also reports **$85.00 due at accommodation**. It is not known whether this is already included in the $960.00 lodging figure, so it is **not** added as a line item and is **not** included in the $1,610.00 total.\n\n- If the $85.00 is already inside the $960.00: total stays $1,610.00, remaining $390.00.\n- If the $85.00 is separate from the $960.00: total becomes $1,695.00, remaining $305.00. The plan still fits the budget.\n\nConfirm with the provider whether the $85.00 is part of the $960.00.\n\n## Over-budget cuts\n\nNot applicable. The plan is within budget, so no cuts are proposed.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 16296,
+          "cache_read": 14632,
+          "cache_creation": 1656,
+          "output_tokens": 1570
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": 1,
+          "comment": "total 1610.0 against 2000.0; expected 1610 against 2000"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "USD"
+        },
+        {
+          "key": "due_at_accommodation_excluded",
+          "score": 1,
+          "comment": "kept out"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "kyoto-fits",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this plan against a $4000 USD budget for 2 travelers, 5 nights in Kyoto. Flights SFO-KIX return: $620 per person. Lodging: $180 per night, 5 nights. Food: $55 per person per day, 5 days. Local transport passes: $120 total. Activities and temple entries: $300 total. All figures are sample data, not live prices. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "The plan comes to **$3,110.00** against your $4,000 budget, so it fits with **$890.00** remaining (77.8% of the budget used).\n\n**Largest line items:**\n1. SFO-KIX return flights, 2 travelers ($620 each): $1,240.00\n2. Kyoto lodging, 5 nights at $180: $900.00\n3. Food, 2 travelers \u00d7 5 days at $55 per person per day: $550.00\n\nTransport passes ($120) and activities and temple entries ($300) make up the rest.\n\nAll figures are sample data, not live prices, so the total is an estimate and not a quote. No currency conversion was needed, since everything is in USD. The breakdown is written to `/trip/budget.md`, with the sample-data caveat and a note that nothing is known to sit outside the total.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "SFO-KIX return flights, 2 travelers (sample data)",
+                  "category": "flights",
+                  "amount": 620,
+                  "quantity": 2,
+                  "estimated": true
+                },
+                {
+                  "label": "Kyoto lodging, 5 nights (sample data)",
+                  "category": "lodging",
+                  "amount": 180,
+                  "quantity": 5,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, 2 travelers x 5 days at $55 per person per day (sample data)",
+                  "category": "food",
+                  "amount": 55,
+                  "quantity": 10,
+                  "estimated": true
+                },
+                {
+                  "label": "Local transport passes, total (sample data)",
+                  "category": "transport",
+                  "amount": 120,
+                  "quantity": 1,
+                  "estimated": true
+                },
+                {
+                  "label": "Activities and temple entries, total (sample data)",
+                  "category": "activities",
+                  "amount": 300,
+                  "quantity": 1,
+                  "estimated": true
+                }
+              ],
+              "budget_total": 4000,
+              "currency": "USD"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Kyoto Trip Budget (2 travelers, 5 nights)\n\n**Currency:** USD (no conversion applied)\n**Budget:** $4,000.00\n\n**Data status:** All figures are SAMPLE DATA, not live prices. Nothing here is a quote. Every line is an estimate.\n\n## Cost lines\n\n| Category   | Item                                                        | Unit amount | Qty | Subtotal   | Status   |\n|------------|-------------------------------------------------------------|-------------|-----|------------|----------|\n| Flights    | SFO-KIX return, per person (2 travelers)                    | $620.00     | 2   | $1,240.00  | Sample   |\n| Lodging    | Kyoto lodging, per night (5 nights)                         | $180.00     | 5   | $900.00    | Sample   |\n| Food       | $55 per person per day (2 travelers x 5 days)               | $55.00      | 10  | $550.00    | Sample   |\n| Transport  | Local transport passes, total                               | $120.00     | 1   | $120.00    | Sample   |\n| Activities | Activities and temple entries, total                        | $300.00     | 1   | $300.00    | Sample   |\n\n## Totals by category\n\n| Category   | Subtotal   |\n|------------|------------|\n| Flights    | $1,240.00  |\n| Lodging    | $900.00    |\n| Food       | $550.00    |\n| Transport  | $120.00    |\n| Activities | $300.00    |\n| **Total**  | **$3,110.00** |\n\n## Budget comparison\n\n- Total estimated cost: **$3,110.00**\n- Budget: $4,000.00\n- Remaining: **$890.00**\n- Share of budget used: 77.8%\n- Status: **Within budget**\n\n## Largest line items\n\n1. SFO-KIX return flights, 2 travelers: $1,240.00\n2. Kyoto lodging, 5 nights: $900.00\n3. Food, 2 travelers x 5 days: $550.00\n\n## Caveats\n\n- The $3,110.00 total rests entirely on sample data. It is not a quote and live prices may differ materially.\n- No costs are known to sit outside this total. No amounts were reported as due at the accommodation.\n- The total does not include anything not listed above (for example, international baggage fees, travel insurance, visas, or extra spending money). None were provided.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"USD\", \"budget_total\": 4000.0, \"total_estimated\": 3110.0, \"remaining\": 890.0, \"over_budget\": false, \"overage\": 0.0, \"percent_of_budget_used\": 77.8, \"by_category\": {\"flights\": 1240.0, \"lodging\": 900.0, \"food\": 550.0, \"activities\": 300.0, \"transport\": 120.0}, \"largest_line_items\": [{\"label\": \"SFO-KIX return flights, 2 travelers (sample data)\", \"category\": \"flights\", \"unit_amount\": 620.0, \"quantity\": 2, \"subtotal\": 1240.0, \"estimated\": true}, {\"label\": \"Kyoto lodging, 5 nights (sample data)\", \"category\": \"lodging\", \"unit_amount\": 180.0, \"quantity\": 5, \"subtotal\": 900.0, \"estimated\": true}, {\"label\": \"Food, 2 travelers x 5 days at $55 per person per day (sample data)\", \"category\": \"food\", \"unit_amount\": 55.0, \"quantity\": 10, \"subtotal\": 550.0, \"estimated\": true}], \"all_lines_estimated\": true, \"line_count\": 5}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Kyoto Trip Budget (2 travelers, 5 nights)\n\n**Currency:** USD (no conversion applied)\n**Budget:** $4,000.00\n\n**Data status:** All figures are SAMPLE DATA, not live prices. Nothing here is a quote. Every line is an estimate.\n\n## Cost lines\n\n| Category   | Item                                                        | Unit amount | Qty | Subtotal   | Status   |\n|------------|-------------------------------------------------------------|-------------|-----|------------|----------|\n| Flights    | SFO-KIX return, per person (2 travelers)                    | $620.00     | 2   | $1,240.00  | Sample   |\n| Lodging    | Kyoto lodging, per night (5 nights)                         | $180.00     | 5   | $900.00    | Sample   |\n| Food       | $55 per person per day (2 travelers x 5 days)               | $55.00      | 10  | $550.00    | Sample   |\n| Transport  | Local transport passes, total                               | $120.00     | 1   | $120.00    | Sample   |\n| Activities | Activities and temple entries, total                        | $300.00     | 1   | $300.00    | Sample   |\n\n## Totals by category\n\n| Category   | Subtotal   |\n|------------|------------|\n| Flights    | $1,240.00  |\n| Lodging    | $900.00    |\n| Food       | $550.00    |\n| Transport  | $120.00    |\n| Activities | $300.00    |\n| **Total**  | **$3,110.00** |\n\n## Budget comparison\n\n- Total estimated cost: **$3,110.00**\n- Budget: $4,000.00\n- Remaining: **$890.00**\n- Share of budget used: 77.8%\n- Status: **Within budget**\n\n## Largest line items\n\n1. SFO-KIX return flights, 2 travelers: $1,240.00\n2. Kyoto lodging, 5 nights: $900.00\n3. Food, 2 travelers x 5 days: $550.00\n\n## Caveats\n\n- The $3,110.00 total rests entirely on sample data. It is not a quote and live prices may differ materially.\n- No costs are known to sit outside this total. No amounts were reported as due at the accommodation.\n- The total does not include anything not listed above (for example, international baggage fees, travel insurance, visas, or extra spending money). None were provided.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 16865,
+          "cache_read": 14704,
+          "cache_creation": 2153,
+          "output_tokens": 1796
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": 1,
+          "comment": "total 3110.0 against 4000.0; expected 3110 against 4000"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "USD"
+        },
+        {
+          "key": "due_at_accommodation_excluded",
+          "score": null,
+          "comment": "nothing to exclude in this example"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "stockholm-sek",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a 15000 SEK budget, 1 traveler, 4 nights in Stockholm. All amounts are in SEK. Flights AMS-ARN return: 2400. Lodging: 1450 per night for 4 nights. Food: 600 per day for 4 days. Transport card: 400. Figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "The Stockholm trip comes to **11,000 SEK**, which is within your 15,000 SEK budget with **4,000 SEK remaining** (73.3% of budget used).\n\nLargest line items:\n1. Lodging, 4 nights at 1,450 SEK: 5,800 SEK\n2. Flights AMS-ARN return: 2,400 SEK\n3. Food, 4 days at 600 SEK: 2,400 SEK\n\nThe transport card is 400 SEK. All figures are sample data, not live prices, so treat the total as an estimate rather than a quote. No currency conversion was needed.\n\nThe breakdown is written to `/trip/budget.md`.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "Flights AMS-ARN return, 1 pax (sample data)",
+                  "category": "flights",
+                  "amount": 2400,
+                  "quantity": 1,
+                  "estimated": true
+                },
+                {
+                  "label": "Lodging, Stockholm, 4 nights at 1450 (sample data)",
+                  "category": "lodging",
+                  "amount": 1450,
+                  "quantity": 4,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, 4 days at 600 per day (sample data)",
+                  "category": "food",
+                  "amount": 600,
+                  "quantity": 4,
+                  "estimated": true
+                },
+                {
+                  "label": "Transport card (sample data)",
+                  "category": "transport",
+                  "amount": 400,
+                  "quantity": 1,
+                  "estimated": true
+                }
+              ],
+              "budget_total": 15000,
+              "currency": "SEK"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Stockholm trip budget (4 nights, 1 traveler)\n\nCurrency: SEK. No conversion was needed; all figures are in SEK.\n\n**Data status: all figures are sample data, not live prices. The total is an estimate, not a quote.**\n\n## Cost lines\n\n| Category  | Item                                          | Unit amount | Qty | Subtotal (SEK) |\n|-----------|-----------------------------------------------|-------------|-----|----------------|\n| Flights   | AMS-ARN return, 1 pax (sample data)           | 2,400       | 1   | 2,400          |\n| Lodging   | Stockholm, 4 nights at 1,450 (sample data)    | 1,450       | 4   | 5,800          |\n| Food      | 4 days at 600 per day (sample data)           | 600         | 4   | 2,400          |\n| Transport | Transport card (sample data)                  | 400         | 1   | 400            |\n\n## Totals by category\n\n| Category  | SEK    |\n|-----------|--------|\n| Lodging   | 5,800  |\n| Flights   | 2,400  |\n| Food      | 2,400  |\n| Transport | 400    |\n| **Total** | **11,000** |\n\n## Against budget\n\n- Budget: 15,000 SEK\n- Estimated total: 11,000 SEK\n- Remaining: 4,000 SEK\n- Share of budget used: 73.3%\n- Status: within budget\n\n## Largest line items\n\n1. Lodging, 4 nights: 5,800 SEK\n2. Flights AMS-ARN return: 2,400 SEK\n3. Food, 4 days: 2,400 SEK\n\n## Caveats\n\n- Every line is sample data. Replace them with live prices before relying on the total.\n- The total covers only the four lines listed. Nothing else is included (for example, costs not listed above).\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"SEK\", \"budget_total\": 15000.0, \"total_estimated\": 11000.0, \"remaining\": 4000.0, \"over_budget\": false, \"overage\": 0.0, \"percent_of_budget_used\": 73.3, \"by_category\": {\"lodging\": 5800.0, \"flights\": 2400.0, \"food\": 2400.0, \"transport\": 400.0}, \"largest_line_items\": [{\"label\": \"Lodging, Stockholm, 4 nights at 1450 (sample data)\", \"category\": \"lodging\", \"unit_amount\": 1450.0, \"quantity\": 4, \"subtotal\": 5800.0, \"estimated\": true}, {\"label\": \"Flights AMS-ARN return, 1 pax (sample data)\", \"category\": \"flights\", \"unit_amount\": 2400.0, \"quantity\": 1, \"subtotal\": 2400.0, \"estimated\": true}, {\"label\": \"Food, 4 days at 600 per day (sample data)\", \"category\": \"food\", \"unit_amount\": 600.0, \"quantity\": 4, \"subtotal\": 2400.0, \"estimated\": true}], \"all_lines_estimated\": true, \"line_count\": 4}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Stockholm trip budget (4 nights, 1 traveler)\n\nCurrency: SEK. No conversion was needed; all figures are in SEK.\n\n**Data status: all figures are sample data, not live prices. The total is an estimate, not a quote.**\n\n## Cost lines\n\n| Category  | Item                                          | Unit amount | Qty | Subtotal (SEK) |\n|-----------|-----------------------------------------------|-------------|-----|----------------|\n| Flights   | AMS-ARN return, 1 pax (sample data)           | 2,400       | 1   | 2,400          |\n| Lodging   | Stockholm, 4 nights at 1,450 (sample data)    | 1,450       | 4   | 5,800          |\n| Food      | 4 days at 600 per day (sample data)           | 600         | 4   | 2,400          |\n| Transport | Transport card (sample data)                  | 400         | 1   | 400            |\n\n## Totals by category\n\n| Category  | SEK    |\n|-----------|--------|\n| Lodging   | 5,800  |\n| Flights   | 2,400  |\n| Food      | 2,400  |\n| Transport | 400    |\n| **Total** | **11,000** |\n\n## Against budget\n\n- Budget: 15,000 SEK\n- Estimated total: 11,000 SEK\n- Remaining: 4,000 SEK\n- Share of budget used: 73.3%\n- Status: within budget\n\n## Largest line items\n\n1. Lodging, 4 nights: 5,800 SEK\n2. Flights AMS-ARN return: 2,400 SEK\n3. Food, 4 days: 2,400 SEK\n\n## Caveats\n\n- Every line is sample data. Replace them with live prices before relying on the total.\n- The total covers only the four lines listed. Nothing else is included (for example, costs not listed above).\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 16586,
+          "cache_read": 14645,
+          "cache_creation": 1933,
+          "output_tokens": 1550
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": 1,
+          "comment": "total 11000.0 against 15000.0; expected 11000 against 15000"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "SEK"
+        },
+        {
+          "key": "due_at_accommodation_excluded",
+          "score": null,
+          "comment": "nothing to exclude in this example"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "lisbon-over",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a $1500 USD budget, 2 travelers, 7 nights in Lisbon. Flights JFK-LIS return: $540 per person. Lodging: $130 per night for 7 nights. Food: $45 per person per day for 7 days. Activities: $150 total. Figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "The estimated total is **$2,770**, which is **$1,270 over** your $1,500 budget (184.7% of budget used). All figures are sample data, not live prices, so this is an estimate rather than a quote.\n\n**Largest line items:**\n1. Flights, JFK-LIS return for 2 travelers: $1,080\n2. Lodging, 7 nights at $130: $910\n3. Food, $45 per person per day for 14 person-days: $630\n\nActivities add $150. No costs are known to sit outside the total, and no currency conversion was needed.\n\n**Cuts to close the gap:** Three cuts are not enough on their own, so the list has four:\n1. **Lodging to $60/night:** saves $490. You get a smaller or more distant place.\n2. **Flights to $365 per person:** saves $350. This needs a cheaper fare or different dates or airport, and I have not confirmed one exists.\n3. **Food to $25 per person per day:** saves $280. Mostly simple meals.\n4. **Activities to $0:** saves $150. Sightseeing is mostly free.\n\nAll four together save $1,270 and bring the total to $1,500. Cuts 1 to 3 alone leave $150 still over.\n\nThe full breakdown is written to `/trip/budget.md`.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "JFK-LIS return flight, 2 travelers (sample data)",
+                  "category": "flights",
+                  "amount": 540,
+                  "quantity": 2,
+                  "estimated": true
+                },
+                {
+                  "label": "Lodging, Lisbon, 7 nights (sample data)",
+                  "category": "lodging",
+                  "amount": 130,
+                  "quantity": 7,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, $45 per person per day, 2 travelers x 7 days (sample data)",
+                  "category": "food",
+                  "amount": 45,
+                  "quantity": 14,
+                  "estimated": true
+                },
+                {
+                  "label": "Activities, total for trip (sample data)",
+                  "category": "activities",
+                  "amount": 150,
+                  "quantity": 1,
+                  "estimated": true
+                }
+              ],
+              "budget_total": 1500,
+              "currency": "USD"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Lisbon Trip Budget\n\n**Travelers:** 2\n**Length:** 7 nights\n**Budget:** $1,500 USD\n**Data status:** All figures are SAMPLE DATA, not live prices. This total is an estimate, not a quote.\n\n## Line items\n\n| Category   | Item                                              | Unit cost | Qty | Subtotal |\n|------------|---------------------------------------------------|-----------|-----|----------|\n| Flights    | JFK-LIS return, per person                        | $540      | 2   | $1,080   |\n| Lodging    | Lisbon accommodation, per night                   | $130      | 7   | $910     |\n| Food       | $45 per person per day (2 travelers x 7 days)     | $45       | 14  | $630     |\n| Activities | Total for trip                                    | $150      | 1   | $150     |\n| **Total**  |                                                   |           |     | **$2,770** |\n\n## Totals by category\n\n- Flights: $1,080\n- Lodging: $910\n- Food: $630\n- Activities: $150\n\n## Against budget\n\n- Budget: $1,500\n- Estimated total: $2,770\n- **Over budget by $1,270** (184.7% of budget used)\n\n## Largest line items\n\n1. Flights, JFK-LIS return, 2 travelers: $1,080\n2. Lodging, 7 nights: $910\n3. Food, 14 person-days: $630\n\n## Caveats\n\n- Total is based entirely on sample data. Confirm live fares, nightly rates, and activity prices before relying on it.\n- No currency conversion was applied; all figures are in USD.\n- No costs are known to sit outside this total.\n\n## Options to close the $1,270 gap\n\nThree cuts do not close the gap on their own. Lodging, the largest flexible item, would have to fall to near zero. The flights line also needs to come down. Figures below are targets, not quotes.\n\n| Cut | Change | Saving | Trade-off to traveler |\n|-----|--------|--------|------------------------|\n| 1. Lodging | $130 to $60 per night (7 nights) | $490 | Smaller or farther accommodation than the sample rate buys |\n| 2. Flights | $540 to $365 per person (2 travelers) | $350 | Requires a cheaper fare or different dates/airport; not confirmed available |\n| 3. Food | $45 to $25 per person per day | $280 | Eating mostly simple meals rather than restaurants every day |\n| 4. Activities | $150 to $0 | $150 | No paid activities; sightseeing mostly free |\n\nCuts 1 to 4 together save $1,270 and bring the total to $1,500. Cuts 1 to 3 alone save $1,120, leaving $150 still over.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"USD\", \"budget_total\": 1500.0, \"total_estimated\": 2770.0, \"remaining\": -1270.0, \"over_budget\": true, \"overage\": 1270.0, \"percent_of_budget_used\": 184.7, \"by_category\": {\"flights\": 1080.0, \"lodging\": 910.0, \"food\": 630.0, \"activities\": 150.0}, \"largest_line_items\": [{\"label\": \"JFK-LIS return flight, 2 travelers (sample data)\", \"category\": \"flights\", \"unit_amount\": 540.0, \"quantity\": 2, \"subtotal\": 1080.0, \"estimated\": true}, {\"label\": \"Lodging, Lisbon, 7 nights (sample data)\", \"category\": \"lodging\", \"unit_amount\": 130.0, \"quantity\": 7, \"subtotal\": 910.0, \"estimated\": true}, {\"label\": \"Food, $45 per person per day, 2 travelers x 7 days (sample data)\", \"category\": \"food\", \"unit_amount\": 45.0, \"quantity\": 14, \"subtotal\": 630.0, \"estimated\": true}], \"all_lines_estimated\": true, \"line_count\": 4}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Lisbon Trip Budget\n\n**Travelers:** 2\n**Length:** 7 nights\n**Budget:** $1,500 USD\n**Data status:** All figures are SAMPLE DATA, not live prices. This total is an estimate, not a quote.\n\n## Line items\n\n| Category   | Item                                              | Unit cost | Qty | Subtotal |\n|------------|---------------------------------------------------|-----------|-----|----------|\n| Flights    | JFK-LIS return, per person                        | $540      | 2   | $1,080   |\n| Lodging    | Lisbon accommodation, per night                   | $130      | 7   | $910     |\n| Food       | $45 per person per day (2 travelers x 7 days)     | $45       | 14  | $630     |\n| Activities | Total for trip                                    | $150      | 1   | $150     |\n| **Total**  |                                                   |           |     | **$2,770** |\n\n## Totals by category\n\n- Flights: $1,080\n- Lodging: $910\n- Food: $630\n- Activities: $150\n\n## Against budget\n\n- Budget: $1,500\n- Estimated total: $2,770\n- **Over budget by $1,270** (184.7% of budget used)\n\n## Largest line items\n\n1. Flights, JFK-LIS return, 2 travelers: $1,080\n2. Lodging, 7 nights: $910\n3. Food, 14 person-days: $630\n\n## Caveats\n\n- Total is based entirely on sample data. Confirm live fares, nightly rates, and activity prices before relying on it.\n- No currency conversion was applied; all figures are in USD.\n- No costs are known to sit outside this total.\n\n## Options to close the $1,270 gap\n\nThree cuts do not close the gap on their own. Lodging, the largest flexible item, would have to fall to near zero. The flights line also needs to come down. Figures below are targets, not quotes.\n\n| Cut | Change | Saving | Trade-off to traveler |\n|-----|--------|--------|------------------------|\n| 1. Lodging | $130 to $60 per night (7 nights) | $490 | Smaller or farther accommodation than the sample rate buys |\n| 2. Flights | $540 to $365 per person (2 travelers) | $350 | Requires a cheaper fare or different dates/airport; not confirmed available |\n| 3. Food | $45 to $25 per person per day | $280 | Eating mostly simple meals rather than restaurants every day |\n| 4. Activities | $150 to $0 | $150 | No paid activities; sightseeing mostly free |\n\nCuts 1 to 4 together save $1,270 and bring the total to $1,500. Cuts 1 to 3 alone save $1,120, leaving $150 still over.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 17328,
+          "cache_read": 14513,
+          "cache_creation": 2807,
+          "output_tokens": 2629
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": 1,
+          "comment": "total 2770.0 against 1500.0; expected 2770 against 1500"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "USD"
+        },
+        {
+          "key": "due_at_accommodation_excluded",
+          "score": null,
+          "comment": "nothing to exclude in this example"
+        },
+        {
+          "key": "rubric",
+          "score": 0.75,
+          "comment": "\u2717 Proposes two or three specific cuts, each with its saving.: It proposes four cuts, each with a saving, which goes beyond the two-or-three range. The response says three cuts are not enough and explains why. A strict reading of 'two or three' is not met."
+        }
+      ]
+    }
+  ]
+}

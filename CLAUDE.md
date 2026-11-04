@@ -541,6 +541,13 @@ Other things that bite here:
   and shows up in `at.status` with a meaningless `state`, which `test_pages.py`
   compares element for element. The browser renders it correctly either way;
   only the page's testability breaks. Prefix the icon into the label instead.
+- **`st.warning` reads the `yellow*` tokens, not `orangeColor`,** and it carries
+  the sample-data notice, so that notice depends on them. `st.info`, `st.error`
+  and metric deltas read `blue*`, `red*` and `green*`.
+- **Dark `primaryColor` stays `#2DD4BF`, so don't add a `type="primary"` button
+  without revisiting it.** White on it is only 1.86:1. A darker teal (`#0E857B`)
+  fixed that button but made the selected option in `st.segmented_control` hard
+  to read.
 - **One palette serves both modes by choice, not by constraint.** As of
   Streamlit 1.62 `chartCategoricalColors` *is* accepted in `[theme.light]` /
   `[theme.dark]` and their sidebar sections, inheriting from `[theme]` when

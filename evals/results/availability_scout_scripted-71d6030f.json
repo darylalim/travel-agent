@@ -1,0 +1,1656 @@
+{
+  "experiment": "availability_scout_scripted-71d6030f",
+  "metadata": {
+    "judge": "anthropic:claude-sonnet-5-5",
+    "provider": "scripted",
+    "repetitions": 3,
+    "subagent": "availability-scout",
+    "model": "anthropic:claude-sonnet-5-5",
+    "effort": "high"
+  },
+  "runs": [
+    {
+      "key": "business-comes-back-premium",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One traveler, business class, LHR to SIN departing 2027-03-01, returning 2027-03-08. Flights only, no lodging. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I couldn't find any real business class fares for LHR\u2013SIN, 1\u20138 March 2027. I've written what I did find to `/trip/options.md`.\n\n**Live offers (Duffel, real inventory) came back as premium economy, not business.** I searched business. All three live offers were premium economy, and shifting departure to 28 Feb or 2 Mar gave the same three fares. Each is a nonstop round trip in USD.\n- **Cheapest:** Qantas, departing 09:48, $2,140.\n- **Middle:** British Airways, departing 15:55, $2,215.\n- **Most expensive:** Singapore Airlines, departing 12:02, $2,380. It is also the shortest flight, at 13h10.\n\nThese offers expire about 30 minutes after the search, at roughly 16:58 UTC on 4 Nov. They need a fresh search before anyone relies on them.\n\n**The only business cabin results are sample data, so they aren't bookable.** They depart from Gatwick (LGW), and the fares ($671\u2013$1,046) and durations (5\u20139 hours) are placeholders, not real prices. A real nonstop to Singapore takes about 13 hours.\n\n**Tradeoff:**\n- **Price:** Qantas premium economy at $2,140 is the cheapest real option.\n- **Convenience:** Singapore Airlines is the quickest, but it costs $240 more than Qantas.\n- **Cabin:** None of the real offers is business class. If business is a firm requirement, I'd need to search other dates or airports. Otherwise, premium economy is the closest real option.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "LHR",
+              "destination": "SIN",
+              "depart_date": "2027-03-01",
+              "return_date": "2027-03-08",
+              "travelers": 1,
+              "cabin": "business"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "LHR",
+              "destination": "SIN",
+              "depart_date": "2027-02-28",
+              "return_date": "2027-03-08",
+              "cabin": "business"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "LHR",
+              "destination": "SIN",
+              "depart_date": "2027-03-02",
+              "return_date": "2027-03-08",
+              "cabin": "business"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "LGW",
+              "destination": "SIN",
+              "depart_date": "2027-03-01",
+              "return_date": "2027-03-08",
+              "cabin": "business"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# LHR -> SIN flight options (1 traveler, round trip 2027-03-01 to 2027-03-08)\n\nRequested cabin: BUSINESS. Searched 2026-11-04.\n\n## Key finding\nNo live (real-inventory) business class offers were found. Every live LHR offer came back as PREMIUM ECONOMY, not business. Searching depart 28 Feb and 2 Mar gave the same three fares. The only business-cabin results are SAMPLE DATA from LGW, which is illustrative and not bookable.\n\n## A. Live offers, source: duffel (real inventory), cabin: PREMIUM ECONOMY (NOT business)\nSearched business and got premium economy. Each offer expires 1800 seconds (about 30 min) after the search, at about 2026-11-04T16:58Z. Re-search before relying on them.\n\n| Carrier | Route | Depart 1 Mar (local) | Stops | Duration | Cabin | Fare (USD, round trip) |\n|---|---|---|---|---|---|---|\n| Qantas | LHR-SIN | 09:48 | 0 | 13h20 | premium_economy | 2,140 |\n| British Airways | LHR-SIN | 15:55 | 0 | 13h25 | premium_economy | 2,215 |\n| Singapore Airlines | LHR-SIN | 12:02 | 0 | 13h10 | premium_economy | 2,380 |\n\nOther dates (all premium_economy, same fares):\n- Depart 28 Feb: SQ 11:17, BA 19:24, QF 16:10.\n- Depart 2 Mar: SQ 20:26, BA 12:19, QF 18:12.\n\n## B. SAMPLE DATA (synthetic, illustrative only, NOT real availability or prices, NOT bookable)\nCabin: business. Departs LGW (Gatwick), not LHR. Depart 2027-03-01, return 2027-03-08.\n\n| Carrier | Depart | Stops | Duration | Fare (USD) |\n|---|---|---|---|---|\n| Anser Airways | 10:45 | 1 | 7h28 | 670.82 |\n| Meridian Air | 08:52 | 2 | 9h18 | 675.25 |\n| Blue Corridor | 14:38 | 0 | 5h38 | 852.99 |\n| Northwind | 15:59 | 0 | 6h23 | 1,046.19 |\n\nThe durations and fares are implausible for a real LGW-SIN trip (a real nonstop is about 13 hours). Treat them as placeholders only.\n\n## Notes\n- No live business fare was found for these dates. Next steps: try other dates, a one-way pair, or other airports, or accept premium economy.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Singapore Airlines\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"12:02\", \"stops\": 0, \"duration_minutes\": 790, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2380, \"total_fare\": 2380, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:02.727780+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"British Airways\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"15:55\", \"stops\": 0, \"duration_minutes\": 805, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2215, \"total_fare\": 2215, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:02.727789+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Qantas\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"09:48\", \"stops\": 0, \"duration_minutes\": 800, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2140, \"total_fare\": 2140, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:02.727793+00:00\"}], \"requested_cabin\": \"business\", \"cabin_note\": \"Searched business, but 3 of 3 offers came back as premium_economy \u2014 cabin is a preference, not a filter. Read each offer's own cabin rather than describing them all as the cabin that was requested.\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Singapore Airlines\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-02\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"20:26\", \"stops\": 0, \"duration_minutes\": 790, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2380, \"total_fare\": 2380, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:06.030061+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"British Airways\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-02\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"12:19\", \"stops\": 0, \"duration_minutes\": 805, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2215, \"total_fare\": 2215, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:06.030080+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Qantas\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-02\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"18:12\", \"stops\": 0, \"duration_minutes\": 800, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2140, \"total_fare\": 2140, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:06.030091+00:00\"}], \"requested_cabin\": \"business\", \"cabin_note\": \"Searched business, but 3 of 3 offers came back as premium_economy \u2014 cabin is a preference, not a filter. Read each offer's own cabin rather than describing them all as the cabin that was requested.\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Singapore Airlines\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-02-28\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"11:17\", \"stops\": 0, \"duration_minutes\": 790, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2380, \"total_fare\": 2380, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:06.032300+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"British Airways\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-02-28\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"19:24\", \"stops\": 0, \"duration_minutes\": 805, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2215, \"total_fare\": 2215, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:06.032315+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Qantas\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-02-28\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"16:10\", \"stops\": 0, \"duration_minutes\": 800, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2140, \"total_fare\": 2140, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:06.032325+00:00\"}], \"requested_cabin\": \"business\", \"cabin_note\": \"Searched business, but 3 of 3 offers came back as premium_economy \u2014 cabin is a preference, not a filter. Read each offer's own cabin rather than describing them all as the cabin that was requested.\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Anser Airways\", \"origin\": \"LGW\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"10:45\", \"stops\": 1, \"duration_minutes\": 448, \"cabin\": \"business\", \"fare_per_traveler\": 670.82, \"total_fare\": 670.82, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Meridian Air\", \"origin\": \"LGW\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"08:52\", \"stops\": 2, \"duration_minutes\": 558, \"cabin\": \"business\", \"fare_per_traveler\": 675.25, \"total_fare\": 675.25, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Blue Corridor\", \"origin\": \"LGW\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"14:38\", \"stops\": 0, \"duration_minutes\": 338, \"cabin\": \"business\", \"fare_per_traveler\": 852.99, \"total_fare\": 852.99, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Northwind\", \"origin\": \"LGW\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"15:59\", \"stops\": 0, \"duration_minutes\": 383, \"cabin\": \"business\", \"fare_per_traveler\": 1046.19, \"total_fare\": 1046.19, \"travelers\": 1, \"currency\": \"USD\"}], \"warning\": \"Some of these offers are synthetic and do not reflect real availability or real prices. Say so explicitly when you use them.\", \"requested_cabin\": \"business\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# LHR -> SIN flight options (1 traveler, round trip 2027-03-01 to 2027-03-08)\n\nRequested cabin: BUSINESS. Searched 2026-11-04.\n\n## Key finding\nNo live (real-inventory) business class offers were found. Every live LHR offer came back as PREMIUM ECONOMY, not business. Searching depart 28 Feb and 2 Mar gave the same three fares. The only business-cabin results are SAMPLE DATA from LGW, which is illustrative and not bookable.\n\n## A. Live offers, source: duffel (real inventory), cabin: PREMIUM ECONOMY (NOT business)\nSearched business and got premium economy. Each offer expires 1800 seconds (about 30 min) after the search, at about 2026-11-04T16:58Z. Re-search before relying on them.\n\n| Carrier | Route | Depart 1 Mar (local) | Stops | Duration | Cabin | Fare (USD, round trip) |\n|---|---|---|---|---|---|---|\n| Qantas | LHR-SIN | 09:48 | 0 | 13h20 | premium_economy | 2,140 |\n| British Airways | LHR-SIN | 15:55 | 0 | 13h25 | premium_economy | 2,215 |\n| Singapore Airlines | LHR-SIN | 12:02 | 0 | 13h10 | premium_economy | 2,380 |\n\nOther dates (all premium_economy, same fares):\n- Depart 28 Feb: SQ 11:17, BA 19:24, QF 16:10.\n- Depart 2 Mar: SQ 20:26, BA 12:19, QF 18:12.\n\n## B. SAMPLE DATA (synthetic, illustrative only, NOT real availability or prices, NOT bookable)\nCabin: business. Departs LGW (Gatwick), not LHR. Depart 2027-03-01, return 2027-03-08.\n\n| Carrier | Depart | Stops | Duration | Fare (USD) |\n|---|---|---|---|---|\n| Anser Airways | 10:45 | 1 | 7h28 | 670.82 |\n| Meridian Air | 08:52 | 2 | 9h18 | 675.25 |\n| Blue Corridor | 14:38 | 0 | 5h38 | 852.99 |\n| Northwind | 15:59 | 0 | 6h23 | 1,046.19 |\n\nThe durations and fares are implausible for a real LGW-SIN trip (a real nonstop is about 13 hours). Treat them as placeholders only.\n\n## Notes\n- No live business fare was found for these dates. Next steps: try other dates, a one-way pair, or other airports, or accept premium economy.\n"
+        },
+        "usage": {
+          "model_calls": 4,
+          "input_tokens": 33129,
+          "cache_read": 28092,
+          "cache_creation": 5027,
+          "output_tokens": 2194
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['business', 'business', 'business', 'business']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "refreshed_expiring_offer",
+          "score": null,
+          "comment": "no expiring offer in this example"
+        },
+        {
+          "key": "varied_thin_search",
+          "score": null,
+          "comment": "no thin search in this example"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "thin-first-search",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One traveler, economy, ORD to NRT departing 2027-04-12, returning 2027-04-22. Fare limit $1,400, and nonstop if there is one. Flights only, no lodging. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I found one option that meets both your fare limit and the nonstop preference. It flies to HND (Haneda), not NRT. I wrote the candidates to `/trip/options.md`.\n\nAll offers are live Duffel fares in economy. They expire about 30 minutes after the search (around 16:58 UTC on 2026-11-04), so they need a fresh search before anyone relies on them.\n\n- **Best on price and convenience: ANA, ORD to HND, nonstop, $1,285.** It departs at 18:31 on 04-12 and takes about 13h10. It is the cheapest offer and the only nonstop.\n- **Best ORD to NRT: China Airlines at $1,610.** It has one stop and is $210 over your limit. Delta ($1,655) and Korean Air ($1,720) are also one-stop and over the limit. The Delta fare has the shortest duration of the three, at 16h25.\n- **Tradeoff:** To stay under $1,400 and fly nonstop, you have to accept Haneda instead of Narita. HND is generally closer to central Tokyo than NRT. Staying with NRT costs at least $210 more and adds a stop.\n\nNo nonstop to NRT came up. Shifting the dates by a day either way gave the same NRT carriers at the same fares, so it doesn't help.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "ORD",
+              "destination": "NRT",
+              "depart_date": "2027-04-12",
+              "return_date": "2027-04-22",
+              "travelers": 1,
+              "cabin": "economy"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "ORD",
+              "destination": "HND",
+              "depart_date": "2027-04-12",
+              "return_date": "2027-04-22",
+              "travelers": 1
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "ORD",
+              "destination": "NRT",
+              "depart_date": "2027-04-11",
+              "return_date": "2027-04-21",
+              "travelers": 1
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "ORD",
+              "destination": "NRT",
+              "depart_date": "2027-04-13",
+              "return_date": "2027-04-23",
+              "travelers": 1
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# ORD -> Tokyo flight options, 2027-04-12 out / 2027-04-22 back\n1 traveler, economy. Fare limit $1,400. Nonstop preferred. Flights only.\nSearched 2026-11-04. All offers are live Duffel inventory (synthetic: false, source: duffel). Every offer was economy, with no cabin_note. Each offer expires 1,800 s (30 min) after the search, at about 16:58 UTC on 2026-11-04. Re-search before relying on any of them.\nFares are round-trip totals in USD.\n\n## Within budget\n| Option | Airport | Stops | Depart (out) | Duration | Fare | Offer ID |\n|---|---|---|---|---|---|---|\n| ANA | ORD -> **HND** (Haneda, not NRT) | **Nonstop** | 18:31 | 13h10 | **$1,285** | off_scripted_0 |\n\nThis is the only nonstop and the only offer under $1,400. It flies to HND, not NRT, so it is a change from the NRT you asked for.\n\n## ORD -> NRT (all over budget, all 1 stop; no NRT nonstop was offered)\n| Carrier | Depart (out) | Duration | Fare | Over limit by |\n|---|---|---|---|---|\n| China Airlines | 20:44 | 19h40 | $1,610 | $210 |\n| Delta | 10:58 | 16h25 | $1,655 | $255 |\n| Korean Air | 13:51 | 17h00 | $1,720 | $320 |\n\n## Other\n- ORD -> HND, Delta, 1 stop, departs 19:38, 16h40, $1,540. Over budget.\n- Shifting the dates by one day (04-11/04-21 and 04-13/04-23) gave the same NRT carriers at the same fares. Shifting doesn't help.\n- Duration figures come from the search's duration_minutes field. I didn't see whether it covers one direction or both.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-12\", \"return_date\": \"2027-04-22\", \"depart_time_local\": \"10:58\", \"stops\": 1, \"duration_minutes\": 985, \"cabin\": \"economy\", \"fare_per_traveler\": 1655, \"total_fare\": 1655, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:02.712528+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Korean Air\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-12\", \"return_date\": \"2027-04-22\", \"depart_time_local\": \"13:51\", \"stops\": 1, \"duration_minutes\": 1020, \"cabin\": \"economy\", \"fare_per_traveler\": 1720, \"total_fare\": 1720, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:02.712546+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"China Airlines\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-12\", \"return_date\": \"2027-04-22\", \"depart_time_local\": \"20:44\", \"stops\": 1, \"duration_minutes\": 1180, \"cabin\": \"economy\", \"fare_per_traveler\": 1610, \"total_fare\": 1610, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:02.712555+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-13\", \"return_date\": \"2027-04-23\", \"depart_time_local\": \"16:45\", \"stops\": 1, \"duration_minutes\": 985, \"cabin\": \"economy\", \"fare_per_traveler\": 1655, \"total_fare\": 1655, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:06.163318+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Korean Air\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-13\", \"return_date\": \"2027-04-23\", \"depart_time_local\": \"06:38\", \"stops\": 1, \"duration_minutes\": 1020, \"cabin\": \"economy\", \"fare_per_traveler\": 1720, \"total_fare\": 1720, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:06.163330+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"China Airlines\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-13\", \"return_date\": \"2027-04-23\", \"depart_time_local\": \"07:31\", \"stops\": 1, \"duration_minutes\": 1180, \"cabin\": \"economy\", \"fare_per_traveler\": 1610, \"total_fare\": 1610, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:06.163337+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 2, \"count\": 2, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"ANA\", \"origin\": \"ORD\", \"destination\": \"HND\", \"depart_date\": \"2027-04-12\", \"return_date\": \"2027-04-22\", \"depart_time_local\": \"18:31\", \"stops\": 0, \"duration_minutes\": 790, \"cabin\": \"economy\", \"fare_per_traveler\": 1285, \"total_fare\": 1285, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:06.161456+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"ORD\", \"destination\": \"HND\", \"depart_date\": \"2027-04-12\", \"return_date\": \"2027-04-22\", \"depart_time_local\": \"19:38\", \"stops\": 1, \"duration_minutes\": 1000, \"cabin\": \"economy\", \"fare_per_traveler\": 1540, \"total_fare\": 1540, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:06.161469+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-11\", \"return_date\": \"2027-04-21\", \"depart_time_local\": \"19:53\", \"stops\": 1, \"duration_minutes\": 985, \"cabin\": \"economy\", \"fare_per_traveler\": 1655, \"total_fare\": 1655, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:06.157150+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Korean Air\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-11\", \"return_date\": \"2027-04-21\", \"depart_time_local\": \"10:46\", \"stops\": 1, \"duration_minutes\": 1020, \"cabin\": \"economy\", \"fare_per_traveler\": 1720, \"total_fare\": 1720, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:06.157173+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"China Airlines\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-11\", \"return_date\": \"2027-04-21\", \"depart_time_local\": \"15:39\", \"stops\": 1, \"duration_minutes\": 1180, \"cabin\": \"economy\", \"fare_per_traveler\": 1610, \"total_fare\": 1610, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:06.157187+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# ORD -> Tokyo flight options, 2027-04-12 out / 2027-04-22 back\n1 traveler, economy. Fare limit $1,400. Nonstop preferred. Flights only.\nSearched 2026-11-04. All offers are live Duffel inventory (synthetic: false, source: duffel). Every offer was economy, with no cabin_note. Each offer expires 1,800 s (30 min) after the search, at about 16:58 UTC on 2026-11-04. Re-search before relying on any of them.\nFares are round-trip totals in USD.\n\n## Within budget\n| Option | Airport | Stops | Depart (out) | Duration | Fare | Offer ID |\n|---|---|---|---|---|---|---|\n| ANA | ORD -> **HND** (Haneda, not NRT) | **Nonstop** | 18:31 | 13h10 | **$1,285** | off_scripted_0 |\n\nThis is the only nonstop and the only offer under $1,400. It flies to HND, not NRT, so it is a change from the NRT you asked for.\n\n## ORD -> NRT (all over budget, all 1 stop; no NRT nonstop was offered)\n| Carrier | Depart (out) | Duration | Fare | Over limit by |\n|---|---|---|---|---|\n| China Airlines | 20:44 | 19h40 | $1,610 | $210 |\n| Delta | 10:58 | 16h25 | $1,655 | $255 |\n| Korean Air | 13:51 | 17h00 | $1,720 | $320 |\n\n## Other\n- ORD -> HND, Delta, 1 stop, departs 19:38, 16h40, $1,540. Over budget.\n- Shifting the dates by one day (04-11/04-21 and 04-13/04-23) gave the same NRT carriers at the same fares. Shifting doesn't help.\n- Duration figures come from the search's duration_minutes field. I didn't see whether it covers one direction or both.\n"
+        },
+        "usage": {
+          "model_calls": 4,
+          "input_tokens": 31966,
+          "cache_read": 27599,
+          "cache_creation": 4357,
+          "output_tokens": 1882
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['economy', 'economy', 'economy', 'economy']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "refreshed_expiring_offer",
+          "score": null,
+          "comment": "no expiring offer in this example"
+        },
+        {
+          "key": "varied_thin_search",
+          "score": 1,
+          "comment": "3 of 4 searches varied"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "mixed-cabin-round-trip",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Two travelers, business class, JFK to CDG departing 2027-05-04, returning 2027-05-12. Flights only. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote the candidates to `/trip/options.md`. The three offers are live Duffel fares, not sample data. They expire about 30 minutes after the search, so re-run it before relying on them.\n\nOnly one of the three came back in business on every leg. The other two are mixed cabin, and the search didn't say which leg is in which class. All three are nonstop, and the prices below are for two travelers in USD.\n\n- **Best on price:** American Airlines, $3,480 per person ($6,960 total). It leaves JFK at 09:48 and the cabin is **mixed**.\n- **Next cheapest:** Delta, $3,650 per person ($7,300 total). It leaves JFK at 07:02 and is also **mixed**.\n- **Best on convenience:** Air France, $5,120 per person ($10,240 total). It leaves JFK at 15:55 and is **business** on every leg.\n\n**Tradeoff:** Air France costs $3,280 more than American for two, and $2,940 more than Delta. It is the only offer confirmed as business throughout. American and Delta are cheaper, but part of the trip is probably not in business. Confirm which leg is downgraded before treating either as a business fare.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "JFK",
+              "destination": "CDG",
+              "depart_date": "2027-05-04",
+              "return_date": "2027-05-12",
+              "travelers": 2,
+              "cabin": "business"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# JFK \u2192 CDG flight options (2 travelers, business requested)\n\nDepart 2027-05-04, return 2027-05-12. Flights only.\nSource: Duffel, live (not sample data). All offers expire ~30 min after search (search run 2026-11-04, expires_at 16:58 UTC, 1800 s remaining at time of search). Re-run before relying on them.\n\nCabin note: business was requested, but cabin is a preference, not a filter. Only one offer came back fully in business. Two came back \"mixed\" (legs in different classes). The search did not say which leg is in which class.\n\n| # | Carrier | Outbound dep (JFK) | Stops | Duration | Cabin returned | Per traveler | Total (2) | Offer ID |\n|---|---|---|---|---|---|---|---|---|\n| 1 | American Airlines | 09:48 | 0 | 7h30 | **mixed** | $3,480 | $6,960 | off_scripted_2 |\n| 2 | Delta Air Lines | 07:02 | 0 | 7h25 | **mixed** | $3,650 | $7,300 | off_scripted_0 |\n| 3 | Air France | 15:55 | 0 | 7h20 | **business** | $5,120 | $10,240 | off_scripted_1 |\n\nAll prices USD. Durations are as reported (outbound).\n\n## Notes\n- Only Air France (#3) is confirmed business on the whole trip.\n- The cheaper American and Delta fares are mixed-cabin. Part of the trip is probably not in business. Confirm which leg is in which class before presenting either as a business fare.\n- The $1,640\u2013$1,780 per-pair premium for Air France may largely reflect the full-business cabin.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"JFK\", \"destination\": \"CDG\", \"depart_date\": \"2027-05-04\", \"return_date\": \"2027-05-12\", \"depart_time_local\": \"07:02\", \"stops\": 0, \"duration_minutes\": 445, \"cabin\": \"mixed\", \"fare_per_traveler\": 3650, \"total_fare\": 7300, \"travelers\": 2, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:19.133642+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Air France\", \"origin\": \"JFK\", \"destination\": \"CDG\", \"depart_date\": \"2027-05-04\", \"return_date\": \"2027-05-12\", \"depart_time_local\": \"15:55\", \"stops\": 0, \"duration_minutes\": 440, \"cabin\": \"business\", \"fare_per_traveler\": 5120, \"total_fare\": 10240, \"travelers\": 2, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:19.133648+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"American Airlines\", \"origin\": \"JFK\", \"destination\": \"CDG\", \"depart_date\": \"2027-05-04\", \"return_date\": \"2027-05-12\", \"depart_time_local\": \"09:48\", \"stops\": 0, \"duration_minutes\": 450, \"cabin\": \"mixed\", \"fare_per_traveler\": 3480, \"total_fare\": 6960, \"travelers\": 2, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:19.133652+00:00\"}], \"requested_cabin\": \"business\", \"cabin_note\": \"Searched business, but 2 of 3 offers came back as mixed \u2014 cabin is a preference, not a filter. 'mixed' means one itinerary's legs are not all the same class. Read each offer's own cabin rather than describing them all as the cabin that was requested.\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# JFK \u2192 CDG flight options (2 travelers, business requested)\n\nDepart 2027-05-04, return 2027-05-12. Flights only.\nSource: Duffel, live (not sample data). All offers expire ~30 min after search (search run 2026-11-04, expires_at 16:58 UTC, 1800 s remaining at time of search). Re-run before relying on them.\n\nCabin note: business was requested, but cabin is a preference, not a filter. Only one offer came back fully in business. Two came back \"mixed\" (legs in different classes). The search did not say which leg is in which class.\n\n| # | Carrier | Outbound dep (JFK) | Stops | Duration | Cabin returned | Per traveler | Total (2) | Offer ID |\n|---|---|---|---|---|---|---|---|---|\n| 1 | American Airlines | 09:48 | 0 | 7h30 | **mixed** | $3,480 | $6,960 | off_scripted_2 |\n| 2 | Delta Air Lines | 07:02 | 0 | 7h25 | **mixed** | $3,650 | $7,300 | off_scripted_0 |\n| 3 | Air France | 15:55 | 0 | 7h20 | **business** | $5,120 | $10,240 | off_scripted_1 |\n\nAll prices USD. Durations are as reported (outbound).\n\n## Notes\n- Only Air France (#3) is confirmed business on the whole trip.\n- The cheaper American and Delta fares are mixed-cabin. Part of the trip is probably not in business. Confirm which leg is in which class before presenting either as a business fare.\n- The $1,640\u2013$1,780 per-pair premium for Air France may largely reflect the full-business cabin.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 20174,
+          "cache_read": 18366,
+          "cache_creation": 1800,
+          "output_tokens": 1233
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['business']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "refreshed_expiring_offer",
+          "score": null,
+          "comment": "no expiring offer in this example"
+        },
+        {
+          "key": "varied_thin_search",
+          "score": null,
+          "comment": "no thin search in this example"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "live-flights-sample-stays",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Two travelers, economy, SFO to KIX departing 2027-10-04, returning 2027-10-09, and lodging in Kyoto for 2 guests for the same dates. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote the candidates to `/trip/options.md`. The flights are live offers. The lodging figures are sample data, so they are illustrative and not bookable.\n\n**Flights** (economy, round trip, 2 travelers, live from Duffel):\n- **Cheapest:** Japan Airlines has one stop, departs SFO at 13:51 and takes 905 minutes outbound. It costs $968.30 per person, or $1,936.60 total.\n- **Most convenient:** United is nonstop, departs at 20:58 and takes 700 minutes. It costs $1,184.60 per person, or $2,369.20 total.\n- **Middle option:** ANA has one stop, departs at 20:44 and takes 960 minutes. It costs $1,032.75 per person, or $2,065.50 total.\n- All three came back in economy, and there was no cabin note.\n- These offers expire 30 minutes after the search, at 16:58 UTC on 2026-11-04. Re-run the search before relying on them.\n- The results gave outbound times only, with no return-leg times.\n\n**Kyoto lodging** (5 nights, 2 guests, sample data):\n- **Cheapest:** the budget hostel private room is $578.85 total. It has a 7.8 rating and no free cancellation.\n- **Best value:** the quiet guesthouse is $687.95 total. It has the highest rating (9.1) and free cancellation.\n- The other three are a business hotel at $817.05, a riverside apartment at $966.15 and a central boutique hotel at $1,095.25.\n- No `due_at_accommodation` amounts came back with any of them.\n\n**Tradeoff:** the United nonstop costs $432.60 more than Japan Airlines for the two of you. It cuts about 205 minutes from the outbound trip.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "SFO",
+              "destination": "KIX",
+              "depart_date": "2027-10-04",
+              "return_date": "2027-10-09",
+              "travelers": 2,
+              "cabin": "economy"
+            }
+          },
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Kyoto",
+              "check_in": "2027-10-04",
+              "check_out": "2027-10-09",
+              "guests": 2
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# Options: SFO to KIX, Kyoto stay, 2027-10-04 to 2027-10-09, 2 travelers\n\n## Flights (economy, round trip)\nSource: duffel (live offers, not synthetic). Each offer expires 1800 seconds (30 min) after the search, at 2026-11-04T16:58 UTC. Re-run the search before relying on any of them. All offers came back in economy, and there was no cabin_note.\n\n| Carrier | Departs SFO (local) | Stops | Duration (min) | Per traveler | Total for 2 | Offer ID |\n|---|---|---|---|---|---|---|\n| Japan Airlines | 13:51 | 1 | 905 | $968.30 | $1,936.60 | off_scripted_1 |\n| ANA | 20:44 | 1 | 960 | $1,032.75 | $2,065.50 | off_scripted_2 |\n| United Airlines | 20:58 | 0 (nonstop) | 700 | $1,184.60 | $2,369.20 | off_scripted_0 |\n\nThe results give only the outbound departure time and duration. They don't give return-leg times.\n\n## Lodging in Kyoto (5 nights, 2 guests)\nSource: sample-data. **These figures are synthetic and illustrative only. They are not live availability and nothing here is bookable.** No `due_at_accommodation` figures were returned.\n\n| Name | Type | Nightly | Total | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | $115.77 | $578.85 | 7.8 | No |\n| Quiet guesthouse | guesthouse | $137.59 | $687.95 | 9.1 | Yes |\n| Business district hotel | hotel | $163.41 | $817.05 | 8.2 | No |\n| Riverside apartment | apartment | $193.23 | $966.15 | 8.6 | Yes |\n| Central boutique hotel | hotel | $219.05 | $1,095.25 | 8.9 | No |\n\n## Comparison\n- Best on price (flight): Japan Airlines, $1,936.60 total, 1 stop.\n- Best on convenience (flight): United nonstop, $2,369.20 total. It is $432.60 more than JAL and about 205 minutes shorter than JAL on the outbound.\n- Lodging: the hostel is cheapest at $578.85. The quiet guesthouse is the best value at $687.95, with the highest rating (9.1) and free cancellation. Both are sample figures only.\n- Tradeoff: the nonstop saves roughly 3.4 hours each way (assuming the return is similar) for about $216 more per person.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"United Airlines\", \"origin\": \"SFO\", \"destination\": \"KIX\", \"depart_date\": \"2027-10-04\", \"return_date\": \"2027-10-09\", \"depart_time_local\": \"20:58\", \"stops\": 0, \"duration_minutes\": 700, \"cabin\": \"economy\", \"fare_per_traveler\": 1184.6, \"total_fare\": 2369.2, \"travelers\": 2, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:21.484251+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Japan Airlines\", \"origin\": \"SFO\", \"destination\": \"KIX\", \"depart_date\": \"2027-10-04\", \"return_date\": \"2027-10-09\", \"depart_time_local\": \"13:51\", \"stops\": 1, \"duration_minutes\": 905, \"cabin\": \"economy\", \"fare_per_traveler\": 968.3, \"total_fare\": 1936.6, \"travelers\": 2, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:21.484263+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"ANA\", \"origin\": \"SFO\", \"destination\": \"KIX\", \"depart_date\": \"2027-10-04\", \"return_date\": \"2027-10-09\", \"depart_time_local\": \"20:44\", \"stops\": 1, \"duration_minutes\": 960, \"cabin\": \"economy\", \"fare_per_traveler\": 1032.75, \"total_fare\": 2065.5, \"travelers\": 2, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:21.484270+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"sample-data\"], \"total_found\": 5, \"count\": 5, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Budget hostel, private room (Kyoto)\", \"kind\": \"hostel\", \"location\": \"Kyoto\", \"check_in\": \"2027-10-04\", \"check_out\": \"2027-10-09\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 115.77, \"total_cost\": 578.85, \"guest_rating\": 7.8, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Quiet guesthouse (Kyoto)\", \"kind\": \"guesthouse\", \"location\": \"Kyoto\", \"check_in\": \"2027-10-04\", \"check_out\": \"2027-10-09\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 137.59, \"total_cost\": 687.95, \"guest_rating\": 9.1, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Business district hotel (Kyoto)\", \"kind\": \"hotel\", \"location\": \"Kyoto\", \"check_in\": \"2027-10-04\", \"check_out\": \"2027-10-09\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 163.41, \"total_cost\": 817.05, \"guest_rating\": 8.2, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Riverside apartment (Kyoto)\", \"kind\": \"apartment\", \"location\": \"Kyoto\", \"check_in\": \"2027-10-04\", \"check_out\": \"2027-10-09\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 193.23, \"total_cost\": 966.15, \"guest_rating\": 8.6, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Central boutique hotel (Kyoto)\", \"kind\": \"hotel\", \"location\": \"Kyoto\", \"check_in\": \"2027-10-04\", \"check_out\": \"2027-10-09\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 219.05, \"total_cost\": 1095.25, \"guest_rating\": 8.9, \"free_cancellation\": false, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# Options: SFO to KIX, Kyoto stay, 2027-10-04 to 2027-10-09, 2 travelers\n\n## Flights (economy, round trip)\nSource: duffel (live offers, not synthetic). Each offer expires 1800 seconds (30 min) after the search, at 2026-11-04T16:58 UTC. Re-run the search before relying on any of them. All offers came back in economy, and there was no cabin_note.\n\n| Carrier | Departs SFO (local) | Stops | Duration (min) | Per traveler | Total for 2 | Offer ID |\n|---|---|---|---|---|---|---|\n| Japan Airlines | 13:51 | 1 | 905 | $968.30 | $1,936.60 | off_scripted_1 |\n| ANA | 20:44 | 1 | 960 | $1,032.75 | $2,065.50 | off_scripted_2 |\n| United Airlines | 20:58 | 0 (nonstop) | 700 | $1,184.60 | $2,369.20 | off_scripted_0 |\n\nThe results give only the outbound departure time and duration. They don't give return-leg times.\n\n## Lodging in Kyoto (5 nights, 2 guests)\nSource: sample-data. **These figures are synthetic and illustrative only. They are not live availability and nothing here is bookable.** No `due_at_accommodation` figures were returned.\n\n| Name | Type | Nightly | Total | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | $115.77 | $578.85 | 7.8 | No |\n| Quiet guesthouse | guesthouse | $137.59 | $687.95 | 9.1 | Yes |\n| Business district hotel | hotel | $163.41 | $817.05 | 8.2 | No |\n| Riverside apartment | apartment | $193.23 | $966.15 | 8.6 | Yes |\n| Central boutique hotel | hotel | $219.05 | $1,095.25 | 8.9 | No |\n\n## Comparison\n- Best on price (flight): Japan Airlines, $1,936.60 total, 1 stop.\n- Best on convenience (flight): United nonstop, $2,369.20 total. It is $432.60 more than JAL and about 205 minutes shorter than JAL on the outbound.\n- Lodging: the hostel is cheapest at $578.85. The quiet guesthouse is the best value at $687.95, with the highest rating (9.1) and free cancellation. Both are sample figures only.\n- Tradeoff: the nonstop saves roughly 3.4 hours each way (assuming the return is similar) for about $216 more per person.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 22543,
+          "cache_read": 19377,
+          "cache_creation": 3158,
+          "output_tokens": 1928
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['economy']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "refreshed_expiring_offer",
+          "score": null,
+          "comment": "no expiring offer in this example"
+        },
+        {
+          "key": "varied_thin_search",
+          "score": null,
+          "comment": "no thin search in this example"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "offer-seconds-from-expiry",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One traveler, economy, one way SEA to ICN on 2027-03-15. No lodging. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote the candidates to `/trip/options.md`. All three flights are live Duffel offers in economy, not sample data, and all are nonstop.\n\n| Carrier | Departs | Duration | Fare |\n|---|---|---|---|\n| Asiana | 15:27 | 11h40 | $805 |\n| Korean Air | 12:20 | 11h30 | $835 |\n| Delta | 19:13 | 11h35 | $860 |\n\n- **Best on price:** Asiana at $805.\n- **Best on convenience:** Korean Air. It has the shortest flight and a midday departure, and it costs $30 more than Asiana.\n- **Tradeoff:** The choice is mainly price against departure time. Delta is the most expensive and has no clear advantage.\n- **Expiry:** These offers expire at 16:56 UTC on 4 November 2026, about 28 minutes after the search. Search again before relying on them.\n- **Fare changes:** The first search returned lower fares, but those offers had only 12 seconds left, so I discarded them and searched again. The Asiana fare, for example, was $790 and is now $805.\n\nYou didn't ask for lodging, so I didn't search for any.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "SEA",
+              "destination": "ICN",
+              "depart_date": "2027-03-15",
+              "travelers": 1,
+              "cabin": "economy"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "SEA",
+              "destination": "ICN",
+              "depart_date": "2027-03-15",
+              "travelers": 1,
+              "cabin": "economy"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# SEA \u2192 ICN, one way, 2027-03-15, 1 traveler, economy\n\nSource: Duffel (live inventory, not sample data). All offers are economy, as requested; no cabin_note was returned.\nOffers expire about 1700 seconds after the search (expires_at 2026-11-04T16:56:51Z). Re-search before relying on them.\nFares changed between two searches. The first search's offers had only 12 seconds left, so I discarded them. The figures below are from the second search.\n\n| Carrier | Departs (local) | Stops | Duration | Fare (USD) | Offer ID |\n|---|---|---|---|---|---|\n| Asiana Airlines | 15:27 | 0 | 11h40 | 805 | off_scripted_1 |\n| Korean Air | 12:20 | 0 | 11h30 | 835 | off_scripted_0 |\n| Delta Air Lines | 19:13 | 0 | 11h35 | 860 | off_scripted_2 |\n\nLodging: not requested.\n\n## Comparison\n- Cheapest: Asiana, $805.\n- Most convenient: Korean Air, the shortest flight at 11h30 with a midday departure, for $30 more than Asiana.\n- All three are nonstop, so the choice comes down to price against departure time. Delta leaves latest (19:13) and costs the most, so it has no advantage here.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Korean Air\", \"origin\": \"SEA\", \"destination\": \"ICN\", \"depart_date\": \"2027-03-15\", \"return_date\": null, \"depart_time_local\": \"12:20\", \"stops\": 0, \"duration_minutes\": 690, \"cabin\": \"economy\", \"fare_per_traveler\": 820, \"total_fare\": 820, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 12, \"expires_at\": \"2026-11-04T16:28:42.360348+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Asiana Airlines\", \"origin\": \"SEA\", \"destination\": \"ICN\", \"depart_date\": \"2027-03-15\", \"return_date\": null, \"depart_time_local\": \"15:27\", \"stops\": 0, \"duration_minutes\": 700, \"cabin\": \"economy\", \"fare_per_traveler\": 790, \"total_fare\": 790, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 12, \"expires_at\": \"2026-11-04T16:28:42.360361+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"SEA\", \"destination\": \"ICN\", \"depart_date\": \"2027-03-15\", \"return_date\": null, \"depart_time_local\": \"19:13\", \"stops\": 0, \"duration_minutes\": 695, \"cabin\": \"economy\", \"fare_per_traveler\": 860, \"total_fare\": 860, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 12, \"expires_at\": \"2026-11-04T16:28:42.360366+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Korean Air\", \"origin\": \"SEA\", \"destination\": \"ICN\", \"depart_date\": \"2027-03-15\", \"return_date\": null, \"depart_time_local\": \"12:20\", \"stops\": 0, \"duration_minutes\": 690, \"cabin\": \"economy\", \"fare_per_traveler\": 835, \"total_fare\": 835, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1700, \"expires_at\": \"2026-11-04T16:56:51.896088+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Asiana Airlines\", \"origin\": \"SEA\", \"destination\": \"ICN\", \"depart_date\": \"2027-03-15\", \"return_date\": null, \"depart_time_local\": \"15:27\", \"stops\": 0, \"duration_minutes\": 700, \"cabin\": \"economy\", \"fare_per_traveler\": 805, \"total_fare\": 805, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1700, \"expires_at\": \"2026-11-04T16:56:51.896099+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"SEA\", \"destination\": \"ICN\", \"depart_date\": \"2027-03-15\", \"return_date\": null, \"depart_time_local\": \"19:13\", \"stops\": 0, \"duration_minutes\": 695, \"cabin\": \"economy\", \"fare_per_traveler\": 860, \"total_fare\": 860, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1700, \"expires_at\": \"2026-11-04T16:56:51.896102+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# SEA \u2192 ICN, one way, 2027-03-15, 1 traveler, economy\n\nSource: Duffel (live inventory, not sample data). All offers are economy, as requested; no cabin_note was returned.\nOffers expire about 1700 seconds after the search (expires_at 2026-11-04T16:56:51Z). Re-search before relying on them.\nFares changed between two searches. The first search's offers had only 12 seconds left, so I discarded them. The figures below are from the second search.\n\n| Carrier | Departs (local) | Stops | Duration | Fare (USD) | Offer ID |\n|---|---|---|---|---|---|\n| Asiana Airlines | 15:27 | 0 | 11h40 | 805 | off_scripted_1 |\n| Korean Air | 12:20 | 0 | 11h30 | 835 | off_scripted_0 |\n| Delta Air Lines | 19:13 | 0 | 11h35 | 860 | off_scripted_2 |\n\nLodging: not requested.\n\n## Comparison\n- Cheapest: Asiana, $805.\n- Most convenient: Korean Air, the shortest flight at 11h30 with a midday departure, for $30 more than Asiana.\n- All three are nonstop, so the choice comes down to price against departure time. Delta leaves latest (19:13) and costs the most, so it has no advantage here.\n"
+        },
+        "usage": {
+          "model_calls": 4,
+          "input_tokens": 28154,
+          "cache_read": 25754,
+          "cache_creation": 2390,
+          "output_tokens": 1250
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['economy', 'economy']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "refreshed_expiring_offer",
+          "score": 1,
+          "comment": "searched again"
+        },
+        {
+          "key": "varied_thin_search",
+          "score": null,
+          "comment": "no thin search in this example"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "business-comes-back-premium",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One traveler, business class, LHR to SIN departing 2027-03-01, returning 2027-03-08. Flights only, no lodging. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I couldn't find any live business-class fares for LHR\u2013SIN. Every real offer came back as premium economy, so I haven't offered those as business. I've written the candidates to `/trip/options.md`.\n\n**Live offers (Duffel, real inventory)**\n- All three are premium economy, nonstop, round trip on 1 Mar and 8 Mar, in USD per traveler.\n- Searches with the outbound moved to 28 Feb or 2 Mar, and a one-way search for 1 Mar, returned the same carriers, fares and cabin.\n- Each offer expires about 30 minutes after the search, at roughly 16:58 UTC today. Re-run the search before relying on any of them.\n\n| Carrier | Outbound departs (local) | Duration | Fare |\n|---|---|---|---|\n| Qantas | 09:48 | 13h20 | $2,140 |\n| British Airways | 15:55 | 13h25 | $2,215 |\n| Singapore Airlines | 12:02 | 13h10 | $2,380 |\n\n**Sample data (illustrative only, not bookable)**\n- These are one-way SIN\u2192LHR business fares for 8 Mar, from $696 to $1,082.\n- The durations are implausible (288\u2013508 minutes), so I'd treat them as placeholders. They shouldn't be used as real prices.\n- No business offers came back for the LHR\u2192SIN outbound.\n\n**Comparison**\n- **Cheapest:** Qantas at $2,140. It is also the earliest departure, but it is premium economy, not business.\n- **Most convenient:** Singapore Airlines has the shortest flight, 13h10, but costs $240 more than Qantas. The three flights are all nonstop and within 15 minutes of each other, so convenience barely separates them.\n- **Business class:** I can't price a real business fare from these results. You could try other dates, other airports or other carriers, or accept premium economy.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "LHR",
+              "destination": "SIN",
+              "depart_date": "2027-03-01",
+              "return_date": "2027-03-08",
+              "travelers": 1,
+              "cabin": "business"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "LHR",
+              "destination": "SIN",
+              "depart_date": "2027-03-01",
+              "cabin": "business"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "SIN",
+              "destination": "LHR",
+              "depart_date": "2027-03-08",
+              "cabin": "business"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "LHR",
+              "destination": "SIN",
+              "depart_date": "2027-02-28",
+              "return_date": "2027-03-08",
+              "cabin": "business"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "LHR",
+              "destination": "SIN",
+              "depart_date": "2027-03-02",
+              "return_date": "2027-03-08",
+              "cabin": "business"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# LHR\u2013SIN flight options, 1 traveler, business class requested\nDepart 2027-03-01, return 2027-03-08. Flights only. Searched 2026-11-04.\n\n## Key finding: no live business-class fares were returned\nEvery live (Duffel) offer came back as **premium_economy**, not business. This was true for the round trip on the requested dates and for departures shifted to 02-28 and 03-02. Cabin is a preference, not a filter. The offers below are labelled with the cabin they actually came back in. I did not upgrade or substitute cabins.\n\n## A. LIVE offers (source: duffel, real inventory), cabin = PREMIUM ECONOMY, not business\nRound trip LHR-SIN, 2027-03-01 out, 2027-03-08 back. All nonstop. Prices are USD per traveler, round trip.\nEach offer expires 1800 seconds (30 minutes) after the search, at about 16:58 UTC on 2026-11-04. Re-search before relying on any of them.\n\n| Carrier | Out departs (local) | Duration | Cabin | Fare | Offer ID |\n|---|---|---|---|---|---|\n| Qantas | 09:48 | 13h20 | premium_economy | $2,140 | off_scripted_2 |\n| British Airways | 15:55 | 13h25 | premium_economy | $2,215 | off_scripted_1 |\n| Singapore Airlines | 12:02 | 13h10 | premium_economy | $2,380 | off_scripted_0 |\n\n- The date-shifted searches (02-28 and 03-02 out) returned the same carriers, fares and cabin.\n- The one-way LHR-SIN search on 03-01 also returned only premium economy, at the same fares as the round trip.\n- The return-leg times and details were not returned.\n\n## B. SAMPLE-DATA offers (illustrative only, NOT real availability, NOT bookable), cabin = business\nOne-way SIN-LHR, 2027-03-08. This is the only place business cabin appeared. The durations (288-508 minutes) are implausible for this route. Treat the figures as placeholders for planning only.\n\n| Carrier | Departs | Stops | Duration (min) | Fare (USD) |\n|---|---|---|---|---|\n| Northwind | 15:55 | 1 | 398 | 696.30 |\n| Blue Corridor | 17:02 | 2 | 508 | 698.21 |\n| Meridian Air | 09:48 | 0 | 288 | 888.83 |\n| Anser Airways | 18:09 | 0 | 333 | 1,082.03 |\n\nNo sample-data business offers were returned for LHR-SIN outbound.\n\n## Summary\n- **Cheapest:** Qantas at $2,140 round trip. It is premium economy, not business.\n- **Most convenient:** the three live fares are all nonstop and within 15 minutes of each other in duration. Singapore Airlines is shortest at 13h10 but costs $240 more than Qantas. Qantas also has the earliest departure.\n- **Business class:** there is no live bookable business fare in the results. Options are to try other dates, try other airports or carriers, or accept premium economy.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Singapore Airlines\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"12:02\", \"stops\": 0, \"duration_minutes\": 790, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2380, \"total_fare\": 2380, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:37.220632+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"British Airways\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"15:55\", \"stops\": 0, \"duration_minutes\": 805, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2215, \"total_fare\": 2215, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:37.220645+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Qantas\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"09:48\", \"stops\": 0, \"duration_minutes\": 800, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2140, \"total_fare\": 2140, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:37.220652+00:00\"}], \"requested_cabin\": \"business\", \"cabin_note\": \"Searched business, but 3 of 3 offers came back as premium_economy \u2014 cabin is a preference, not a filter. Read each offer's own cabin rather than describing them all as the cabin that was requested.\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Singapore Airlines\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-02\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"20:26\", \"stops\": 0, \"duration_minutes\": 790, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2380, \"total_fare\": 2380, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:41.014495+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"British Airways\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-02\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"12:19\", \"stops\": 0, \"duration_minutes\": 805, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2215, \"total_fare\": 2215, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:41.014508+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Qantas\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-02\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"18:12\", \"stops\": 0, \"duration_minutes\": 800, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2140, \"total_fare\": 2140, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:41.014514+00:00\"}], \"requested_cabin\": \"business\", \"cabin_note\": \"Searched business, but 3 of 3 offers came back as premium_economy \u2014 cabin is a preference, not a filter. Read each offer's own cabin rather than describing them all as the cabin that was requested.\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Singapore Airlines\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": null, \"depart_time_local\": \"12:33\", \"stops\": 0, \"duration_minutes\": 790, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2380, \"total_fare\": 2380, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:41.016643+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"British Airways\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": null, \"depart_time_local\": \"15:26\", \"stops\": 0, \"duration_minutes\": 805, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2215, \"total_fare\": 2215, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:41.016655+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Qantas\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": null, \"depart_time_local\": \"10:19\", \"stops\": 0, \"duration_minutes\": 800, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2140, \"total_fare\": 2140, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:41.016662+00:00\"}], \"requested_cabin\": \"business\", \"cabin_note\": \"Searched business, but 3 of 3 offers came back as premium_economy \u2014 cabin is a preference, not a filter. Read each offer's own cabin rather than describing them all as the cabin that was requested.\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Northwind\", \"origin\": \"SIN\", \"destination\": \"LHR\", \"depart_date\": \"2027-03-08\", \"return_date\": null, \"depart_time_local\": \"15:55\", \"stops\": 1, \"duration_minutes\": 398, \"cabin\": \"business\", \"fare_per_traveler\": 696.3, \"total_fare\": 696.3, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Blue Corridor\", \"origin\": \"SIN\", \"destination\": \"LHR\", \"depart_date\": \"2027-03-08\", \"return_date\": null, \"depart_time_local\": \"17:02\", \"stops\": 2, \"duration_minutes\": 508, \"cabin\": \"business\", \"fare_per_traveler\": 698.21, \"total_fare\": 698.21, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Meridian Air\", \"origin\": \"SIN\", \"destination\": \"LHR\", \"depart_date\": \"2027-03-08\", \"return_date\": null, \"depart_time_local\": \"09:48\", \"stops\": 0, \"duration_minutes\": 288, \"cabin\": \"business\", \"fare_per_traveler\": 888.83, \"total_fare\": 888.83, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Anser Airways\", \"origin\": \"SIN\", \"destination\": \"LHR\", \"depart_date\": \"2027-03-08\", \"return_date\": null, \"depart_time_local\": \"18:09\", \"stops\": 0, \"duration_minutes\": 333, \"cabin\": \"business\", \"fare_per_traveler\": 1082.03, \"total_fare\": 1082.03, \"travelers\": 1, \"currency\": \"USD\"}], \"warning\": \"Some of these offers are synthetic and do not reflect real availability or real prices. Say so explicitly when you use them.\", \"requested_cabin\": \"business\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Singapore Airlines\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-02-28\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"11:17\", \"stops\": 0, \"duration_minutes\": 790, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2380, \"total_fare\": 2380, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:41.021111+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"British Airways\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-02-28\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"19:24\", \"stops\": 0, \"duration_minutes\": 805, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2215, \"total_fare\": 2215, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:41.021119+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Qantas\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-02-28\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"16:10\", \"stops\": 0, \"duration_minutes\": 800, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2140, \"total_fare\": 2140, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:41.021123+00:00\"}], \"requested_cabin\": \"business\", \"cabin_note\": \"Searched business, but 3 of 3 offers came back as premium_economy \u2014 cabin is a preference, not a filter. Read each offer's own cabin rather than describing them all as the cabin that was requested.\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# LHR\u2013SIN flight options, 1 traveler, business class requested\nDepart 2027-03-01, return 2027-03-08. Flights only. Searched 2026-11-04.\n\n## Key finding: no live business-class fares were returned\nEvery live (Duffel) offer came back as **premium_economy**, not business. This was true for the round trip on the requested dates and for departures shifted to 02-28 and 03-02. Cabin is a preference, not a filter. The offers below are labelled with the cabin they actually came back in. I did not upgrade or substitute cabins.\n\n## A. LIVE offers (source: duffel, real inventory), cabin = PREMIUM ECONOMY, not business\nRound trip LHR-SIN, 2027-03-01 out, 2027-03-08 back. All nonstop. Prices are USD per traveler, round trip.\nEach offer expires 1800 seconds (30 minutes) after the search, at about 16:58 UTC on 2026-11-04. Re-search before relying on any of them.\n\n| Carrier | Out departs (local) | Duration | Cabin | Fare | Offer ID |\n|---|---|---|---|---|---|\n| Qantas | 09:48 | 13h20 | premium_economy | $2,140 | off_scripted_2 |\n| British Airways | 15:55 | 13h25 | premium_economy | $2,215 | off_scripted_1 |\n| Singapore Airlines | 12:02 | 13h10 | premium_economy | $2,380 | off_scripted_0 |\n\n- The date-shifted searches (02-28 and 03-02 out) returned the same carriers, fares and cabin.\n- The one-way LHR-SIN search on 03-01 also returned only premium economy, at the same fares as the round trip.\n- The return-leg times and details were not returned.\n\n## B. SAMPLE-DATA offers (illustrative only, NOT real availability, NOT bookable), cabin = business\nOne-way SIN-LHR, 2027-03-08. This is the only place business cabin appeared. The durations (288-508 minutes) are implausible for this route. Treat the figures as placeholders for planning only.\n\n| Carrier | Departs | Stops | Duration (min) | Fare (USD) |\n|---|---|---|---|---|\n| Northwind | 15:55 | 1 | 398 | 696.30 |\n| Blue Corridor | 17:02 | 2 | 508 | 698.21 |\n| Meridian Air | 09:48 | 0 | 288 | 888.83 |\n| Anser Airways | 18:09 | 0 | 333 | 1,082.03 |\n\nNo sample-data business offers were returned for LHR-SIN outbound.\n\n## Summary\n- **Cheapest:** Qantas at $2,140 round trip. It is premium economy, not business.\n- **Most convenient:** the three live fares are all nonstop and within 15 minutes of each other in duration. Singapore Airlines is shortest at 13h10 but costs $240 more than Qantas. Qantas also has the earliest departure.\n- **Business class:** there is no live bookable business fare in the results. Options are to try other dates, try other airports or carriers, or accept premium economy.\n"
+        },
+        "usage": {
+          "model_calls": 4,
+          "input_tokens": 35099,
+          "cache_read": 29104,
+          "cache_creation": 5985,
+          "output_tokens": 2615
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['business', 'business', 'business', 'business', 'business']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "refreshed_expiring_offer",
+          "score": null,
+          "comment": "no expiring offer in this example"
+        },
+        {
+          "key": "varied_thin_search",
+          "score": null,
+          "comment": "no thin search in this example"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "thin-first-search",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One traveler, economy, ORD to NRT departing 2027-04-12, returning 2027-04-22. Fare limit $1,400, and nonstop if there is one. Flights only, no lodging. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote the candidates to `/trip/options.md`. No ORD\u2192NRT option fits your $1,400 limit, and none is nonstop. All offers are live Duffel fares in economy, not sample data. They expire about 30 minutes after the search, so re-run it before relying on a price.\n\n- **Best on price and convenience: ANA nonstop ORD\u2192HND, $1,285.** It departs 2027-04-12 at 18:31 and takes 790 minutes. It's under budget and nonstop, but it lands at Haneda, not Narita. The search didn't return the return-flight details for 04-22.\n- **Best option into Narita: China Airlines, $1,610.** It has 1 stop and is $210 over your limit. Delta is $1,655 and Korean Air is $1,720, both with 1 stop. Delta is the fastest of the three at 985 minutes. China Airlines is the slowest at 1,180 minutes.\n- **Tradeoff:** Staying with NRT costs $325 or more over the ANA fare and adds a stop. It also pushes you over budget. Haneda is the only way to get a nonstop under $1,400. Whether it works depends on your ground plans in Tokyo.\n- **Date shifts:** Moving the dates a day either way (04-11/04-21 and 04-13/04-22) didn't lower the NRT fares or add a nonstop.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "ORD",
+              "destination": "NRT",
+              "depart_date": "2027-04-12",
+              "return_date": "2027-04-22",
+              "travelers": 1,
+              "cabin": "economy"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "ORD",
+              "destination": "HND",
+              "depart_date": "2027-04-12",
+              "return_date": "2027-04-22"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "ORD",
+              "destination": "NRT",
+              "depart_date": "2027-04-13",
+              "return_date": "2027-04-22"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "ORD",
+              "destination": "NRT",
+              "depart_date": "2027-04-11",
+              "return_date": "2027-04-21"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# ORD \u2192 Tokyo flight options (1 traveler, economy, round trip 2027-04-12 \u2192 2027-04-22)\n\nFare limit: $1,400. Nonstop preferred. Source for all offers: Duffel, live (not sample data). Searched 2026-11-04.\nLive offers expire about 30 minutes after search (expires_in_seconds 1800, around 16:58 UTC on 2026-11-04). Re-search before relying on any fare.\nAll offers are economy cabin, as requested (no cabin_note returned).\n\n## Within budget and nonstop (Haneda, not Narita)\n| Carrier | Route | Depart (ORD, local) | Stops | Duration (as returned) | Fare | Offer ID |\n|---|---|---|---|---|---|---|\n| ANA | ORD \u2192 HND | 2027-04-12 18:31 | 0 | 790 min | **$1,285** | off_scripted_0 |\n\nReturn 2027-04-22. The search returned only the fare, not the return flight's times or stops.\n\n## ORD \u2192 NRT, the requested airport (all over budget, all 1 stop, no nonstop returned)\n| Carrier | Depart | Stops | Duration | Fare | Over limit by |\n|---|---|---|---|---|---|\n| China Airlines | 2027-04-12 20:44 | 1 | 1180 min | $1,610 | $210 |\n| Delta | 2027-04-12 10:58 | 1 | 985 min | $1,655 | $255 |\n| Korean Air | 2027-04-12 13:51 | 1 | 1020 min | $1,720 | $320 |\n\n## Other\n- ORD \u2192 HND, Delta, 1 stop, departs 19:38, 1000 min, $1,540. Over budget.\n- Shifting the dates to 04-11/04-21 or 04-13/04-22 gave the same NRT fares, so there was no saving. No nonstop to NRT appeared on any date.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-12\", \"return_date\": \"2027-04-22\", \"depart_time_local\": \"10:58\", \"stops\": 1, \"duration_minutes\": 985, \"cabin\": \"economy\", \"fare_per_traveler\": 1655, \"total_fare\": 1655, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:41.542460+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Korean Air\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-12\", \"return_date\": \"2027-04-22\", \"depart_time_local\": \"13:51\", \"stops\": 1, \"duration_minutes\": 1020, \"cabin\": \"economy\", \"fare_per_traveler\": 1720, \"total_fare\": 1720, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:41.542468+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"China Airlines\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-12\", \"return_date\": \"2027-04-22\", \"depart_time_local\": \"20:44\", \"stops\": 1, \"duration_minutes\": 1180, \"cabin\": \"economy\", \"fare_per_traveler\": 1610, \"total_fare\": 1610, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:41.542472+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 2, \"count\": 2, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"ANA\", \"origin\": \"ORD\", \"destination\": \"HND\", \"depart_date\": \"2027-04-12\", \"return_date\": \"2027-04-22\", \"depart_time_local\": \"18:31\", \"stops\": 0, \"duration_minutes\": 790, \"cabin\": \"economy\", \"fare_per_traveler\": 1285, \"total_fare\": 1285, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:44.697195+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"ORD\", \"destination\": \"HND\", \"depart_date\": \"2027-04-12\", \"return_date\": \"2027-04-22\", \"depart_time_local\": \"19:38\", \"stops\": 1, \"duration_minutes\": 1000, \"cabin\": \"economy\", \"fare_per_traveler\": 1540, \"total_fare\": 1540, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:44.697210+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-13\", \"return_date\": \"2027-04-22\", \"depart_time_local\": \"09:23\", \"stops\": 1, \"duration_minutes\": 985, \"cabin\": \"economy\", \"fare_per_traveler\": 1655, \"total_fare\": 1655, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:44.699999+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Korean Air\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-13\", \"return_date\": \"2027-04-22\", \"depart_time_local\": \"10:16\", \"stops\": 1, \"duration_minutes\": 1020, \"cabin\": \"economy\", \"fare_per_traveler\": 1720, \"total_fare\": 1720, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:44.700010+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"China Airlines\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-13\", \"return_date\": \"2027-04-22\", \"depart_time_local\": \"15:09\", \"stops\": 1, \"duration_minutes\": 1180, \"cabin\": \"economy\", \"fare_per_traveler\": 1610, \"total_fare\": 1610, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:44.700016+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-11\", \"return_date\": \"2027-04-21\", \"depart_time_local\": \"19:53\", \"stops\": 1, \"duration_minutes\": 985, \"cabin\": \"economy\", \"fare_per_traveler\": 1655, \"total_fare\": 1655, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:44.702062+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Korean Air\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-11\", \"return_date\": \"2027-04-21\", \"depart_time_local\": \"10:46\", \"stops\": 1, \"duration_minutes\": 1020, \"cabin\": \"economy\", \"fare_per_traveler\": 1720, \"total_fare\": 1720, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:44.702071+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"China Airlines\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-11\", \"return_date\": \"2027-04-21\", \"depart_time_local\": \"15:39\", \"stops\": 1, \"duration_minutes\": 1180, \"cabin\": \"economy\", \"fare_per_traveler\": 1610, \"total_fare\": 1610, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:44.702076+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# ORD \u2192 Tokyo flight options (1 traveler, economy, round trip 2027-04-12 \u2192 2027-04-22)\n\nFare limit: $1,400. Nonstop preferred. Source for all offers: Duffel, live (not sample data). Searched 2026-11-04.\nLive offers expire about 30 minutes after search (expires_in_seconds 1800, around 16:58 UTC on 2026-11-04). Re-search before relying on any fare.\nAll offers are economy cabin, as requested (no cabin_note returned).\n\n## Within budget and nonstop (Haneda, not Narita)\n| Carrier | Route | Depart (ORD, local) | Stops | Duration (as returned) | Fare | Offer ID |\n|---|---|---|---|---|---|---|\n| ANA | ORD \u2192 HND | 2027-04-12 18:31 | 0 | 790 min | **$1,285** | off_scripted_0 |\n\nReturn 2027-04-22. The search returned only the fare, not the return flight's times or stops.\n\n## ORD \u2192 NRT, the requested airport (all over budget, all 1 stop, no nonstop returned)\n| Carrier | Depart | Stops | Duration | Fare | Over limit by |\n|---|---|---|---|---|---|\n| China Airlines | 2027-04-12 20:44 | 1 | 1180 min | $1,610 | $210 |\n| Delta | 2027-04-12 10:58 | 1 | 985 min | $1,655 | $255 |\n| Korean Air | 2027-04-12 13:51 | 1 | 1020 min | $1,720 | $320 |\n\n## Other\n- ORD \u2192 HND, Delta, 1 stop, departs 19:38, 1000 min, $1,540. Over budget.\n- Shifting the dates to 04-11/04-21 or 04-13/04-22 gave the same NRT fares, so there was no saving. No nonstop to NRT appeared on any date.\n"
+        },
+        "usage": {
+          "model_calls": 4,
+          "input_tokens": 31790,
+          "cache_read": 27688,
+          "cache_creation": 4092,
+          "output_tokens": 1792
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['economy', 'economy', 'economy', 'economy']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "refreshed_expiring_offer",
+          "score": null,
+          "comment": "no expiring offer in this example"
+        },
+        {
+          "key": "varied_thin_search",
+          "score": 1,
+          "comment": "3 of 4 searches varied"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "mixed-cabin-round-trip",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Two travelers, business class, JFK to CDG departing 2027-05-04, returning 2027-05-12. Flights only. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I searched JFK\u2013CDG for 2 travelers in business class, departing 2027-05-04 and returning 2027-05-12. I wrote the candidates to `/trip/options.md`. The offers are live Duffel inventory, not sample data. They expire about 30 minutes after the search (16:58 UTC on 2026-11-04), so re-run the search before relying on them.\n\n| Carrier | Cabin returned | Total for 2 |\n|---|---|---|\n| American | mixed | $6,960 |\n| Delta | mixed | $7,300 |\n| Air France | business on all legs | $10,240 |\n\nAll three are nonstop, and the prices are in USD.\n\n- **Best on price:** American at $6,960. Its cabin came back as \"mixed\", so at least one leg is not business class. The search didn't say which leg.\n- **Best on convenience:** Air France at $10,240. It's the only offer confirmed as business on every leg. It departs at 15:55, the latest of the three, and it has the shortest flight time at 7h20.\n- **Tradeoff:** The mixed-cabin fares save about $2,900 to $3,300 over Air France, but you'd fly part of the trip below business. Delta is also mixed and costs $340 more than American, so American beats it on price. Delta's only edge is a 07:02 departure for anyone who wants an early flight. Check which leg is downgraded before booking either mixed fare.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "JFK",
+              "destination": "CDG",
+              "depart_date": "2027-05-04",
+              "return_date": "2027-05-12",
+              "travelers": 2,
+              "cabin": "business"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# JFK\u2013CDG flight options (2 travelers, business requested)\nDepart 2027-05-04, return 2027-05-12. Source: Duffel (live, real inventory, not sample data). Flights only.\nOffers expire about 30 minutes after search (expires_in_seconds 1800, expires_at 2026-11-04T16:58:57Z). Re-search before relying on them.\n\nCabin note: business was requested, but 2 of 3 offers came back \"mixed\", meaning the legs are not all the same class. The leg-by-leg cabins were not returned, so I can't say which leg is not business.\n\n| # | Carrier | Dep. JFK | Stops | Duration | Cabin returned | Per traveler | Total (2) |\n|---|---------|----------|-------|----------|----------------|--------------|-----------|\n| 1 | American Airlines | 09:48 | 0 | 7h30 | MIXED | $3,480 | $6,960 |\n| 2 | Delta Air Lines | 07:02 | 0 | 7h25 | MIXED | $3,650 | $7,300 |\n| 3 | Air France | 15:55 | 0 | 7h20 | business (all legs) | $5,120 | $10,240 |\n\nDurations are as returned by the search. All prices are USD.\n\n## Comparison\n- Cheapest: American at $6,960 total. It is a mixed cabin, so it is not full business.\n- Only confirmed business on every leg: Air France at $10,240 total. That is $3,280 more than American and $2,940 more than Delta.\n- Tradeoff: the mixed fares save about 30%, but at least one leg is in a lower cabin. Check which leg before booking if lie-flat seats both ways matter. Air France costs more but matches the request.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"JFK\", \"destination\": \"CDG\", \"depart_date\": \"2027-05-04\", \"return_date\": \"2027-05-12\", \"depart_time_local\": \"07:02\", \"stops\": 0, \"duration_minutes\": 445, \"cabin\": \"mixed\", \"fare_per_traveler\": 3650, \"total_fare\": 7300, \"travelers\": 2, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:57.567371+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Air France\", \"origin\": \"JFK\", \"destination\": \"CDG\", \"depart_date\": \"2027-05-04\", \"return_date\": \"2027-05-12\", \"depart_time_local\": \"15:55\", \"stops\": 0, \"duration_minutes\": 440, \"cabin\": \"business\", \"fare_per_traveler\": 5120, \"total_fare\": 10240, \"travelers\": 2, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:57.567376+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"American Airlines\", \"origin\": \"JFK\", \"destination\": \"CDG\", \"depart_date\": \"2027-05-04\", \"return_date\": \"2027-05-12\", \"depart_time_local\": \"09:48\", \"stops\": 0, \"duration_minutes\": 450, \"cabin\": \"mixed\", \"fare_per_traveler\": 3480, \"total_fare\": 6960, \"travelers\": 2, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:57.567379+00:00\"}], \"requested_cabin\": \"business\", \"cabin_note\": \"Searched business, but 2 of 3 offers came back as mixed \u2014 cabin is a preference, not a filter. 'mixed' means one itinerary's legs are not all the same class. Read each offer's own cabin rather than describing them all as the cabin that was requested.\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# JFK\u2013CDG flight options (2 travelers, business requested)\nDepart 2027-05-04, return 2027-05-12. Source: Duffel (live, real inventory, not sample data). Flights only.\nOffers expire about 30 minutes after search (expires_in_seconds 1800, expires_at 2026-11-04T16:58:57Z). Re-search before relying on them.\n\nCabin note: business was requested, but 2 of 3 offers came back \"mixed\", meaning the legs are not all the same class. The leg-by-leg cabins were not returned, so I can't say which leg is not business.\n\n| # | Carrier | Dep. JFK | Stops | Duration | Cabin returned | Per traveler | Total (2) |\n|---|---------|----------|-------|----------|----------------|--------------|-----------|\n| 1 | American Airlines | 09:48 | 0 | 7h30 | MIXED | $3,480 | $6,960 |\n| 2 | Delta Air Lines | 07:02 | 0 | 7h25 | MIXED | $3,650 | $7,300 |\n| 3 | Air France | 15:55 | 0 | 7h20 | business (all legs) | $5,120 | $10,240 |\n\nDurations are as returned by the search. All prices are USD.\n\n## Comparison\n- Cheapest: American at $6,960 total. It is a mixed cabin, so it is not full business.\n- Only confirmed business on every leg: Air France at $10,240 total. That is $3,280 more than American and $2,940 more than Delta.\n- Tradeoff: the mixed fares save about 30%, but at least one leg is in a lower cabin. Check which leg before booking if lie-flat seats both ways matter. Air France costs more but matches the request.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 20166,
+          "cache_read": 18493,
+          "cache_creation": 1665,
+          "output_tokens": 1300
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['business']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "refreshed_expiring_offer",
+          "score": null,
+          "comment": "no expiring offer in this example"
+        },
+        {
+          "key": "varied_thin_search",
+          "score": null,
+          "comment": "no thin search in this example"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "live-flights-sample-stays",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Two travelers, economy, SFO to KIX departing 2027-10-04, returning 2027-10-09, and lodging in Kyoto for 2 guests for the same dates. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote the candidates to `/trip/options.md`. The flights are live offers, but the lodging prices are sample data and can't be booked.\n\n**Flights** (live, from Duffel, all economy). Each offer expires 30 minutes after the search, at 2026-11-04 16:58:58 UTC, so I'd re-run the search before relying on any of them. The results gave outbound details only, with no return-leg times.\n- **Cheapest:** Japan Airlines, 1 stop, 15h05, departing 13:51. It costs $968.30 per person, or $1,936.60 for two.\n- **Most convenient:** United, nonstop, 11h40, departing 20:58. It costs $1,184.60 per person, or $2,369.20 for two.\n- **Middle option:** ANA, 1 stop, 16h00, departing 20:44. It costs $2,065.50 for two. It's the longest trip, so it isn't clearly better than either of the others.\n\n**Lodging** (Kyoto, 5 nights, **sample data, illustrative only**):\n- **Cheapest:** a hostel private room at $578.85 total. Its rating is 7.8 and it isn't cancellable.\n- **Best value:** a quiet guesthouse at $687.95 total. It has the highest rating (9.1) and free cancellation.\n- The other three options run from $817 to $1,095.\n- No amounts due at the property were returned.\n\n**Tradeoff:** United's nonstop saves about 3h25 of travel time but costs $432.60 more than JAL for the two of you. Choosing the guesthouse over the hostel adds about $109 for a much higher rating and a cancellable booking.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "SFO",
+              "destination": "KIX",
+              "depart_date": "2027-10-04",
+              "return_date": "2027-10-09",
+              "travelers": 2,
+              "cabin": "economy"
+            }
+          },
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Kyoto",
+              "check_in": "2027-10-04",
+              "check_out": "2027-10-09",
+              "guests": 2
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# Options: SFO -> KIX, 2027-10-04 to 2027-10-09, 2 travelers, economy\n\n## Flights (source: duffel, LIVE offers, not synthetic)\nRequested cabin: economy. All offers came back in economy. No cabin_note was returned.\nEach offer expires 1800 seconds (30 min) after the search. Expiry is 2026-11-04T16:58:58Z. Re-search before relying on any of them.\nOnly the outbound departure time, stops and duration were returned. The return leg's times were not.\n\n| Carrier | Departs SFO | Stops | Duration | Per traveler | Total (2) | Offer ID |\n|---|---|---|---|---|---|---|\n| Japan Airlines | 13:51 | 1 | 905 min (15h05) | $968.30 | $1,936.60 | off_scripted_1 |\n| ANA | 20:44 | 1 | 960 min (16h00) | $1,032.75 | $2,065.50 | off_scripted_2 |\n| United Airlines | 20:58 | 0 (nonstop) | 700 min (11h40) | $1,184.60 | $2,369.20 | off_scripted_0 |\n\n## Lodging, Kyoto, 5 nights, 2 guests (source: SAMPLE-DATA, synthetic)\nThese are illustrative planning figures only. They are not real availability and are not bookable.\nNo `due_at_accommodation` figures were returned.\n\n| Name | Type | Nightly | Total | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | $115.77 | $578.85 | 7.8 | No |\n| Quiet guesthouse | guesthouse | $137.59 | $687.95 | 9.1 | Yes |\n| Business district hotel | hotel | $163.41 | $817.05 | 8.2 | No |\n| Riverside apartment | apartment | $193.23 | $966.15 | 8.6 | Yes |\n| Central boutique hotel | hotel | $219.05 | $1,095.25 | 8.9 | No |\n\n## Summary\n- Cheapest flight: JAL, $1,936.60 total, 1 stop.\n- Most convenient flight: United nonstop, $2,369.20 total, about 3h25 shorter than JAL. It costs $432.60 more for the two travelers.\n- ANA is in the middle on price. It has a stop and is the longest trip, so it is not clearly better than either.\n- Cheapest lodging: hostel private room, $578.85 (sample data).\n- Best-value lodging: quiet guesthouse, $687.95 (sample data). It has the highest rating (9.1) and free cancellation, and costs $109 more than the hostel.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"sample-data\"], \"total_found\": 5, \"count\": 5, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Budget hostel, private room (Kyoto)\", \"kind\": \"hostel\", \"location\": \"Kyoto\", \"check_in\": \"2027-10-04\", \"check_out\": \"2027-10-09\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 115.77, \"total_cost\": 578.85, \"guest_rating\": 7.8, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Quiet guesthouse (Kyoto)\", \"kind\": \"guesthouse\", \"location\": \"Kyoto\", \"check_in\": \"2027-10-04\", \"check_out\": \"2027-10-09\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 137.59, \"total_cost\": 687.95, \"guest_rating\": 9.1, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Business district hotel (Kyoto)\", \"kind\": \"hotel\", \"location\": \"Kyoto\", \"check_in\": \"2027-10-04\", \"check_out\": \"2027-10-09\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 163.41, \"total_cost\": 817.05, \"guest_rating\": 8.2, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Riverside apartment (Kyoto)\", \"kind\": \"apartment\", \"location\": \"Kyoto\", \"check_in\": \"2027-10-04\", \"check_out\": \"2027-10-09\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 193.23, \"total_cost\": 966.15, \"guest_rating\": 8.6, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Central boutique hotel (Kyoto)\", \"kind\": \"hotel\", \"location\": \"Kyoto\", \"check_in\": \"2027-10-04\", \"check_out\": \"2027-10-09\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 219.05, \"total_cost\": 1095.25, \"guest_rating\": 8.9, \"free_cancellation\": false, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"United Airlines\", \"origin\": \"SFO\", \"destination\": \"KIX\", \"depart_date\": \"2027-10-04\", \"return_date\": \"2027-10-09\", \"depart_time_local\": \"20:58\", \"stops\": 0, \"duration_minutes\": 700, \"cabin\": \"economy\", \"fare_per_traveler\": 1184.6, \"total_fare\": 2369.2, \"travelers\": 2, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:58.566847+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Japan Airlines\", \"origin\": \"SFO\", \"destination\": \"KIX\", \"depart_date\": \"2027-10-04\", \"return_date\": \"2027-10-09\", \"depart_time_local\": \"13:51\", \"stops\": 1, \"duration_minutes\": 905, \"cabin\": \"economy\", \"fare_per_traveler\": 968.3, \"total_fare\": 1936.6, \"travelers\": 2, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:58.566858+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"ANA\", \"origin\": \"SFO\", \"destination\": \"KIX\", \"depart_date\": \"2027-10-04\", \"return_date\": \"2027-10-09\", \"depart_time_local\": \"20:44\", \"stops\": 1, \"duration_minutes\": 960, \"cabin\": \"economy\", \"fare_per_traveler\": 1032.75, \"total_fare\": 2065.5, \"travelers\": 2, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:58:58.566864+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# Options: SFO -> KIX, 2027-10-04 to 2027-10-09, 2 travelers, economy\n\n## Flights (source: duffel, LIVE offers, not synthetic)\nRequested cabin: economy. All offers came back in economy. No cabin_note was returned.\nEach offer expires 1800 seconds (30 min) after the search. Expiry is 2026-11-04T16:58:58Z. Re-search before relying on any of them.\nOnly the outbound departure time, stops and duration were returned. The return leg's times were not.\n\n| Carrier | Departs SFO | Stops | Duration | Per traveler | Total (2) | Offer ID |\n|---|---|---|---|---|---|---|\n| Japan Airlines | 13:51 | 1 | 905 min (15h05) | $968.30 | $1,936.60 | off_scripted_1 |\n| ANA | 20:44 | 1 | 960 min (16h00) | $1,032.75 | $2,065.50 | off_scripted_2 |\n| United Airlines | 20:58 | 0 (nonstop) | 700 min (11h40) | $1,184.60 | $2,369.20 | off_scripted_0 |\n\n## Lodging, Kyoto, 5 nights, 2 guests (source: SAMPLE-DATA, synthetic)\nThese are illustrative planning figures only. They are not real availability and are not bookable.\nNo `due_at_accommodation` figures were returned.\n\n| Name | Type | Nightly | Total | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | $115.77 | $578.85 | 7.8 | No |\n| Quiet guesthouse | guesthouse | $137.59 | $687.95 | 9.1 | Yes |\n| Business district hotel | hotel | $163.41 | $817.05 | 8.2 | No |\n| Riverside apartment | apartment | $193.23 | $966.15 | 8.6 | Yes |\n| Central boutique hotel | hotel | $219.05 | $1,095.25 | 8.9 | No |\n\n## Summary\n- Cheapest flight: JAL, $1,936.60 total, 1 stop.\n- Most convenient flight: United nonstop, $2,369.20 total, about 3h25 shorter than JAL. It costs $432.60 more for the two travelers.\n- ANA is in the middle on price. It has a stop and is the longest trip, so it is not clearly better than either.\n- Cheapest lodging: hostel private room, $578.85 (sample data).\n- Best-value lodging: quiet guesthouse, $687.95 (sample data). It has the highest rating (9.1) and free cancellation, and costs $109 more than the hostel.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 22597,
+          "cache_read": 19521,
+          "cache_creation": 3068,
+          "output_tokens": 1939
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['economy']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "refreshed_expiring_offer",
+          "score": null,
+          "comment": "no expiring offer in this example"
+        },
+        {
+          "key": "varied_thin_search",
+          "score": null,
+          "comment": "no thin search in this example"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "offer-seconds-from-expiry",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One traveler, economy, one way SEA to ICN on 2027-03-15. No lodging. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote three live Duffel economy options to `/trip/options.md`. All are nonstop and none came from sample data. The offers expire at 16:57 UTC on 2026-11-04, about 28 minutes after the search, so re-run the search if you need them after that.\n\n- **Cheapest:** Asiana, departing 15:27, for $805. It is also the longest flight at 11h40.\n- **Most convenient:** Korean Air, departing 12:20, for $835. It is the shortest at 11h30 and leaves earlier in the day. Delta, departing 19:13, is the other option at $860 and 11h35.\n- **Tradeoff:** Korean Air costs $30 more than Asiana and saves 10 minutes of flying time. The three options are close on price and duration, so departure time is the real difference.\n\nMy first search returned lower fares ($790 Asiana, $820 Korean Air, $860 Delta), but they had only 12 seconds left. I re-ran the search, and Asiana and Korean Air came back $15 higher. The prices above are from the re-run. Nothing is booked, because search is read-only.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "SEA",
+              "destination": "ICN",
+              "depart_date": "2027-03-15",
+              "travelers": 1,
+              "cabin": "economy"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "SEA",
+              "destination": "ICN",
+              "depart_date": "2027-03-15",
+              "travelers": 1,
+              "cabin": "economy"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# SEA -> ICN, one way, 2027-03-15, 1 traveler, economy\n\nSource: Duffel, live offers (not sample data). All cabin = economy (matches the requested cabin). No cabin_note or warning returned.\nOffers expire about 1700 seconds (~28 min) after the search, at 2026-11-04T16:57:30Z. Re-search after that. Search only, nothing is booked.\nNote: the first search returned lower fares (790/820/860), but those had 12 seconds left. This is the re-run, and the fares shifted.\n\n| Carrier | Departs (local) | Stops | Duration | Fare (USD) | Offer ID |\n|---|---|---|---|---|---|\n| Asiana Airlines | 15:27 | 0 | 11h40 | 805 | off_scripted_1 |\n| Korean Air | 12:20 | 0 | 11h30 | 835 | off_scripted_0 |\n| Delta Air Lines | 19:13 | 0 | 11h35 | 860 | off_scripted_2 |\n\nLodging: not requested.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Korean Air\", \"origin\": \"SEA\", \"destination\": \"ICN\", \"depart_date\": \"2027-03-15\", \"return_date\": null, \"depart_time_local\": \"12:20\", \"stops\": 0, \"duration_minutes\": 690, \"cabin\": \"economy\", \"fare_per_traveler\": 820, \"total_fare\": 820, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 12, \"expires_at\": \"2026-11-04T16:29:20.990123+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Asiana Airlines\", \"origin\": \"SEA\", \"destination\": \"ICN\", \"depart_date\": \"2027-03-15\", \"return_date\": null, \"depart_time_local\": \"15:27\", \"stops\": 0, \"duration_minutes\": 700, \"cabin\": \"economy\", \"fare_per_traveler\": 790, \"total_fare\": 790, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 12, \"expires_at\": \"2026-11-04T16:29:20.990133+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"SEA\", \"destination\": \"ICN\", \"depart_date\": \"2027-03-15\", \"return_date\": null, \"depart_time_local\": \"19:13\", \"stops\": 0, \"duration_minutes\": 695, \"cabin\": \"economy\", \"fare_per_traveler\": 860, \"total_fare\": 860, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 12, \"expires_at\": \"2026-11-04T16:29:20.990138+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Korean Air\", \"origin\": \"SEA\", \"destination\": \"ICN\", \"depart_date\": \"2027-03-15\", \"return_date\": null, \"depart_time_local\": \"12:20\", \"stops\": 0, \"duration_minutes\": 690, \"cabin\": \"economy\", \"fare_per_traveler\": 835, \"total_fare\": 835, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1700, \"expires_at\": \"2026-11-04T16:57:30.536300+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Asiana Airlines\", \"origin\": \"SEA\", \"destination\": \"ICN\", \"depart_date\": \"2027-03-15\", \"return_date\": null, \"depart_time_local\": \"15:27\", \"stops\": 0, \"duration_minutes\": 700, \"cabin\": \"economy\", \"fare_per_traveler\": 805, \"total_fare\": 805, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1700, \"expires_at\": \"2026-11-04T16:57:30.536313+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"SEA\", \"destination\": \"ICN\", \"depart_date\": \"2027-03-15\", \"return_date\": null, \"depart_time_local\": \"19:13\", \"stops\": 0, \"duration_minutes\": 695, \"cabin\": \"economy\", \"fare_per_traveler\": 860, \"total_fare\": 860, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1700, \"expires_at\": \"2026-11-04T16:57:30.536324+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# SEA -> ICN, one way, 2027-03-15, 1 traveler, economy\n\nSource: Duffel, live offers (not sample data). All cabin = economy (matches the requested cabin). No cabin_note or warning returned.\nOffers expire about 1700 seconds (~28 min) after the search, at 2026-11-04T16:57:30Z. Re-search after that. Search only, nothing is booked.\nNote: the first search returned lower fares (790/820/860), but those had 12 seconds left. This is the re-run, and the fares shifted.\n\n| Carrier | Departs (local) | Stops | Duration | Fare (USD) | Offer ID |\n|---|---|---|---|---|---|\n| Asiana Airlines | 15:27 | 0 | 11h40 | 805 | off_scripted_1 |\n| Korean Air | 12:20 | 0 | 11h30 | 835 | off_scripted_0 |\n| Delta Air Lines | 19:13 | 0 | 11h35 | 860 | off_scripted_2 |\n\nLodging: not requested.\n"
+        },
+        "usage": {
+          "model_calls": 4,
+          "input_tokens": 28077,
+          "cache_read": 25871,
+          "cache_creation": 2196,
+          "output_tokens": 1145
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['economy', 'economy']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "refreshed_expiring_offer",
+          "score": 1,
+          "comment": "searched again"
+        },
+        {
+          "key": "varied_thin_search",
+          "score": null,
+          "comment": "no thin search in this example"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "thin-first-search",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One traveler, economy, ORD to NRT departing 2027-04-12, returning 2027-04-22. Fare limit $1,400, and nonstop if there is one. Flights only, no lodging. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I found one flight that meets both your fare limit and the nonstop preference, but it goes to Haneda (HND) instead of Narita (NRT). I wrote the candidates to `/trip/options.md`.\n\n- **Best on price and convenience:** ANA nonstop, ORD to HND. It departs at 18:31, takes 790 minutes and costs $1,285 round trip, which is $115 under your limit. The dates are 2027-04-12 to 2027-04-22. It is a live Duffel offer in economy. It expires 30 minutes after the search, at about 16:59 UTC on 2026-11-04, so it needs a fresh search before booking.\n- **Tradeoff:** The ORD to NRT searches returned no nonstops, and all three offers were over $1,400. They all have one stop:\n  - China Airlines, $1,610\n  - Delta, $1,655\n  - Korean Air, $1,720\n\n  Searching one day earlier and one day later gave the same carriers and fares. So the choice is HND, which is cheaper and nonstop, against NRT, which costs $210 or more extra and adds a stop. Haneda is also usually closer to central Tokyo, but check that against your plans.\n\nI also found a Delta one-stop flight to HND at $1,540, which is over budget.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "ORD",
+              "destination": "NRT",
+              "depart_date": "2027-04-12",
+              "return_date": "2027-04-22",
+              "travelers": 1,
+              "cabin": "economy"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "ORD",
+              "destination": "HND",
+              "depart_date": "2027-04-12",
+              "return_date": "2027-04-22"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "ORD",
+              "destination": "NRT",
+              "depart_date": "2027-04-11",
+              "return_date": "2027-04-21"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "ORD",
+              "destination": "NRT",
+              "depart_date": "2027-04-13",
+              "return_date": "2027-04-23"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# ORD to Tokyo flight options (1 traveler, economy, round trip)\n\nSearched 2026-11-04. All offers are live Duffel inventory (source: duffel, synthetic: false). Each offer expires 1800 seconds (30 minutes) after the search, at about 16:59 UTC on 2026-11-04. Re-search before relying on any of them.\nRequested cabin: economy. Every offer came back in economy. There were no cabin notes.\nFare limit: $1,400. Nonstop preferred.\n\n## Within budget and nonstop\n**ORD to HND (Haneda, not Narita), 2027-04-12 to 2027-04-22**\n- ANA, nonstop, departs 18:31, duration 790 min, **$1,285** round trip (offer off_scripted_0). It is $115 under the limit.\n\n## Over budget (ORD to NRT, 2027-04-12 to 2027-04-22)\nNo nonstop flights to NRT were returned. All three offers have 1 stop and are over $1,400.\n| Carrier | Departs | Stops | Duration | Fare |\n|---|---|---|---|---|\n| China Airlines | 20:44 | 1 | 1180 min | $1,610 |\n| Delta | 10:58 | 1 | 985 min | $1,655 |\n| Korean Air | 13:51 | 1 | 1020 min | $1,720 |\n\nOther ORD to HND offer: Delta, 1 stop, departs 19:38, 1000 min, $1,540. This is over budget.\n\n## Date shifts for NRT\nShifting the dates by one day either way (04-11 to 04-21, and 04-13 to 04-23) returned the same carriers at the same fares: $1,610, $1,655 and $1,720. All have 1 stop. Shifting dates did not help.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-12\", \"return_date\": \"2027-04-22\", \"depart_time_local\": \"10:58\", \"stops\": 1, \"duration_minutes\": 985, \"cabin\": \"economy\", \"fare_per_traveler\": 1655, \"total_fare\": 1655, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:20.028640+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Korean Air\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-12\", \"return_date\": \"2027-04-22\", \"depart_time_local\": \"13:51\", \"stops\": 1, \"duration_minutes\": 1020, \"cabin\": \"economy\", \"fare_per_traveler\": 1720, \"total_fare\": 1720, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:20.028648+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"China Airlines\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-12\", \"return_date\": \"2027-04-22\", \"depart_time_local\": \"20:44\", \"stops\": 1, \"duration_minutes\": 1180, \"cabin\": \"economy\", \"fare_per_traveler\": 1610, \"total_fare\": 1610, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:20.028652+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 2, \"count\": 2, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"ANA\", \"origin\": \"ORD\", \"destination\": \"HND\", \"depart_date\": \"2027-04-12\", \"return_date\": \"2027-04-22\", \"depart_time_local\": \"18:31\", \"stops\": 0, \"duration_minutes\": 790, \"cabin\": \"economy\", \"fare_per_traveler\": 1285, \"total_fare\": 1285, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:23.197950+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"ORD\", \"destination\": \"HND\", \"depart_date\": \"2027-04-12\", \"return_date\": \"2027-04-22\", \"depart_time_local\": \"19:38\", \"stops\": 1, \"duration_minutes\": 1000, \"cabin\": \"economy\", \"fare_per_traveler\": 1540, \"total_fare\": 1540, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:23.197963+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-11\", \"return_date\": \"2027-04-21\", \"depart_time_local\": \"19:53\", \"stops\": 1, \"duration_minutes\": 985, \"cabin\": \"economy\", \"fare_per_traveler\": 1655, \"total_fare\": 1655, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:23.199963+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Korean Air\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-11\", \"return_date\": \"2027-04-21\", \"depart_time_local\": \"10:46\", \"stops\": 1, \"duration_minutes\": 1020, \"cabin\": \"economy\", \"fare_per_traveler\": 1720, \"total_fare\": 1720, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:23.199974+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"China Airlines\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-11\", \"return_date\": \"2027-04-21\", \"depart_time_local\": \"15:39\", \"stops\": 1, \"duration_minutes\": 1180, \"cabin\": \"economy\", \"fare_per_traveler\": 1610, \"total_fare\": 1610, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:23.199980+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-13\", \"return_date\": \"2027-04-23\", \"depart_time_local\": \"16:45\", \"stops\": 1, \"duration_minutes\": 985, \"cabin\": \"economy\", \"fare_per_traveler\": 1655, \"total_fare\": 1655, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:23.202178+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Korean Air\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-13\", \"return_date\": \"2027-04-23\", \"depart_time_local\": \"06:38\", \"stops\": 1, \"duration_minutes\": 1020, \"cabin\": \"economy\", \"fare_per_traveler\": 1720, \"total_fare\": 1720, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:23.202187+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"China Airlines\", \"origin\": \"ORD\", \"destination\": \"NRT\", \"depart_date\": \"2027-04-13\", \"return_date\": \"2027-04-23\", \"depart_time_local\": \"07:31\", \"stops\": 1, \"duration_minutes\": 1180, \"cabin\": \"economy\", \"fare_per_traveler\": 1610, \"total_fare\": 1610, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:23.202192+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# ORD to Tokyo flight options (1 traveler, economy, round trip)\n\nSearched 2026-11-04. All offers are live Duffel inventory (source: duffel, synthetic: false). Each offer expires 1800 seconds (30 minutes) after the search, at about 16:59 UTC on 2026-11-04. Re-search before relying on any of them.\nRequested cabin: economy. Every offer came back in economy. There were no cabin notes.\nFare limit: $1,400. Nonstop preferred.\n\n## Within budget and nonstop\n**ORD to HND (Haneda, not Narita), 2027-04-12 to 2027-04-22**\n- ANA, nonstop, departs 18:31, duration 790 min, **$1,285** round trip (offer off_scripted_0). It is $115 under the limit.\n\n## Over budget (ORD to NRT, 2027-04-12 to 2027-04-22)\nNo nonstop flights to NRT were returned. All three offers have 1 stop and are over $1,400.\n| Carrier | Departs | Stops | Duration | Fare |\n|---|---|---|---|---|\n| China Airlines | 20:44 | 1 | 1180 min | $1,610 |\n| Delta | 10:58 | 1 | 985 min | $1,655 |\n| Korean Air | 13:51 | 1 | 1020 min | $1,720 |\n\nOther ORD to HND offer: Delta, 1 stop, departs 19:38, 1000 min, $1,540. This is over budget.\n\n## Date shifts for NRT\nShifting the dates by one day either way (04-11 to 04-21, and 04-13 to 04-23) returned the same carriers at the same fares: $1,610, $1,655 and $1,720. All have 1 stop. Shifting dates did not help.\n"
+        },
+        "usage": {
+          "model_calls": 4,
+          "input_tokens": 31747,
+          "cache_read": 27690,
+          "cache_creation": 4047,
+          "output_tokens": 1715
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['economy', 'economy', 'economy', 'economy']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "refreshed_expiring_offer",
+          "score": null,
+          "comment": "no expiring offer in this example"
+        },
+        {
+          "key": "varied_thin_search",
+          "score": 1,
+          "comment": "3 of 4 searches varied"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "business-comes-back-premium",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One traveler, business class, LHR to SIN departing 2027-03-01, returning 2027-03-08. Flights only, no lodging. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I couldn't find any real business-class fares for LHR to SIN. The three live offers all came back as premium economy, so none of them is business class. I've written the candidates to `/trip/options.md`.\n\n**Live offers (real inventory, premium economy, round trip, USD):**\n- **Cheapest:** Qantas, $2,140, nonstop, departs 09:48.\n- **Most convenient:** Singapore Airlines, $2,380, nonstop, shortest at 13h10, departs 12:02. British Airways is in between at $2,215, nonstop, departing 15:55.\n- **Tradeoff:** Singapore Airlines costs $240 more than Qantas to save 10 minutes of flying. Qantas is the better value.\n- **Expiry:** These offers expire about 30 minutes after the search, at about 16:59 UTC on 4 November. Re-run the search before relying on them.\n\nI tried a one-way search and a date shift to 28 Feb\u20137 Mar. Both returned the same premium economy fares.\n\n**LGW sample data (not bookable):** A search from Gatwick returned four offers labelled business, from $671 to $1,046. They are sample data, and the durations (5.5 to 9 hours) and fares are unrealistic. I included them in the file but marked them as illustrative only. Please don't treat them as real business pricing.\n\nGetting verified business fares would need other dates, other airlines or a different search provider.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "LHR",
+              "destination": "SIN",
+              "depart_date": "2027-03-01",
+              "return_date": "2027-03-08",
+              "travelers": 1,
+              "cabin": "business"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "LHR",
+              "destination": "SIN",
+              "depart_date": "2027-03-01",
+              "travelers": 1,
+              "cabin": "business"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "LHR",
+              "destination": "SIN",
+              "depart_date": "2027-02-28",
+              "return_date": "2027-03-07",
+              "travelers": 1,
+              "cabin": "business"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "LGW",
+              "destination": "SIN",
+              "depart_date": "2027-03-01",
+              "return_date": "2027-03-08",
+              "travelers": 1,
+              "cabin": "business"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# LHR \u2192 SIN flight options (1 traveler, round trip 2027-03-01 \u2192 2027-03-08)\n\nRequested cabin: **business**. Searched 2026-11-04.\n\n## Key finding\n**No real business-class offers were found.** All live LHR results came back as **premium economy**, not business. The cabin is a preference, not a filter, so these are NOT business fares. The only business-cabin results are sample data (illustrative, not bookable).\n\n## A. Live offers from LHR (source: duffel, real inventory) \u2014 CABIN = PREMIUM ECONOMY (not business)\nPrices in USD, round trip, per traveler. Each offer expires about 30 minutes after the search (expires_in_seconds 1800, at about 16:59 UTC on 2026-11-04). Re-search before relying on them.\n\n| Carrier | Depart LHR (1 Mar) | Stops | Duration | Cabin | Fare |\n|---|---|---|---|---|---|\n| Qantas | 09:48 | 0 | 13h20 | premium_economy | $2,140 |\n| British Airways | 15:55 | 0 | 13h25 | premium_economy | $2,215 |\n| Singapore Airlines | 12:02 | 0 | 13h10 | premium_economy | $2,380 |\n\nNotes:\n- The same three offers and fares came back for a one-way search and for a 28 Feb to 7 Mar shift. Only the departure times varied.\n- Business was not returned on any date tried.\n\n## B. Sample-data offers from LGW (source: sample-data, synthetic) \u2014 ILLUSTRATIVE ONLY, NOT BOOKABLE\nThese are labelled business, but they are synthetic. The durations (about 5.5 to 9 hours for LGW to SIN) are unrealistic, and the fares are far below real business prices. Do not present them as real options.\n\n| Carrier | Depart LGW | Stops | Duration | Cabin | Fare |\n|---|---|---|---|---|---|\n| Anser Airways | 10:45 | 1 | 7h28 | business | $670.82 |\n| Meridian Air | 08:52 | 2 | 9h18 | business | $675.25 |\n| Blue Corridor | 14:38 | 0 | 5h38 | business | $852.99 |\n| Northwind | 15:59 | 0 | 6h23 | business | $1,046.19 |\n\n## Comparison\n- **Best on price (real):** Qantas, $2,140, premium economy, nonstop.\n- **Best on convenience (real):** Singapore Airlines, nonstop with the shortest duration (13h10), at the highest price ($2,380). BA has the latest departure (15:55) at $2,215.\n- **Tradeoff:** Moving from Qantas to Singapore Airlines costs $240 more for 10 minutes less flying. That is marginal, so Qantas is the better value of the real options. None of them is business class.\n- **Business class:** There are no verified business fares. To get real business pricing, try other dates, airlines, or a different search provider.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Singapore Airlines\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"12:02\", \"stops\": 0, \"duration_minutes\": 790, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2380, \"total_fare\": 2380, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:13.683227+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"British Airways\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"15:55\", \"stops\": 0, \"duration_minutes\": 805, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2215, \"total_fare\": 2215, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:13.683242+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Qantas\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"09:48\", \"stops\": 0, \"duration_minutes\": 800, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2140, \"total_fare\": 2140, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:13.683249+00:00\"}], \"requested_cabin\": \"business\", \"cabin_note\": \"Searched business, but 3 of 3 offers came back as premium_economy \u2014 cabin is a preference, not a filter. Read each offer's own cabin rather than describing them all as the cabin that was requested.\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Singapore Airlines\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-02-28\", \"return_date\": \"2027-03-07\", \"depart_time_local\": \"07:04\", \"stops\": 0, \"duration_minutes\": 790, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2380, \"total_fare\": 2380, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:17.922372+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"British Airways\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-02-28\", \"return_date\": \"2027-03-07\", \"depart_time_local\": \"16:57\", \"stops\": 0, \"duration_minutes\": 805, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2215, \"total_fare\": 2215, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:17.922377+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Qantas\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-02-28\", \"return_date\": \"2027-03-07\", \"depart_time_local\": \"11:50\", \"stops\": 0, \"duration_minutes\": 800, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2140, \"total_fare\": 2140, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:17.922380+00:00\"}], \"requested_cabin\": \"business\", \"cabin_note\": \"Searched business, but 3 of 3 offers came back as premium_economy \u2014 cabin is a preference, not a filter. Read each offer's own cabin rather than describing them all as the cabin that was requested.\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Anser Airways\", \"origin\": \"LGW\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"10:45\", \"stops\": 1, \"duration_minutes\": 448, \"cabin\": \"business\", \"fare_per_traveler\": 670.82, \"total_fare\": 670.82, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Meridian Air\", \"origin\": \"LGW\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"08:52\", \"stops\": 2, \"duration_minutes\": 558, \"cabin\": \"business\", \"fare_per_traveler\": 675.25, \"total_fare\": 675.25, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Blue Corridor\", \"origin\": \"LGW\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"14:38\", \"stops\": 0, \"duration_minutes\": 338, \"cabin\": \"business\", \"fare_per_traveler\": 852.99, \"total_fare\": 852.99, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Northwind\", \"origin\": \"LGW\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": \"2027-03-08\", \"depart_time_local\": \"15:59\", \"stops\": 0, \"duration_minutes\": 383, \"cabin\": \"business\", \"fare_per_traveler\": 1046.19, \"total_fare\": 1046.19, \"travelers\": 1, \"currency\": \"USD\"}], \"warning\": \"Some of these offers are synthetic and do not reflect real availability or real prices. Say so explicitly when you use them.\", \"requested_cabin\": \"business\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Singapore Airlines\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": null, \"depart_time_local\": \"12:33\", \"stops\": 0, \"duration_minutes\": 790, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2380, \"total_fare\": 2380, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:17.925728+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"British Airways\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": null, \"depart_time_local\": \"15:26\", \"stops\": 0, \"duration_minutes\": 805, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2215, \"total_fare\": 2215, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:17.925733+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Qantas\", \"origin\": \"LHR\", \"destination\": \"SIN\", \"depart_date\": \"2027-03-01\", \"return_date\": null, \"depart_time_local\": \"10:19\", \"stops\": 0, \"duration_minutes\": 800, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 2140, \"total_fare\": 2140, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:17.925736+00:00\"}], \"requested_cabin\": \"business\", \"cabin_note\": \"Searched business, but 3 of 3 offers came back as premium_economy \u2014 cabin is a preference, not a filter. Read each offer's own cabin rather than describing them all as the cabin that was requested.\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# LHR \u2192 SIN flight options (1 traveler, round trip 2027-03-01 \u2192 2027-03-08)\n\nRequested cabin: **business**. Searched 2026-11-04.\n\n## Key finding\n**No real business-class offers were found.** All live LHR results came back as **premium economy**, not business. The cabin is a preference, not a filter, so these are NOT business fares. The only business-cabin results are sample data (illustrative, not bookable).\n\n## A. Live offers from LHR (source: duffel, real inventory) \u2014 CABIN = PREMIUM ECONOMY (not business)\nPrices in USD, round trip, per traveler. Each offer expires about 30 minutes after the search (expires_in_seconds 1800, at about 16:59 UTC on 2026-11-04). Re-search before relying on them.\n\n| Carrier | Depart LHR (1 Mar) | Stops | Duration | Cabin | Fare |\n|---|---|---|---|---|---|\n| Qantas | 09:48 | 0 | 13h20 | premium_economy | $2,140 |\n| British Airways | 15:55 | 0 | 13h25 | premium_economy | $2,215 |\n| Singapore Airlines | 12:02 | 0 | 13h10 | premium_economy | $2,380 |\n\nNotes:\n- The same three offers and fares came back for a one-way search and for a 28 Feb to 7 Mar shift. Only the departure times varied.\n- Business was not returned on any date tried.\n\n## B. Sample-data offers from LGW (source: sample-data, synthetic) \u2014 ILLUSTRATIVE ONLY, NOT BOOKABLE\nThese are labelled business, but they are synthetic. The durations (about 5.5 to 9 hours for LGW to SIN) are unrealistic, and the fares are far below real business prices. Do not present them as real options.\n\n| Carrier | Depart LGW | Stops | Duration | Cabin | Fare |\n|---|---|---|---|---|---|\n| Anser Airways | 10:45 | 1 | 7h28 | business | $670.82 |\n| Meridian Air | 08:52 | 2 | 9h18 | business | $675.25 |\n| Blue Corridor | 14:38 | 0 | 5h38 | business | $852.99 |\n| Northwind | 15:59 | 0 | 6h23 | business | $1,046.19 |\n\n## Comparison\n- **Best on price (real):** Qantas, $2,140, premium economy, nonstop.\n- **Best on convenience (real):** Singapore Airlines, nonstop with the shortest duration (13h10), at the highest price ($2,380). BA has the latest departure (15:55) at $2,215.\n- **Tradeoff:** Moving from Qantas to Singapore Airlines costs $240 more for 10 minutes less flying. That is marginal, so Qantas is the better value of the real options. None of them is business class.\n- **Business class:** There are no verified business fares. To get real business pricing, try other dates, airlines, or a different search provider.\n"
+        },
+        "usage": {
+          "model_calls": 4,
+          "input_tokens": 33319,
+          "cache_read": 28249,
+          "cache_creation": 5060,
+          "output_tokens": 2324
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['business', 'business', 'business', 'business']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "refreshed_expiring_offer",
+          "score": null,
+          "comment": "no expiring offer in this example"
+        },
+        {
+          "key": "varied_thin_search",
+          "score": null,
+          "comment": "no thin search in this example"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "mixed-cabin-round-trip",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Two travelers, business class, JFK to CDG departing 2027-05-04, returning 2027-05-12. Flights only. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I searched JFK to CDG round trip for two travelers in business class and wrote the three results to `/trip/options.md`. All three are live Duffel offers, not sample data. Each expires about 30 minutes after the search (16:59 UTC on 2026-11-04), so the search needs re-running before anyone relies on the prices.\n\n| Carrier | Departs JFK | Cabin as returned | Total for 2 |\n|---|---|---|---|\n| American Airlines | 09:48 | mixed | $6,960 |\n| Delta Air Lines | 07:02 | mixed | $7,300 |\n| Air France | 15:55 | business | $10,240 |\n\nAll three are nonstop, and the outbound flights take about 7h20 to 7h30. Prices are in USD.\n\n- **Cheapest:** American at $6,960. It came back as mixed cabin, so at least one leg isn't business. The results don't say which leg.\n- **Best match for the business request:** Air France at $10,240. It is the only offer that is business on every leg. It costs $3,280 more than American.\n- **Delta:** It is also mixed and $340 more than American, so I don't see an advantage beyond the earliest departure.\n\nThe roughly $3,300 saving comes from part of the trip not being in business. If you're considering American or Delta, check which leg is downgraded before booking.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "JFK",
+              "destination": "CDG",
+              "depart_date": "2027-05-04",
+              "return_date": "2027-05-12",
+              "travelers": 2,
+              "cabin": "business"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# JFK \u2192 CDG flight options (business requested)\n\nSearch: 2 travelers, depart 2027-05-04, return 2027-05-12, round trip, flights only.\nSource: Duffel, live offers (not sample data). Searched 2026-11-04; each offer expires 1800 s (~30 min) after the search, at 2026-11-04T16:59:32 UTC. Re-run before relying on them.\n\nCabin note: business was requested, but only 1 of 3 offers is entirely business. Two came back \"mixed\", meaning the legs are not all in the same class. The search result doesn't say which leg is in which class.\n\n| # | Carrier | Departs JFK | Stops | Duration (outbound) | Cabin (as returned) | Per traveler | Total (2) | Offer ID |\n|---|---------|-------------|-------|---------------------|---------------------|--------------|-----------|----------|\n| 1 | American Airlines | 09:48 | 0 | 7h30 | **mixed** | $3,480 | $6,960 | off_scripted_2 |\n| 2 | Delta Air Lines | 07:02 | 0 | 7h25 | **mixed** | $3,650 | $7,300 | off_scripted_0 |\n| 3 | Air France | 15:55 | 0 | 7h20 | **business** | $5,120 | $10,240 | off_scripted_1 |\n\nAll prices are USD.\n\n## Comparison\n- Cheapest: American, $6,960 total. It is mixed cabin, so at least one leg is not business.\n- Best for the business request: Air France, $10,240 total. It is the only offer returned as business. It is $3,280 more than American for two travelers.\n- Delta is also mixed and costs $340 more than American, so it has no clear advantage. It has the earliest departure (07:02).\n- Tradeoff: the roughly $3,300 saving on the mixed-cabin fares comes from some part of the trip not being in business. Before booking either mixed offer, confirm which leg is downgraded.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"JFK\", \"destination\": \"CDG\", \"depart_date\": \"2027-05-04\", \"return_date\": \"2027-05-12\", \"depart_time_local\": \"07:02\", \"stops\": 0, \"duration_minutes\": 445, \"cabin\": \"mixed\", \"fare_per_traveler\": 3650, \"total_fare\": 7300, \"travelers\": 2, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:32.654295+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Air France\", \"origin\": \"JFK\", \"destination\": \"CDG\", \"depart_date\": \"2027-05-04\", \"return_date\": \"2027-05-12\", \"depart_time_local\": \"15:55\", \"stops\": 0, \"duration_minutes\": 440, \"cabin\": \"business\", \"fare_per_traveler\": 5120, \"total_fare\": 10240, \"travelers\": 2, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:32.654303+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"American Airlines\", \"origin\": \"JFK\", \"destination\": \"CDG\", \"depart_date\": \"2027-05-04\", \"return_date\": \"2027-05-12\", \"depart_time_local\": \"09:48\", \"stops\": 0, \"duration_minutes\": 450, \"cabin\": \"mixed\", \"fare_per_traveler\": 3480, \"total_fare\": 6960, \"travelers\": 2, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:32.654307+00:00\"}], \"requested_cabin\": \"business\", \"cabin_note\": \"Searched business, but 2 of 3 offers came back as mixed \u2014 cabin is a preference, not a filter. 'mixed' means one itinerary's legs are not all the same class. Read each offer's own cabin rather than describing them all as the cabin that was requested.\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# JFK \u2192 CDG flight options (business requested)\n\nSearch: 2 travelers, depart 2027-05-04, return 2027-05-12, round trip, flights only.\nSource: Duffel, live offers (not sample data). Searched 2026-11-04; each offer expires 1800 s (~30 min) after the search, at 2026-11-04T16:59:32 UTC. Re-run before relying on them.\n\nCabin note: business was requested, but only 1 of 3 offers is entirely business. Two came back \"mixed\", meaning the legs are not all in the same class. The search result doesn't say which leg is in which class.\n\n| # | Carrier | Departs JFK | Stops | Duration (outbound) | Cabin (as returned) | Per traveler | Total (2) | Offer ID |\n|---|---------|-------------|-------|---------------------|---------------------|--------------|-----------|----------|\n| 1 | American Airlines | 09:48 | 0 | 7h30 | **mixed** | $3,480 | $6,960 | off_scripted_2 |\n| 2 | Delta Air Lines | 07:02 | 0 | 7h25 | **mixed** | $3,650 | $7,300 | off_scripted_0 |\n| 3 | Air France | 15:55 | 0 | 7h20 | **business** | $5,120 | $10,240 | off_scripted_1 |\n\nAll prices are USD.\n\n## Comparison\n- Cheapest: American, $6,960 total. It is mixed cabin, so at least one leg is not business.\n- Best for the business request: Air France, $10,240 total. It is the only offer returned as business. It is $3,280 more than American for two travelers.\n- Delta is also mixed and costs $340 more than American, so it has no clear advantage. It has the earliest departure (07:02).\n- Tradeoff: the roughly $3,300 saving on the mixed-cabin fares comes from some part of the trip not being in business. Before booking either mixed offer, confirm which leg is downgraded.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 20286,
+          "cache_read": 18493,
+          "cache_creation": 1785,
+          "output_tokens": 1395
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['business']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "refreshed_expiring_offer",
+          "score": null,
+          "comment": "no expiring offer in this example"
+        },
+        {
+          "key": "varied_thin_search",
+          "score": null,
+          "comment": "no thin search in this example"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "live-flights-sample-stays",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Two travelers, economy, SFO to KIX departing 2027-10-04, returning 2027-10-09, and lodging in Kyoto for 2 guests for the same dates. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote the candidates to `/trip/options.md`. The flights are live offers, but the lodging figures are sample data.\n\n**Flights** (live, economy on every offer, round trip for 2). These offers expire about 30 minutes after the search, so I'd re-run it before relying on them.\n- **JAL, one stop:** $1,936.60 total ($968.30 each), leaving SFO at 13:51. Travel time is 15h05.\n- **ANA, one stop:** $2,065.50 total, leaving at 20:44. Travel time is 16h00.\n- **United, nonstop:** $2,369.20 total, leaving at 20:58. Travel time is 11h40.\n\n**Kyoto lodging** (sample data, illustrative only, not bookable). Five nights for 2 guests ranged from $578.85 to $1,095.25.\n- **Cheapest:** the budget hostel with a private room, at $578.85. It is rated 7.8 and has no free cancellation.\n- **Best rated:** the quiet guesthouse, at $687.95. It is rated 9.1 and has free cancellation.\n- **Other options:** a business hotel ($817.05), a riverside apartment ($966.15, free cancellation) and a central boutique hotel ($1,095.25).\n\nNone of the lodging results listed a payment due on arrival.\n\n**Best on price:** JAL plus the hostel, at about $2,515 combined. The lodging part of that figure is illustrative.\n\n**Best on convenience:** the United nonstop, plus the guesthouse if you want a higher rating and free cancellation.\n\n**Tradeoff:** the nonstop costs $432.60 more than JAL (about 22%) and saves roughly 3.5 hours of travel. The guesthouse costs about $109 more than the hostel. The transfer from KIX to Kyoto isn't priced in any of these figures.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "SFO",
+              "destination": "KIX",
+              "depart_date": "2027-10-04",
+              "return_date": "2027-10-09",
+              "travelers": 2,
+              "cabin": "economy"
+            }
+          },
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Kyoto",
+              "check_in": "2027-10-04",
+              "check_out": "2027-10-09",
+              "guests": 2
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# Options: SFO -> KIX, 2027-10-04 to 2027-10-09, 2 travelers, economy\n\nSearched 2026-11-04. Flights and lodging come from different sources and are labeled separately.\n\n## Flights (source: duffel, LIVE offers, real inventory, cabin: economy on all)\nOffers expire about 30 minutes after the search (expires_at 2026-11-04T16:59:35Z). Re-search before relying on them.\n\n| Carrier | Departs SFO | Stops | Duration | Per traveler | Total for 2 | Offer ID |\n|---|---|---|---|---|---|---|\n| Japan Airlines | 13:51 | 1 | 15h05 | $968.30 | $1,936.60 | off_scripted_1 |\n| ANA | 20:44 | 1 | 16h00 | $1,032.75 | $2,065.50 | off_scripted_2 |\n| United Airlines | 20:58 | 0 (nonstop) | 11h40 | $1,184.60 | $2,369.20 | off_scripted_0 |\n\nAll prices are USD round trip. No cabin_note was returned, and every offer is economy.\n\n## Lodging, Kyoto, 5 nights, 2 guests (source: SAMPLE-DATA, SYNTHETIC)\nThese figures are illustrative only. They are not live availability and cannot be booked. No `due_at_accommodation` was reported for any of them.\n\n| Name | Type | Nightly | Total | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | $115.77 | $578.85 | 7.8 | No |\n| Quiet guesthouse | guesthouse | $137.59 | $687.95 | 9.1 | Yes |\n| Business district hotel | hotel | $163.41 | $817.05 | 8.2 | No |\n| Riverside apartment | apartment | $193.23 | $966.15 | 8.6 | Yes |\n| Central boutique hotel | hotel | $219.05 | $1,095.25 | 8.9 | No |\n\n## Summary\n- Best on price: JAL one-stop at $1,936.60 for 2, with the budget hostel at about $578.85 (sample). Combined: about $2,515, with the lodging figure illustrative.\n- Best on convenience: United nonstop at $2,369.20 for 2. It saves about 3.5 hours of travel but costs $432.60 more than JAL. For lodging, the quiet guesthouse (sample) has the highest rating (9.1) and free cancellation, for about $109 more than the hostel.\n- Tradeoff: the nonstop costs about 22% more than the cheapest flight. United and ANA both leave in the evening. JAL leaves in the afternoon, but it has a connection.\n- Both United and ANA leave around 20:45-21:00. KIX to Kyoto is a separate transfer that is not priced here.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"sample-data\"], \"total_found\": 5, \"count\": 5, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Budget hostel, private room (Kyoto)\", \"kind\": \"hostel\", \"location\": \"Kyoto\", \"check_in\": \"2027-10-04\", \"check_out\": \"2027-10-09\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 115.77, \"total_cost\": 578.85, \"guest_rating\": 7.8, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Quiet guesthouse (Kyoto)\", \"kind\": \"guesthouse\", \"location\": \"Kyoto\", \"check_in\": \"2027-10-04\", \"check_out\": \"2027-10-09\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 137.59, \"total_cost\": 687.95, \"guest_rating\": 9.1, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Business district hotel (Kyoto)\", \"kind\": \"hotel\", \"location\": \"Kyoto\", \"check_in\": \"2027-10-04\", \"check_out\": \"2027-10-09\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 163.41, \"total_cost\": 817.05, \"guest_rating\": 8.2, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Riverside apartment (Kyoto)\", \"kind\": \"apartment\", \"location\": \"Kyoto\", \"check_in\": \"2027-10-04\", \"check_out\": \"2027-10-09\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 193.23, \"total_cost\": 966.15, \"guest_rating\": 8.6, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Central boutique hotel (Kyoto)\", \"kind\": \"hotel\", \"location\": \"Kyoto\", \"check_in\": \"2027-10-04\", \"check_out\": \"2027-10-09\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 219.05, \"total_cost\": 1095.25, \"guest_rating\": 8.9, \"free_cancellation\": false, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"United Airlines\", \"origin\": \"SFO\", \"destination\": \"KIX\", \"depart_date\": \"2027-10-04\", \"return_date\": \"2027-10-09\", \"depart_time_local\": \"20:58\", \"stops\": 0, \"duration_minutes\": 700, \"cabin\": \"economy\", \"fare_per_traveler\": 1184.6, \"total_fare\": 2369.2, \"travelers\": 2, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:35.758542+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Japan Airlines\", \"origin\": \"SFO\", \"destination\": \"KIX\", \"depart_date\": \"2027-10-04\", \"return_date\": \"2027-10-09\", \"depart_time_local\": \"13:51\", \"stops\": 1, \"duration_minutes\": 905, \"cabin\": \"economy\", \"fare_per_traveler\": 968.3, \"total_fare\": 1936.6, \"travelers\": 2, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:35.758556+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"ANA\", \"origin\": \"SFO\", \"destination\": \"KIX\", \"depart_date\": \"2027-10-04\", \"return_date\": \"2027-10-09\", \"depart_time_local\": \"20:44\", \"stops\": 1, \"duration_minutes\": 960, \"cabin\": \"economy\", \"fare_per_traveler\": 1032.75, \"total_fare\": 2065.5, \"travelers\": 2, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1800, \"expires_at\": \"2026-11-04T16:59:35.758562+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# Options: SFO -> KIX, 2027-10-04 to 2027-10-09, 2 travelers, economy\n\nSearched 2026-11-04. Flights and lodging come from different sources and are labeled separately.\n\n## Flights (source: duffel, LIVE offers, real inventory, cabin: economy on all)\nOffers expire about 30 minutes after the search (expires_at 2026-11-04T16:59:35Z). Re-search before relying on them.\n\n| Carrier | Departs SFO | Stops | Duration | Per traveler | Total for 2 | Offer ID |\n|---|---|---|---|---|---|---|\n| Japan Airlines | 13:51 | 1 | 15h05 | $968.30 | $1,936.60 | off_scripted_1 |\n| ANA | 20:44 | 1 | 16h00 | $1,032.75 | $2,065.50 | off_scripted_2 |\n| United Airlines | 20:58 | 0 (nonstop) | 11h40 | $1,184.60 | $2,369.20 | off_scripted_0 |\n\nAll prices are USD round trip. No cabin_note was returned, and every offer is economy.\n\n## Lodging, Kyoto, 5 nights, 2 guests (source: SAMPLE-DATA, SYNTHETIC)\nThese figures are illustrative only. They are not live availability and cannot be booked. No `due_at_accommodation` was reported for any of them.\n\n| Name | Type | Nightly | Total | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | $115.77 | $578.85 | 7.8 | No |\n| Quiet guesthouse | guesthouse | $137.59 | $687.95 | 9.1 | Yes |\n| Business district hotel | hotel | $163.41 | $817.05 | 8.2 | No |\n| Riverside apartment | apartment | $193.23 | $966.15 | 8.6 | Yes |\n| Central boutique hotel | hotel | $219.05 | $1,095.25 | 8.9 | No |\n\n## Summary\n- Best on price: JAL one-stop at $1,936.60 for 2, with the budget hostel at about $578.85 (sample). Combined: about $2,515, with the lodging figure illustrative.\n- Best on convenience: United nonstop at $2,369.20 for 2. It saves about 3.5 hours of travel but costs $432.60 more than JAL. For lodging, the quiet guesthouse (sample) has the highest rating (9.1) and free cancellation, for about $109 more than the hostel.\n- Tradeoff: the nonstop costs about 22% more than the cheapest flight. United and ANA both leave in the evening. JAL leaves in the afternoon, but it has a connection.\n- Both United and ANA leave around 20:45-21:00. KIX to Kyoto is a separate transfer that is not priced here.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 22571,
+          "cache_read": 19521,
+          "cache_creation": 3042,
+          "output_tokens": 1980
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['economy']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "refreshed_expiring_offer",
+          "score": null,
+          "comment": "no expiring offer in this example"
+        },
+        {
+          "key": "varied_thin_search",
+          "score": null,
+          "comment": "no thin search in this example"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "offer-seconds-from-expiry",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One traveler, economy, one way SEA to ICN on 2027-03-15. No lodging. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I found three nonstop economy flights from SEA to ICN on 2027-03-15 and wrote them to `/trip/options.md`. The fares are live Duffel offers, not sample data, and none of them is bookable beyond the expiry below.\n\nThe first search returned fares $15 lower, but those offers had only 12 seconds left. I re-ran the search, and these are the fares from the second run. They expire at 16:58 UTC on 2026-11-04, about 28 minutes after the search. Search again before relying on them.\n\n| Carrier | Departs (local) | Duration | Fare (USD) |\n|---|---|---|---|\n| Asiana | 15:27 | 11h40 | 805 |\n| Korean Air | 12:20 | 11h30 | 835 |\n| Delta | 19:13 | 11h35 | 860 |\n\n- **Best on price:** Asiana at $805.\n- **Best on convenience:** Korean Air, which is the shortest at 11h30 and leaves at midday. It costs $30 more than Asiana.\n- **Tradeoff:** Asiana is $30 cheaper and takes 10 minutes longer. Delta is the most expensive, though its evening departure may suit some schedules.\n\nI searched only SEA to ICN. I didn't try nearby airports or other dates.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "SEA",
+              "destination": "ICN",
+              "depart_date": "2027-03-15",
+              "travelers": 1,
+              "cabin": "economy"
+            }
+          },
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "SEA",
+              "destination": "ICN",
+              "depart_date": "2027-03-15",
+              "travelers": 1,
+              "cabin": "economy"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# SEA \u2192 ICN, one way, 2027-03-15, 1 traveler, economy\n\nSource: Duffel (live inventory, not sample data). All offers are economy, nonstop, and requested_cabin matches each offer's cabin. No cabin_note was returned.\nOffers expire about 1700 seconds (roughly 28 minutes) after the search, at 2026-11-04T16:58:06 UTC. Re-search before relying on them.\nThe first search returned lower fares, but those offers had 12 seconds left. I re-ran the search, and the fares below are from the second run.\n\n| Carrier | Departs (local) | Duration | Fare (USD) | Offer ID |\n|---|---|---|---|---|\n| Asiana Airlines | 15:27 | 11h40 | 805 | off_scripted_1 |\n| Korean Air | 12:20 | 11h30 | 835 | off_scripted_0 |\n| Delta Air Lines | 19:13 | 11h35 | 860 | off_scripted_2 |\n\nLodging: not requested.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Korean Air\", \"origin\": \"SEA\", \"destination\": \"ICN\", \"depart_date\": \"2027-03-15\", \"return_date\": null, \"depart_time_local\": \"12:20\", \"stops\": 0, \"duration_minutes\": 690, \"cabin\": \"economy\", \"fare_per_traveler\": 820, \"total_fare\": 820, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 12, \"expires_at\": \"2026-11-04T16:29:56.700537+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Asiana Airlines\", \"origin\": \"SEA\", \"destination\": \"ICN\", \"depart_date\": \"2027-03-15\", \"return_date\": null, \"depart_time_local\": \"15:27\", \"stops\": 0, \"duration_minutes\": 700, \"cabin\": \"economy\", \"fare_per_traveler\": 790, \"total_fare\": 790, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 12, \"expires_at\": \"2026-11-04T16:29:56.700553+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"SEA\", \"destination\": \"ICN\", \"depart_date\": \"2027-03-15\", \"return_date\": null, \"depart_time_local\": \"19:13\", \"stops\": 0, \"duration_minutes\": 695, \"cabin\": \"economy\", \"fare_per_traveler\": 860, \"total_fare\": 860, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 12, \"expires_at\": \"2026-11-04T16:29:56.700560+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"scripted\", \"sources\": [\"duffel\"], \"total_found\": 3, \"count\": 3, \"offers\": [{\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Korean Air\", \"origin\": \"SEA\", \"destination\": \"ICN\", \"depart_date\": \"2027-03-15\", \"return_date\": null, \"depart_time_local\": \"12:20\", \"stops\": 0, \"duration_minutes\": 690, \"cabin\": \"economy\", \"fare_per_traveler\": 835, \"total_fare\": 835, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_0\", \"expires_in_seconds\": 1700, \"expires_at\": \"2026-11-04T16:58:06.235537+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Asiana Airlines\", \"origin\": \"SEA\", \"destination\": \"ICN\", \"depart_date\": \"2027-03-15\", \"return_date\": null, \"depart_time_local\": \"15:27\", \"stops\": 0, \"duration_minutes\": 700, \"cabin\": \"economy\", \"fare_per_traveler\": 805, \"total_fare\": 805, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_1\", \"expires_in_seconds\": 1700, \"expires_at\": \"2026-11-04T16:58:06.235549+00:00\"}, {\"source\": \"duffel\", \"synthetic\": false, \"carrier\": \"Delta Air Lines\", \"origin\": \"SEA\", \"destination\": \"ICN\", \"depart_date\": \"2027-03-15\", \"return_date\": null, \"depart_time_local\": \"19:13\", \"stops\": 0, \"duration_minutes\": 695, \"cabin\": \"economy\", \"fare_per_traveler\": 860, \"total_fare\": 860, \"travelers\": 1, \"currency\": \"USD\", \"live_mode\": true, \"offer_id\": \"off_scripted_2\", \"expires_in_seconds\": 1700, \"expires_at\": \"2026-11-04T16:58:06.235555+00:00\"}], \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# SEA \u2192 ICN, one way, 2027-03-15, 1 traveler, economy\n\nSource: Duffel (live inventory, not sample data). All offers are economy, nonstop, and requested_cabin matches each offer's cabin. No cabin_note was returned.\nOffers expire about 1700 seconds (roughly 28 minutes) after the search, at 2026-11-04T16:58:06 UTC. Re-search before relying on them.\nThe first search returned lower fares, but those offers had 12 seconds left. I re-ran the search, and the fares below are from the second run.\n\n| Carrier | Departs (local) | Duration | Fare (USD) | Offer ID |\n|---|---|---|---|---|\n| Asiana Airlines | 15:27 | 11h40 | 805 | off_scripted_1 |\n| Korean Air | 12:20 | 11h30 | 835 | off_scripted_0 |\n| Delta Air Lines | 19:13 | 11h35 | 860 | off_scripted_2 |\n\nLodging: not requested.\n"
+        },
+        "usage": {
+          "model_calls": 4,
+          "input_tokens": 28045,
+          "cache_read": 25871,
+          "cache_creation": 2164,
+          "output_tokens": 1176
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['economy', 'economy']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "refreshed_expiring_offer",
+          "score": 1,
+          "comment": "searched again"
+        },
+        {
+          "key": "varied_thin_search",
+          "score": null,
+          "comment": "no thin search in this example"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    }
+  ]
+}
