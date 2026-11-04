@@ -23,7 +23,7 @@ web.
 ```bash
 uv run langgraph dev                     # LangGraph Studio at :2024 — the main way to run it
 uv run streamlit run streamlit_app.py    # browser UI at :8501
-uv run python -m travel_agent.main "5 days in Kyoto in September, 2 people, $4000"
+uv run python -m travel_agent.main '5 days in Kyoto in September, 2 people, $4000'
 ```
 
 The three differ in more than ergonomics — each wires persistence differently:
@@ -257,7 +257,7 @@ that already shipped.
 ## Stack
 
 `deepagents` 0.7.x · `langchain` 1.3+ · `langgraph` 1.2+ ·
-`claude-opus-5-5` (main agent), `claude-sonnet-5-5` and `claude-haiku-4-5` (subagents) via `langchain-anthropic` · Duffel API `v2` over `httpx` ·
+`claude-opus-5-5` (main agent), `claude-sonnet-5-5` and `claude-haiku-5-5` (subagents) via `langchain-anthropic` · Duffel API `v2` over `httpx` ·
 `streamlit` 1.60+ for the browser UI. Requires Python 3.11+.
 
 ## License

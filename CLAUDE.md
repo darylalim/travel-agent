@@ -11,7 +11,7 @@ and why; this file covers what breaks when you edit it.
 uv sync                                  # installs the dev group too
 uv run langgraph dev                     # LangGraph Studio at :2024 — main way to run it
 uv run streamlit run streamlit_app.py    # browser UI at :8501
-uv run python -m travel_agent.main "5 days in Kyoto, 2 people, $4000"
+uv run python -m travel_agent.main '5 days in Kyoto, 2 people, $4000'
 
 uv run pytest                            # 465 tests, ~4s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
