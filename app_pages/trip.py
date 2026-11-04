@@ -62,7 +62,9 @@ if not any((flight_searches, stay_searches, budget, record.files)):
 # 8px swatch fills nearly all of it, so a long label runs into the swatch of the
 # entry after it ("No free cancellation● Not stated"). There is room to spare at
 # this width — the default is simply tight.
-_LEGEND = {"orient": "bottom", "title": None, "columnPadding": 18, "labelOffset": 6}
+#
+# `columns` lets it wrap: in one row, "Two or more stops" clips on a phone.
+_LEGEND = {"orient": "bottom", "title": None, "columns": 2, "columnPadding": 18, "labelOffset": 6}
 
 
 def _provenance_note(plotted: list[dict[str, Any]]) -> None:
@@ -227,14 +229,14 @@ def _tradeoff_chart(items: list[dict[str, Any]], cfg: _Tradeoff) -> list[dict[st
                     "type": "quantitative",
                     "title": cfg.x_title,
                     "scale": {"zero": False, "nice": True, "padding": 14},
-                    "axis": {"grid": False},
+                    "axis": {"grid": False, "tickCount": 6},
                 },
                 "y": {
                     "field": cfg.y_field,
                     "type": "quantitative",
                     "title": axis_money,
                     "scale": {"zero": False, "nice": True, "padding": 14},
-                    "axis": {"grid": True, "format": ",.0f"},
+                    "axis": {"grid": True, "format": ",.0f", "tickCount": 6},
                 },
                 "color": {
                     "field": "band",
@@ -388,7 +390,11 @@ if budget:
     # and the row goes ragged. One height for all three keeps them square.
     _CARD_HEIGHT = 200
 
-    with st.container(horizontal=True, gap="small"):
+    # Columns rather than a horizontal container, because they stack at 640px or
+    # below. Built from the card count: without a budget only the total exists,
+    # and a fixed three would leave two gaps beside it.
+    cards = st.columns(3 if ceiling else 1, gap="small")
+    with cards[0]:
         st.metric(
             "Estimated total",
             total,
@@ -418,10 +424,11 @@ if budget:
             chart_data=costing_series(costings, "total_estimated"),
             chart_type="bar",
         )
-        # Only against a budget the traveler set. `summarize_budget` returns no
-        # comparison without one, and two blank cards beside the total would
-        # read as a budget that exists and was not worked out.
-        if ceiling:
+    # Only against a budget the traveler set. `summarize_budget` returns no
+    # comparison without one, and two blank cards beside the total would read
+    # as a budget that exists and was not worked out.
+    if ceiling:
+        with cards[1]:
             st.metric(
                 "Remaining",
                 remaining,
@@ -430,17 +437,17 @@ if budget:
                 height=_CARD_HEIGHT,
                 help="Budget less the estimate. Negative when the plan overshoots.",
             )
-            with st.container(border=True, height=_CARD_HEIGHT):
-                st.metric(
-                    "Budget used",
-                    used,
-                    format="%.0f%%",
-                    help="Share of the ceiling the estimate accounts for.",
-                )
-                if isinstance(used, (int, float)):
-                    # st.progress rejects floats outside 0-1, and overspending
-                    # legitimately exceeds 100%.
-                    st.progress(min(max(used / 100, 0.0), 1.0))
+        with cards[2], st.container(border=True, height=_CARD_HEIGHT):
+            st.metric(
+                "Budget used",
+                used,
+                format="%.0f%%",
+                help="Share of the ceiling the estimate accounts for.",
+            )
+            if isinstance(used, (int, float)):
+                # st.progress rejects floats outside 0-1, and overspending
+                # legitimately exceeds 100%.
+                st.progress(min(max(used / 100, 0.0), 1.0))
 
     if not ceiling:
         st.caption(":material/info: No budget set, so the estimate is not compared to one.")
@@ -524,13 +531,14 @@ if flight_offers:
         placeholder="—",
         column_order=(
             "carrier",
+            # Second, so the per-row label is on screen in a narrow table.
+            "provenance",
             "total_fare",
             "fare_per_traveler",
             "duration_minutes",
             "stops",
             "depart_time_local",
             "cabin",
-            "provenance",
         ),
         column_config={
             "carrier": st.column_config.TextColumn("Carrier", width="medium", pinned=True),
@@ -589,6 +597,8 @@ if stay_offers:
         placeholder="—",
         column_order=(
             "name",
+            # Second, so the per-row label is on screen in a narrow table.
+            "provenance",
             "kind",
             "nightly_rate",
             "nights",
@@ -596,10 +606,11 @@ if stay_offers:
             "due_at_accommodation",
             "guest_rating",
             "free_cancellation",
-            "provenance",
         ),
         column_config={
-            "name": st.column_config.TextColumn("Property", width="large", pinned=True),
+            # Medium: a pinned "large" column fills a phone-width table, hiding
+            # everything after it.
+            "name": st.column_config.TextColumn("Property", width="medium", pinned=True),
             "kind": st.column_config.TextColumn("Type", width="small"),
             "nightly_rate": st.column_config.NumberColumn("Per night", format=rate_format),
             "nights": st.column_config.NumberColumn("Nights", format="%d", width="small"),

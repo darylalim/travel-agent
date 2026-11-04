@@ -24,13 +24,12 @@ load_dotenv()
 
 # Safe to import here: `travel_agent.ui` defers the agent import into a cached
 # factory, so nothing builds a graph before `load_dotenv()` has run.
-from travel_agent.ui import TripRecord
+from travel_agent.ui import PLAN_WIDTH, TRIP_WIDTH, TripRecord
 
 st.set_page_config(
     page_title="Travel agent",
     page_icon=":material/travel_explore:",
     layout="wide",
-    initial_sidebar_state="expanded",
 )
 
 # Shared state is initialised here rather than in a page, so either page can
@@ -58,26 +57,11 @@ pages = [
 ]
 page = st.navigation(pages, position="top")
 
-with st.sidebar:
-    # No heading above this: one button does not need a section label, and an
-    # h3 in a narrow column outweighs the control it introduces.
-    if st.button(
-        "Start a new trip",
-        icon=":material/restart_alt:",
-        width="stretch",
-        help="Clears this trip's workspace. The traveler profile is kept.",
-    ):
-        st.session_state.thread_id = str(uuid.uuid4())
-        st.session_state.messages = []
-        st.session_state.record = TripRecord()
-        st.session_state.seen_caveats = []
-        st.rerun()
-
-    st.space("medium")
-    st.caption("Setup")
-    # Stacked rather than `horizontal=True`: badges size to their content, and
-    # two of them overflow a sidebar this narrow.
-    with st.container(gap="xsmall"):
+with (
+    st.container(horizontal_alignment="center"),
+    st.container(width=PLAN_WIDTH if page.title == "Plan" else TRIP_WIDTH),
+):
+    with st.container(horizontal=True, vertical_alignment="center", gap="small"):
         # Grey on purpose, and never green. A colour reading as "live" would be
         # a claim about the data, which the provider name cannot support: the
         # same provider called `duffel` returns fictional fares and sample
@@ -97,7 +81,19 @@ with st.sidebar:
                 color="gray",
                 help="`TAVILY_API_KEY` is not set, so the agent cannot research destinations.",
             )
+        st.space("stretch")
+        if st.button(
+            "Start a new trip",
+            icon=":material/restart_alt:",
+            width="content",
+            help="Clears this trip's workspace. The traveler profile is kept.",
+        ):
+            st.session_state.thread_id = str(uuid.uuid4())
+            st.session_state.messages = []
+            st.session_state.record = TripRecord()
+            st.session_state.seen_caveats = []
+            st.rerun()
 
-# Pages do not set their own title; the entry script owns it.
-st.title(f"{page.icon} {page.title}")
-page.run()
+    # Pages do not set their own title; the entry script owns it.
+    st.title(f"{page.icon} {page.title}")
+    page.run()

@@ -681,6 +681,40 @@ def test_the_amount_due_at_the_property_reaches_the_table(trip_page):
     assert "never added together" in columns["due_at_accommodation"]["help"]
 
 
+def test_provenance_sits_beside_the_first_column_of_both_tables(trip_page):
+    """The per-row label must not be pushed off a narrow table.
+
+    It is what the data-honesty invariant puts in front of the traveler, and a
+    table reaching past the screen hides its last columns without saying so.
+    """
+    record = trip_page.session_state["record"]
+    record.record_tool(_flight_search("2027-02-10"))
+    record.record_tool(_search("search_stays", [{"name": "Hotel", "total_cost": 500.0}]))
+    trip_page.run()
+
+    assert _table(trip_page, 0)[0][:2] == ["carrier", "provenance"]
+    assert _table(trip_page, 1)[0][:2] == ["name", "provenance"]
+
+
+@pytest.mark.parametrize(("budget_total", "cards"), [(3000.0, 3), (None, 1)])
+def test_kpi_columns_follow_the_card_count(trip_page, budget_total, cards):
+    """A fixed three columns would leave gaps beside a lone total."""
+    budget = {"currency": "USD", "total_estimated": 2500.0, "by_category": {"food": 2500.0}}
+    if budget_total:
+        budget |= {
+            "budget_total": budget_total,
+            "remaining": 500.0,
+            "over_budget": False,
+            "percent_of_budget_used": 83.3,
+        }
+    message = ToolMessage(content=json.dumps(budget), name="summarize_budget", tool_call_id="b")
+    trip_page.session_state["record"].record_tool(message)
+    trip_page.run()
+
+    assert len(trip_page.columns) == cards
+    assert len(trip_page.metric) == cards
+
+
 def test_the_cabin_an_offer_came_back_in_reaches_the_table(trip_page):
     """Cabin is only worth requesting if what returned is visible.
 

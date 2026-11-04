@@ -68,6 +68,13 @@ WORKSPACE_FILES: tuple[tuple[str, str, str], ...] = (
 
 ITINERARY_PATH = f"{WORKSPACE}/itinerary.md"
 
+# Content widths in pixels. A fixed `st.container(width=...)` is capped to its
+# parent, so these act as maximums, which is how the page adapts: Python never
+# learns the viewport. Here rather than in the entry script because `chat.py`
+# needs the same figure for its input and a page cannot import that script.
+PLAN_WIDTH = 820
+TRIP_WIDTH = 1280
+
 # Tools whose structured output the trip view renders directly.
 CAPTURED_TOOLS = ("search_flights", "search_stays", "summarize_budget")
 

@@ -15,7 +15,7 @@ from typing import Any
 
 import streamlit as st
 
-from travel_agent.ui import escape_dollars, stream_turn
+from travel_agent.ui import PLAN_WIDTH, escape_dollars, stream_turn
 
 SUGGESTIONS = {
     "5 days in Kyoto": "5 days in Kyoto in September, 2 people, $4000 total, flying from SFO.",
@@ -71,10 +71,14 @@ if not st.session_state.messages:
     if choice:
         suggested = SUGGESTIONS[choice]
 
-typed = st.chat_input(
-    "Where are you going, when, how many people, and what is the budget?",
-    submit_mode="disable",
-)
+# Through `st.bottom`: inside a normal container the input renders inline, and
+# this page runs inside the entry script's width cap.
+with st.bottom, st.container(horizontal_alignment="center"):
+    typed = st.chat_input(
+        "Where are you going, when, how many people, and what is the budget?",
+        submit_mode="disable",
+        width=PLAN_WIDTH,
+    )
 prompt = typed or suggested
 
 if prompt:
