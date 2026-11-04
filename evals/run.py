@@ -577,6 +577,29 @@ def refreshed_expiring_offer(outputs: dict, reference_outputs: dict) -> dict:
     return _verdict([] if len(runs) >= 2 else [f"searched {len(runs)} time(s)"], "searched again")
 
 
+def varied_thin_search(outputs: dict, reference_outputs: dict) -> dict:
+    """A thin first search was varied, and the reply names what that found.
+
+    The prompt only asks for variety when the first pass is thin, so fewer
+    searches is right everywhere else and no other example can show it going.
+    The comment carries the counts, for comparing effort levels.
+    """
+    varied_search = reference_outputs.get("varied_search")
+    if not varied_search:
+        return {"score": None, "comment": "no thin search in this example"}
+    briefed, names = varied_search["briefed"], varied_search["better_offer"]
+    calls = [
+        _with_defaults("search_flights", c["args"])
+        for c in outputs["tool_calls"]
+        if c["name"] == "search_flights"
+    ]
+    varied = [c for c in calls if not all(_same(f, v, c.get(f)) for f, v in briefed.items())]
+    problems = [] if varied else [f"{len(calls)} search(es), none varied"]
+    if not any(name in outputs["response"] for name in names):
+        problems.append(f"reply does not name {names[0]}")
+    return _verdict(problems, f"{len(varied)} of {len(calls)} searches varied")
+
+
 # --- budget-analyst ----------------------------------------------------------
 
 
@@ -826,6 +849,7 @@ EVALUATORS: dict[str, list[Callable[..., dict]]] = {
         cabin_as_briefed,
         forbidden_tools_unused,
         refreshed_expiring_offer,
+        varied_thin_search,
         rubric,
     ],
     "final_response_scripted": [search_arguments, searches_not_in_past, rubric],

@@ -1,6 +1,6 @@
 {
-  "name": "travel-agent: availability-scout scripted v2",
-  "description": "Inventory sample data never produces, served by scripted tools (evals/scripted.py): a business search answered in premium economy, a round trip in mixed cabins, an offer seconds from expiry, and live flights beside sample lodging. Each example's `scripted_tools` metadata says what the searches return; a search it does not script gets sample data. Same reference shape as the scout hard set, plus `expiring_search`, a search that must be run at least twice. Run with --repetitions for a pass rate. v2 gives every scripted live flight a real carrier, a realistic duration and a realistic fare. v1 kept the sample data's fictional carriers, six-hour transpacific nonstops and $238 fares, and the main agent rightly doubted 'live' offers that looked like that, so the example measured whether it notices fake data rather than how it labels real data.",
+  "name": "travel-agent: availability-scout scripted v3",
+  "description": "Inventory sample data never produces, served by scripted tools (evals/scripted.py): a business search answered in premium economy, a round trip in mixed cabins, an offer seconds from expiry, and live flights beside sample lodging. Each example's `scripted_tools` metadata says what the searches return; a search it does not script gets sample data. Same reference shape as the scout hard set, plus `expiring_search`, a search that must be run at least twice. Run with --repetitions for a pass rate. v2 gives every scripted live flight a real carrier, a realistic duration and a realistic fare. v1 kept the sample data's fictional carriers, six-hour transpacific nonstops and $238 fares, and the main agent rightly doubted 'live' offers that looked like that, so the example measured whether it notices fake data rather than how it labels real data. v3 adds `thin-first-search`, the one example that needs a varied search to succeed, and `varied_search`, its reference. Its last rule has an empty match so that any other search, a shifted date included, still gets live offers rather than falling through to sample fares.",
   "examples": [
     {
       "key": "business-comes-back-premium",
@@ -215,6 +215,82 @@
                   {"carrier": "United Airlines", "stops": 0, "duration_minutes": 700, "fare_per_traveler": 1184.6, "expires_in_seconds": 1800},
                   {"carrier": "Japan Airlines", "stops": 1, "duration_minutes": 905, "fare_per_traveler": 968.3, "expires_in_seconds": 1800},
                   {"carrier": "ANA", "stops": 1, "duration_minutes": 960, "fare_per_traveler": 1032.75, "expires_in_seconds": 1800}
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "thin-first-search",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One traveler, economy, ORD to NRT departing 2027-04-12, returning 2027-04-22. Fare limit $1,400, and nonstop if there is one. Flights only, no lodging. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "expected_calls": {
+          "search_flights": [
+            {
+              "origin": "ORD",
+              "destination": "NRT",
+              "depart_date": "2027-04-12",
+              "return_date": "2027-04-22",
+              "travelers": 1,
+              "cabin": "economy"
+            },
+            {
+              "origin": "ORD",
+              "destination": "HND",
+              "depart_date": "2027-04-12",
+              "return_date": "2027-04-22",
+              "travelers": 1,
+              "cabin": "economy"
+            }
+          ]
+        },
+        "forbidden_tools": ["search_stays"],
+        "varied_search": {
+          "briefed": {
+            "origin": "ORD",
+            "destination": "NRT",
+            "depart_date": "2027-04-12",
+            "return_date": "2027-04-22"
+          },
+          "better_offer": ["ANA", "All Nippon"]
+        },
+        "criteria": [
+          "Says that no offer into NRT is nonstop or within the $1,400 limit.",
+          "Says that the ANA nonstop flies into HND rather than the NRT the brief named.",
+          "Does not label the offers as sample data, since they are live."
+        ]
+      },
+      "metadata": {
+        "behaviour": ["search-variety", "live-offers"],
+        "trap": "The briefed search succeeds but is thin: every fare into NRT is over the limit and none is nonstop. Reporting that is a plausible answer, and only a search into HND finds the nonstop under the limit.",
+        "dates_intentionally_past": false,
+        "scripted_tools": {
+          "flights": {
+            "source": "duffel",
+            "synthetic": false,
+            "rules": [
+              {
+                "match": {"destination": "HND"},
+                "offers": [
+                  {"carrier": "ANA", "stops": 0, "duration_minutes": 790, "fare_per_traveler": 1285.0, "expires_in_seconds": 1800},
+                  {"carrier": "Delta Air Lines", "stops": 1, "duration_minutes": 1000, "fare_per_traveler": 1540.0, "expires_in_seconds": 1800}
+                ]
+              },
+              {
+                "match": {},
+                "offers": [
+                  {"carrier": "Delta Air Lines", "stops": 1, "duration_minutes": 985, "fare_per_traveler": 1655.0, "expires_in_seconds": 1800},
+                  {"carrier": "Korean Air", "stops": 1, "duration_minutes": 1020, "fare_per_traveler": 1720.0, "expires_in_seconds": 1800},
+                  {"carrier": "China Airlines", "stops": 1, "duration_minutes": 1180, "fare_per_traveler": 1610.0, "expires_in_seconds": 1800}
                 ]
               }
             ]

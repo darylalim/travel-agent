@@ -881,3 +881,26 @@ def test_an_offer_seconds_from_expiry_must_be_searched_again():
     elsewhere = ("search_flights", {"origin": "PDX", "destination": "ICN"})
     assert harness.refreshed_expiring_offer(_outputs(sea, elsewhere), ref)["score"] == 0
     assert harness.refreshed_expiring_offer(_outputs(sea), {})["score"] is None
+
+
+def test_a_thin_search_must_be_varied_and_the_better_offer_named():
+    briefed = {"origin": "ORD", "destination": "NRT", "depart_date": "2027-04-12"}
+    ref = {"varied_search": {"briefed": briefed, "better_offer": ["ANA", "All Nippon"]}}
+    first = ("search_flights", briefed)
+    haneda = ("search_flights", {**briefed, "destination": "hnd"})
+    shifted = ("search_flights", {**briefed, "depart_date": "2027-04-13"})
+
+    found = {**_outputs(first, haneda), "response": "All Nippon flies nonstop into HND."}
+    assert harness.varied_thin_search(found, ref) == {
+        "score": 1,
+        "comment": "1 of 2 searches varied",
+    }
+    # Spelling the briefed search differently is not varying it.
+    repeat = ("search_flights", {**briefed, "origin": "ord"})
+    assert harness.varied_thin_search(_outputs(first, repeat), ref)["score"] == 0
+    # Varying the wrong thing finds nothing to name, which is still a miss.
+    missed = harness.varied_thin_search(_outputs(first, shifted), ref)
+    assert missed["score"] == 0
+    assert "does not name ANA" in missed["comment"]
+    # The older scripted examples carry no reference and must not be marked down.
+    assert harness.varied_thin_search(_outputs(first), {})["score"] is None

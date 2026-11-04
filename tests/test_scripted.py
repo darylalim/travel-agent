@@ -19,7 +19,7 @@ from langchain_core.outputs import ChatGeneration, ChatResult
 
 import travel_agent.agent as agent_module
 from evals import run as harness
-from evals import scripted
+from evals import scripted, upload
 from travel_agent.tools.availability import (
     SAMPLE_DISCLAIMER,
     SampleProvider,
@@ -231,3 +231,27 @@ def test_a_patched_fare_carries_a_total_that_agrees_with_it():
     with scripted.active(_register("brief", script)):
         offer = scripted.ScriptedProvider().search_flights(**{**FLIGHT, "travelers": 2})[0]
     assert offer["fare_per_traveler"] == 1184.6 and offer["total_fare"] == 2369.2
+
+
+@pytest.mark.parametrize(
+    ("destination", "depart_date", "carriers"),
+    [
+        ("HND", "2027-04-12", {"ANA", "Delta Air Lines"}),
+        ("HND", "2027-04-13", {"ANA", "Delta Air Lines"}),
+        ("NRT", "2027-04-12", {"Delta Air Lines", "Korean Air", "China Airlines"}),
+        # Falling through to sample data here would put a $238 fare beside live
+        # ones, and the shifted date would look like the better offer.
+        ("NRT", "2027-04-13", {"Delta Air Lines", "Korean Air", "China Airlines"}),
+    ],
+)
+def test_only_haneda_finds_the_better_offer_on_the_thin_search(destination, depart_date, carriers):
+    dataset = upload.load_datasets()["availability_scout_scripted"]
+    example = next(e for e in dataset["examples"] if e["key"] == "thin-first-search")
+    inputs = example["inputs"]
+    scripted._SCRIPTS[scripted._input_key(inputs)] = example["metadata"]["scripted_tools"]
+    with scripted.active(inputs):
+        offers = scripted.ScriptedProvider().search_flights(
+            "ORD", destination, depart_date, "2027-04-22", 1
+        )
+    assert {o["carrier"] for o in offers} == carriers
+    assert not any(o["synthetic"] for o in offers)
