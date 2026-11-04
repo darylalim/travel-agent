@@ -52,6 +52,7 @@ import uuid
 from collections.abc import Callable, Iterable
 from datetime import date
 from functools import cache
+from pathlib import Path
 from typing import Any
 
 from deepagents.backends.utils import file_data_to_string
@@ -83,6 +84,8 @@ SCRIPTED_DATASETS = frozenset({"availability_scout_scripted", "final_response_sc
 # Sonnet 5.5 rejects forced `tool_choice`, which LangChain's default structured
 # output relies on, so the judge uses `method="json_schema"`. That asks for
 # native structured output (`output_config.format`) instead.
+RESULTS_DIR = Path(__file__).parent / "results"
+
 JUDGE_MODEL = "anthropic:claude-sonnet-5-5"
 JUDGE_EFFORT = "medium"
 # Server-side refusal fallback: if Sonnet 5.5 refuses to grade a transcript, the
@@ -929,6 +932,36 @@ def pass_rates(rows: Iterable[Any]) -> list[str]:
     return lines
 
 
+def save_results(
+    rows: Iterable[Any], experiment: str, metadata: dict, directory: Path = RESULTS_DIR
+) -> Path:
+    """Write a run's transcripts and scores to disk, and return the file.
+
+    LangSmith is not a safe only copy. Over its trace limit it answers 429, the
+    run still exits 0 and prints its scores, and the transcripts are gone, so
+    the only way back to them is paying for the run again. Passing comments are
+    kept too, since the summary drops them and they carry the search counts.
+    """
+    records = [
+        {
+            "key": _key(row["example"]),
+            "inputs": row["example"].inputs,
+            "outputs": row["run"].outputs,
+            "error": row["run"].error,
+            "scores": [
+                {"key": r.key, "score": r.score, "comment": r.comment}
+                for r in row["evaluation_results"]["results"]
+            ],
+        }
+        for row in rows
+    ]
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / f"{experiment}.json"
+    document = {"experiment": experiment, "metadata": metadata, "runs": records}
+    path.write_text(json.dumps(document, indent=2, default=str))
+    return path
+
+
 def agent_target(repetitions: int) -> Callable[[dict], dict]:
     """The whole-agent run function for an evaluation.
 
@@ -1063,7 +1096,9 @@ def main(argv: list[str] | None = None) -> int:
             metadata=metadata,
         )
         print(f"  experiment: {results.experiment_name}")
-        rows = list(results)  # read twice below
+        rows = list(results)  # read more than once below
+        # First, so a failure printing the summary cannot lose a paid run.
+        print(f"  saved: {save_results(rows, results.experiment_name, metadata)}")
         print(*summarize(rows), *pass_rates(rows), sep="\n")
     return 0
 

@@ -10,6 +10,7 @@ no model calls.
 from __future__ import annotations
 
 import copy
+import json
 import os
 from collections.abc import Iterator
 from typing import Any
@@ -118,6 +119,42 @@ def test_cache_writes_reported_by_ttl_are_counted(scripted_subagent):
     reply.usage_metadata["input_token_details"] = details
     scripted_subagent(reply)
     assert harness.run_subagent("budget-analyst", BRIEF)["usage"]["cache_creation"] == 4300
+
+
+def test_a_run_is_saved_with_its_transcript_and_passing_comments(tmp_path):
+    from datetime import date
+    from types import SimpleNamespace as NS
+
+    from langsmith.evaluation import EvaluationResult
+
+    ok = {
+        "example": NS(metadata={"key": "thin"}, id="e1", inputs={"messages": []}),
+        "run": NS(
+            error=None,
+            # A value JSON cannot encode must not cost the whole file.
+            outputs={"tool_calls": [{"name": "search_flights"}], "when": date(2027, 4, 12)},
+        ),
+        "evaluation_results": {
+            "results": [
+                EvaluationResult(key="varied", score=1, comment="1 of 2 searches varied"),
+            ]
+        },
+    }
+    failed = {
+        "example": NS(metadata={}, id="e2", inputs={"messages": []}),
+        "run": NS(error="RateLimitError", outputs=None),
+        "evaluation_results": {"results": []},
+    }
+    path = harness.save_results([ok, failed], "exp-1", {"effort": "high"}, tmp_path / "new")
+
+    saved = json.loads(path.read_text())
+    assert path.name == "exp-1.json"
+    assert saved["metadata"] == {"effort": "high"}
+    thin, broken = saved["runs"]
+    assert thin["outputs"]["tool_calls"] == [{"name": "search_flights"}]
+    # The summary hides a passing comment; this file is where it survives.
+    assert thin["scores"][0]["comment"] == "1 of 2 searches varied"
+    assert (broken["key"], broken["error"]) == ("e2", "RateLimitError")
 
 
 def test_the_summary_prints_scores_and_tokens_and_survives_a_failed_run():

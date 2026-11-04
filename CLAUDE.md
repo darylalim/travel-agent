@@ -714,6 +714,12 @@ and all three were the harness's fault: two criteria no run could meet, and an
 evaluator that read only the first search. Read the comments the summary prints
 before reading anything into a score.
 
+Every run also writes `evals/results/<experiment>.json`, gitignored: each
+transcript, score and comment. It is always on rather than a flag, because
+LangSmith over its monthly trace limit answers 429 while the run still exits 0
+and prints scores, so the transcripts are lost and only a paid rerun recovers
+them. The summary hides passing comments, and this file keeps them.
+
 `trajectory` and `final_response` run the whole agent through `run_agent`:
 `build_agent()` on its default model, with a fresh store per example so no run
 meets a profile another one wrote. Three things there are easy to undo:
