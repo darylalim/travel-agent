@@ -258,14 +258,14 @@ def test_a_failure_quoting_prices_renders_as_text(chat_page):
 
 
 def test_workspace_prices_render_as_text_and_stay_raw(trip_page):
-    itinerary = "Day 1: lunch $20, dinner $45"
+    itinerary = "Day 1: lunch $20, dinner $45, tram ~€3, museum ~€12"
     research = "Hotels from $90 to $140"
     record = trip_page.session_state["record"]
     record.files = {ui.ITINERARY_PATH: itinerary, ui.WORKSPACE_FILES[0][0]: research}
     trip_page.run()
 
     shown = [element.value for element in trip_page.markdown]
-    assert r"Day 1: lunch \$20, dinner \$45" in shown
+    assert r"Day 1: lunch \$20, dinner \$45, tram \~€3, museum \~€12" in shown
     assert r"Hotels from \$90 to \$140" in shown
     assert record.files[ui.ITINERARY_PATH] == itinerary
 

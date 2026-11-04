@@ -15,7 +15,7 @@ from typing import Any
 
 import streamlit as st
 
-from travel_agent.ui import PLAN_WIDTH, escape_dollars, stream_turn
+from travel_agent.ui import PLAN_WIDTH, escape_markdown, stream_turn
 
 SUGGESTIONS = {
     "5 days in Kyoto": "5 days in Kyoto in September, 2 people, $4000 total, flying from SFO.",
@@ -49,14 +49,14 @@ def _render_activity(entry: dict[str, Any]) -> None:
 for entry in st.session_state.messages:
     with st.chat_message(entry["role"]):
         if entry["role"] != "assistant":
-            st.markdown(escape_dollars(entry["content"]))
+            st.markdown(escape_markdown(entry["content"]))
             continue
         _render_activity(entry)
         for caveat in entry.get("caveats", []):
             st.warning(caveat, icon=":material/warning:")
-        st.markdown(escape_dollars(entry["content"]))
+        st.markdown(escape_markdown(entry["content"]))
         if entry.get("error"):
-            st.error(escape_dollars(entry["error"]), icon=":material/error:")
+            st.error(escape_markdown(entry["error"]), icon=":material/error:")
 
 # Suggestions stand in for a first prompt and disappear once the chat starts.
 suggested = None
@@ -84,7 +84,7 @@ prompt = typed or suggested
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
-        st.markdown(escape_dollars(prompt))
+        st.markdown(escape_markdown(prompt))
 
     slots: dict[str, Any] = {}
     labels: dict[str, str] = {}
@@ -132,7 +132,7 @@ if prompt:
                 """
                 for chunk in chunks:
                     streamed.append(chunk)
-                    yield escape_dollars(chunk)
+                    yield escape_markdown(chunk)
 
             try:
                 # Only `str` is ever yielded, so this streams as markdown
@@ -147,7 +147,7 @@ if prompt:
             status.update(label=status_label, state=status_state)
 
             if failure is not None:
-                st.error(escape_dollars(failure), icon=":material/error:")
+                st.error(escape_markdown(failure), icon=":material/error:")
 
             # Caveats are shown once, when first raised; the Trip page keeps
             # the standing list so a warning is never only visible in

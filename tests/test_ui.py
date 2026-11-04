@@ -37,7 +37,7 @@ from travel_agent.ui import (
     costing_series,
     currency_code,
     currency_label,
-    escape_dollars,
+    escape_markdown,
     money_format,
     money_format_for,
     money_text,
@@ -770,7 +770,10 @@ def test_costing_series_needs_two_points_to_be_a_series():
         # Doubling the backslash would print one and leave the `$` live.
         (r"already \$40", r"already \$40"),
         (r"\$40 and $50", r"\$40 and \$50"),
+        # Two of these strike through everything between them.
+        ("Pena ~€20 or the castle ~€12", r"Pena \~€20 or the castle \~€12"),
+        (r"already \~20 and ~30", r"already \~20 and \~30"),
     ],
 )
-def test_every_dollar_sign_is_escaped_exactly_once(text, escaped):
-    assert escape_dollars(text) == escaped
+def test_every_dollar_sign_and_tilde_is_escaped_exactly_once(text, escaped):
+    assert escape_markdown(text) == escaped

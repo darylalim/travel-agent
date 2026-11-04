@@ -412,16 +412,17 @@ def money_axis_title(prefix: str, code: str, fallback: str = "USD") -> str:
     return f"{prefix} ({currency_label(code, fallback)})"
 
 
-def escape_dollars(text: str) -> str:
-    """`text` with each `$` escaped, for anything Streamlit parses as markdown.
+def escape_markdown(text: str) -> str:
+    """`text` with each `$` and `~` escaped, for anything Streamlit parses as markdown.
 
-    Text between two `$` signs renders as LaTeX, so a reply quoting two prices
-    loses both signs and the words between them turn into maths. Call this at
-    render time only: what is stored stays raw, because the replay escapes it
-    again. The lookbehind leaves an already escaped `\\$` alone; a plain replace
-    would double the backslash and leave the `$` live.
+    Text between two `$` signs renders as LaTeX, and between two `~` as
+    strikethrough, so a reply quoting prices loses its signs and an itinerary
+    reading "~€20 ... ~€12" looks cancelled. Call this at render time only: what
+    is stored stays raw, because the replay escapes it again. The lookbehind
+    leaves an already escaped `\\$` alone; a plain replace would double the
+    backslash and leave the sign live.
     """
-    return re.sub(r"(?<!\\)\$", r"\\$", text)
+    return re.sub(r"(?<!\\)([$~])", r"\\\1", text)
 
 
 def money_text(amount: Any, code: str, fallback: str = "USD") -> str:
