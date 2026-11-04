@@ -7,6 +7,13 @@ Travel planning agent on Deep Agents. Research destinations and search flight an
 It gathers options, builds a day-by-day itinerary, costs it against a budget,
 and remembers traveler preferences across conversations.
 
+Two things it will not do:
+
+- **It never books.** It searches and reads, and takes no payment, on a test
+  token or a live one.
+- **It never shows sample data as real.** Every offer says whether it is
+  synthetic, and the chat and the Trip page both carry that label.
+
 ## Setup
 
 ```bash
@@ -26,7 +33,7 @@ uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main '5 days in Kyoto in September, 2 people, $4000'
 ```
 
-The three differ in more than ergonomics — each wires persistence differently:
+Each wires persistence differently:
 
 | Entry point | Checkpointer and store | `/memories/` survives |
 |---|---|---|
@@ -35,58 +42,32 @@ The three differ in more than ergonomics — each wires persistence differently:
 | `python -m travel_agent.main` | In-process | Nothing — it dies with the process |
 
 `langgraph dev` is the recommended path: memory persists and you get a visual
-trace of every subagent call. The middle row follows from `st.cache_resource`
-being scoped to the **server process** rather than the session.
+trace of every subagent call.
 
 ### The browser UI
 
-Two pages, wired with `st.navigation`:
+Two pages:
 
-- **Plan** — chat with the agent. Its prose streams token by token; tool calls
-  appear as a collapsed activity trail beside it, so you can watch it delegate
-  to `availability-scout` without the subagent's own chatter filling the
-  transcript.
-- **Trip** — the same trip as figures: budget KPIs against the ceiling, cost by
-  category, flight and lodging comparison tables, and the itinerary. Each table
-  names the query behind it, and when the scout tried several — nearby airports,
-  dates shifted a day — you get a control to switch between them. They are
-  deliberately not merged: those are different questions, and a combined list
-  sorted by price would rank a cheaper flight on other dates above a dearer one
-  on the dates you actually asked for.
+- **Plan:** chat with the agent. Its prose streams in, and tool calls appear as a
+  collapsed activity trail beside it.
+- **Trip:** the same trip as figures: budget against the ceiling, cost by
+  category, flight and lodging tables, and the itinerary. When the scout tried
+  several queries, such as nearby airports or shifted dates, a control switches
+  between them. They are not merged, because a combined list sorted by price
+  would rank a cheaper flight on other dates above the dates you asked for.
 
-The Trip page reads the **structured tool payloads**, not the markdown the agent
-wrote, so `synthetic` and `warning` reach the screen as data. Every synthetic
-result is labelled in the table and repeated as a standing notice at the top of
-the page — a caveat that only existed in chat scrollback would be too easy to
-scroll past.
-
-Getting those payloads takes care. deepagents folds a subagent's state back into
-the parent *without* its `messages`, substituting a single `ToolMessage` holding
-only the subagent's closing prose. Since `search_flights` and `search_stays` are
-bound only to `availability-scout`, reading message history after a run finds no
-search results at all. The UI therefore captures them mid-stream, with
-`subgraphs=True` so nested messages are emitted in the first place.
-`tests/test_ui.py` pins the behaviour.
+Every synthetic result is labelled in its table and repeated as a standing notice
+at the top of the Trip page.
 
 ### Tracing
 
-Set `LANGSMITH_API_KEY` in `.env` and every entry point traces to LangSmith —
-`.env.example` already sets `LANGSMITH_TRACING=true` and
-`LANGSMITH_PROJECT=travel-agent`. No code is involved: LangChain attaches its
-tracer whenever those variables are present, and each subagent call appears as
-a nested run under the main agent's.
+Set `LANGSMITH_API_KEY` in `.env` and every entry point traces to LangSmith, with
+each subagent call nested under the main agent's. `.env.example` already sets
+`LANGSMITH_TRACING=true` and `LANGSMITH_PROJECT=travel-agent`.
 
-Runs from the CLI and the Streamlit UI are named `travel_agent`, the graph id
-in `langgraph.json`, and tagged `cli` or `streamlit` so they can be filtered
-apart. The thread id lands in run metadata, which groups a trip's turns into
-one LangSmith thread.
-
-A trace records full inputs and outputs: the traveler profile, the prompts,
-and every offer payload, including live Duffel fares. Set `LANGSMITH_TRACING=false`
-if that should not leave the machine.
-
-The test suite never traces, even with tracing exported — `tests/conftest.py`
-overrides it for every test.
+A trace records full inputs and outputs: the traveler profile, the prompts and
+every offer payload, including live Duffel fares. Set `LANGSMITH_TRACING=false` if
+that should not leave the machine. The test suite never traces.
 
 ## How it works
 
@@ -114,11 +95,7 @@ A `CompositeBackend` splits the agent's filesystem in two:
   `traveler_profile.md`, loaded into the system prompt at startup via
   `memory=[...]` and safely skipped on the first run when it does not exist yet.
 
-Both backends resolve state and store from the LangGraph execution context, so
-`agent.py` passes **no** checkpointer or store into the graph the server loads.
-`build_agent()` accepts them for standalone use.
-
-### Flight and lodging sources
+## Flight and lodging sources
 
 `tools/availability.py` defines an `AvailabilityProvider` protocol. Pick one
 with `TRAVEL_AGENT_PROVIDER`:
@@ -129,103 +106,72 @@ with `TRAVEL_AGENT_PROVIDER`:
 | `duffel` + test token | **Synthetic** (Duffel test inventory) | Synthetic (sample data) |
 | `duffel` + live token | **Real** | **Real** (Duffel Stays) |
 
-The safety property: **the traveler is never shown synthetic inventory
-described as real.** Every offer carries `synthetic: bool`, and a response
-carrying any synthetic offers gets a `warning`. The prompts tell the agent to
-key off those two fields.
+Every offer carries `synthetic: bool`, and a response carrying any synthetic
+offers gets a `warning`. The prompts tell the agent to key off those two fields,
+never the provider name. A Duffel *test* token returns fictional airlines at
+invented fares from a live API, so it is labelled exactly like sample data, and
+a live token returns real inventory under the same provider name.
 
-Note the middle row. A Duffel *test* token returns fictional airlines at
-invented fares — synthetic despite coming from a live API over the network, so
-it is labelled exactly like sample data. Judging by the provider name would get
-this wrong in both directions: test-mode flights under `duffel` would look real,
-and real lodging under `duffel` would look synthetic if the rule were "lodging is
-always sample data".
-
-Lodging is the row that moves. Duffel's Stays test inventory exists at a single
-coordinate pair, so a test-mode search of an actual city returns nothing at
-all — not an error, just an empty list. Sample data answers the question the
-traveler asked, so a test token routes lodging there and says so; a live token
-searches Duffel Stays for real.
-
-An empty result set is warned about as well, since providers declare
-synthetic-ness up front — otherwise "no offers" from a synthetic source would
-read as "we checked real inventory and found nothing available". Sample offers
-are deterministic, seeded off the query, so prices don't drift mid-conversation.
+Duffel's Stays test inventory sits at one coordinate pair, so a test token routes
+lodging to sample data and says so. An empty result is warned about too, or "no
+offers" from a synthetic source would read as "we checked real inventory".
 
 To enable Duffel: create a test token in the Duffel dashboard under *Developer
 test mode* (`duffel_test_…`), then set `DUFFEL_API_TOKEN` and
 `TRAVEL_AGENT_PROVIDER=duffel` in `.env`. Test-mode results are fictional and
 are labelled as such — see the table above.
 
-**Duffel is read-only.** It creates offer requests and searches and reads the
-results back; it never calls `POST /air/orders` or `POST /stays/bookings`, and
-never creates a quote, so nothing is booked and no payment is taken, on a test
-token or a live one. Adding booking would mean putting order creation behind
-Deep Agents' `interrupt_on` human-approval gate — a deliberate decision, not a
-config change.
-
-The verb is not the discriminator: `/stays/search` is itself a `POST`, and it is
-the one call the lodging path is built to make. So `tests/test_no_booking.py`
-matches on the **path**, walking the AST of every file under `src/` and failing
-on any booking, quote, payment or cancellation path that appears in a string
-literal outside a docstring.
-
-Working on the AST rather than on source text is what makes that precise in both
-directions. A request cannot reach an endpoint whose path is not a literal
-somewhere, so hoisting the path into a variable does not hide it — while
-comments never enter the tree at all and docstrings are excluded by
-construction, so prose and test assertions naming the endpoint stay allowed. A
-check on this invariant must never block writing about it.
+**Duffel is read-only.** It never calls `POST /air/orders` or
+`POST /stays/bookings` and never creates a quote. Adding booking would mean
+putting order creation behind Deep Agents' `interrupt_on` human-approval gate, a
+deliberate decision rather than a config change. `tests/test_no_booking.py`
+enforces this.
 
 A few things worth knowing:
 
 - **Offers expire, usually in minutes.** Each carries `expires_at` and
-  `expires_in_seconds`, and the prompts tell the agent to re-search rather than
-  quote a stale offer.
-- **Results are capped at 20 offers.** One real test-mode SFO→NRT search
-  returned **630** — handing them all to the model would cost a context window.
-  The trim keeps the cheapest, the fastest, and the fewest-stops options, so a
-  nonstop still survives when the cheapest fares are all multi-stop. Responses
-  carry `total_found`, `count`, and a `truncated` note.
-- **Live lodging search covers a fixed list of cities.** Duffel Stays searches
-  by latitude and longitude — there is no city-name form, and Duffel's own guide
-  says you will "probably need to use a geocoding service". Rather than take that
-  dependency and another API key, the provider ships a static table and refuses
-  what it does not know, naming the cities that do work. A nearest-match guess
-  would label results with a city nobody asked for, which is far harder to
-  notice than an error.
-- **A stay's two prices are reported, never summed.** Duffel's docs disagree
-  about whether `due_at_accommodation_amount` sits inside `total_amount` or on
-  top of it, so both are surfaced as they arrive. Adding them double-counts under
-  one reading and subtracting understates under the other, and either way the
-  traveler would be shown a confident number nobody can source.
-- **Cabin class is validated at the tool layer, never guessed.** It defaults to
-  economy; "Premium Economy" and `premium-economy` both land on
-  `premium_economy`, while anything unrecognised is an error naming the four that
-  work — coercing "biz" to business commits the traveler to a fare several times
-  the one they meant.
-- **Cabin is a preference rather than a filter.** A search can succeed without
-  returning what it asked for, so the response echoes `requested_cabin`, each
-  offer carries the cabin it actually came back in (`mixed` when one itinerary's
-  legs disagree), and a `cabin_note` appears when those differ. That note is
-  deliberately separate from `warning`: a real fare in the wrong cabin is not the
-  same problem as a fictional one, and a live search with no honesty caveat to
-  raise must not borrow that banner. The 20-offer trim selects the requested
-  cabin first for the same reason — a lower cabin is always cheaper, so trimming
-  by price alone would answer a business search with twenty economy fares and
-  raise nothing.
-- **Multi-room lodging search is out of scope** — one room, all guests.
+  `expires_in_seconds`, and the agent re-searches rather than quote a stale one.
+- **Results are capped at 20 offers.** The trim keeps the cheapest, the fastest
+  and the fewest-stops options, so a nonstop survives when the cheapest fares are
+  all multi-stop. Responses carry `total_found`, `count` and a `truncated` note.
+- **Live lodging search covers a fixed list of cities.** Duffel Stays searches by
+  coordinates, so the provider ships a static table and refuses a city it does
+  not know, naming the ones that work, rather than guess the nearest.
+- **A stay's two prices are reported, never summed.** Duffel's docs disagree about
+  whether `due_at_accommodation_amount` sits inside `total_amount`.
+- **Cabin is a preference rather than a filter.** It defaults to economy, each
+  offer carries the cabin it came back in, and a `cabin_note` flags a mismatch.
+- **Multi-room lodging search is out of scope:** one room, all guests.
 
-Duffel's REST API is called over `httpx` directly rather than through the
-`duffel-api` PyPI package, which was last released in 2023, is classified Alpha,
-and would add a `requests` dependency. `tests/test_duffel.py` verifies the
-request shape against `httpx.MockTransport`, and `tests/conftest.py` clears the
-provider env vars for every test — so the suite needs no token and never reaches
-the network, whatever you have exported.
+Duffel's REST API is called over `httpx` directly, because the `duffel-api` PyPI
+package was last released in 2023, is classified Alpha and would add a `requests`
+dependency. The test suite needs no token and never reaches the network.
 
 To add another provider (Amadeus, Skyscanner, Booking.com): implement the
 protocol, register a factory in `_PROVIDERS`, and set `source` to the provider
 name so the sample-data caveat drops out of the agent's replies automatically.
+
+## Evaluations
+
+`evals/` holds nine LangSmith datasets, and `evals/run.py` scores them against
+the real models. They need `LANGSMITH_API_KEY`, and they spend real tokens.
+
+| Sets | What they are for |
+|---|---|
+| Regression: `final_response`, `trajectory`, `availability_scout`, `budget_analyst` | Catching breakage in replies, delegation and each subagent |
+| `_hard` | Briefs a plausible agent gets wrong, run with `--repetitions` for a pass rate |
+| `_scripted` | Inventory and research sample data never produces, such as a cabin downgrade or partly failed research |
+
+```bash
+uv run python -m evals.upload --dry-run                          # validate the datasets, no keys needed
+uv run python -m evals.upload                                    # upload any not already in LangSmith
+uv run python -m evals.run budget_analyst --limit 1 --no-judge   # cheapest real run, a few cents
+uv run python -m evals.run trajectory --limit 1                  # one full trip, about $1
+uv run python -m evals.run budget_analyst_hard --repetitions 3   # a pass rate, about $0.50
+```
+
+Pass `--no-web-search` if Tavily is out of credits. Each run also writes its
+transcripts and scores to `evals/results/`, which is gitignored.
 
 ## Develop
 
@@ -248,11 +194,6 @@ pass, CI tags that commit `vX.Y.Z` and publishes a GitHub release whose notes ar
 the commit subjects since the previous tag. Nothing else is required, and nothing
 is uploaded to a package index — the PyPI name `travel-agent` belongs to an
 unrelated project, so a release is a tag and notes.
-
-The gate asks whether the tag already exists rather than what the push changed,
-so a re-run or a failed run is completed by the next push instead of tagging
-twice. It refuses a version that is not `X.Y.Z`, and refuses one below a version
-that already shipped.
 
 ## Stack
 
