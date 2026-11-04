@@ -1,5 +1,5 @@
 {
-  "name": "travel-agent: final response",
+  "name": "travel-agent: final response v2",
   "description": "Whole-trip requests to the main agent, graded against rubric criteria rather than a reference answer: an itinerary has no single right text. Assumes TRAVEL_AGENT_PROVIDER=sample-data, so every flight and lodging figure is synthetic and must be labelled as such.",
   "examples": [
     {
@@ -43,7 +43,7 @@
         "currency": "USD",
         "criteria": [
           "Says plainly whether the plan exceeds $1500, with the overage if it does.",
-          "If over budget, proposes two or three specific cuts, each with its saving.",
+          "If over budget, proposes specific cuts, each with its saving, that close the gap or say how much of it is left.",
           "Does not silently drop cost lines (such as food or local transport) to make the total fit.",
           "Labels flight and lodging prices as sample data rather than real fares.",
           "Still delivers a plan for the trip that was asked for, rather than refusing or only asking questions."

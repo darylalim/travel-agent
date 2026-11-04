@@ -1,5 +1,5 @@
 {
-  "name": "travel-agent: budget-analyst",
+  "name": "travel-agent: budget-analyst v2",
   "description": "Single-step tests of the budget-analyst subagent. The input is the brief the main agent would pass through `task`. `expected_items` is the `summarize_budget` call the analyst should make, and `expected_total` and `over_budget` are what that call returns. The test suite runs the real tool over `expected_items`, so the numbers here cannot drift from the arithmetic.",
   "examples": [
     {
@@ -57,7 +57,7 @@
         "over_budget": true,
         "criteria": [
           "Reports that the plan is over budget and by how much.",
-          "Proposes two or three specific cuts, each with its saving.",
+          "Proposes specific cuts, each with its saving, that close the gap or say how much of it is left.",
           "Does not silently drop a line item to make the numbers work.",
           "Flags that the figures came from sample data."
         ]

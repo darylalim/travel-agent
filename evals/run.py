@@ -580,23 +580,33 @@ def refreshed_expiring_offer(outputs: dict, reference_outputs: dict) -> dict:
     return _verdict([] if len(runs) >= 2 else [f"searched {len(runs)} time(s)"], "searched again")
 
 
+def _varies(field: str, expected: Any, actual: Any) -> bool:
+    """A search differs from the briefed one on this field.
+
+    Stricter on `location` than `_same`, which reads "Leith, Edinburgh" as
+    Edinburgh. Here that is a different area, and "Edinburgh, UK" is not.
+    """
+    if field == "location":
+        return str(actual).split(",")[0].strip().casefold() != expected.casefold()
+    return not _same(field, expected, actual)
+
+
 def varied_thin_search(outputs: dict, reference_outputs: dict) -> dict:
     """A thin first search was varied, and the reply names what that found.
 
     The prompt only asks for variety when the first pass is thin, so fewer
     searches is right everywhere else and no other example can show it going.
-    The comment carries the counts, for comparing effort levels.
+    The comment carries the counts, for comparing effort levels. `briefed` holds
+    only the fields that count as variety: the same stay with its ceiling lifted
+    is what `medium` did, and it looks at the same inventory.
     """
     varied_search = reference_outputs.get("varied_search")
     if not varied_search:
         return {"score": None, "comment": "no thin search in this example"}
     briefed, names = varied_search["briefed"], varied_search["better_offer"]
-    calls = [
-        _with_defaults("search_flights", c["args"])
-        for c in outputs["tool_calls"]
-        if c["name"] == "search_flights"
-    ]
-    varied = [c for c in calls if not all(_same(f, v, c.get(f)) for f, v in briefed.items())]
+    tool = varied_search.get("tool", "search_flights")
+    calls = [_with_defaults(tool, c["args"]) for c in outputs["tool_calls"] if c["name"] == tool]
+    varied = [c for c in calls if any(_varies(f, v, c.get(f)) for f, v in briefed.items())]
     problems = [] if varied else [f"{len(calls)} search(es), none varied"]
     if not any(name in outputs["response"] for name in names):
         problems.append(f"reply does not name {names[0]}")

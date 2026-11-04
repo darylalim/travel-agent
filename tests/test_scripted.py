@@ -74,6 +74,40 @@ def _register(text: str, script: dict) -> dict:
     return inputs
 
 
+def test_a_scripted_stay_answers_a_ceiling_as_a_real_provider_would():
+    script = {
+        "stays": {
+            "source": "sample-data",
+            "rules": [
+                {
+                    "match": {},
+                    "offers": [
+                        {"name": "Under", "nightly_rate": 40.0},
+                        {"name": "Over", "nightly_rate": 90.0},
+                    ],
+                }
+            ],
+        }
+    }
+    inputs = _register("ceiling", script)
+    with scripted.active(inputs):
+        payload = search_stays.invoke({**STAY, "max_nightly_rate": 50})
+    # A  ceiling is below every sample rate, so this offer has to be built
+    # from an uncapped base or it arrives with only the keys its patch sets.
+    (offer,) = payload["offers"]
+    assert offer["name"] == "Under"
+    assert set(offer) == set(
+        SampleProvider().search_stays("X", "2027-03-01", "2027-03-08", 1, None)[0]
+    )
+    assert offer["total_cost"] == 280.0
+
+
+def test_an_unscripted_stay_search_keeps_the_sample_ceiling():
+    args = ("Singapore", "2027-03-01", "2027-03-08", 1, 150)
+    expected = SampleProvider().search_stays(*args)
+    assert scripted.ScriptedProvider().search_stays(*args) == expected
+
+
 # --- inventory ---------------------------------------------------------------
 
 

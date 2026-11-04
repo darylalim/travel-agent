@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main '5 days in Kyoto, 2 people, $4000'
 
-uv run pytest                            # 479 tests, ~4s, no network, no model calls
+uv run pytest                            # 490 tests, ~5s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -787,7 +787,7 @@ seconds from expiry, live flights beside sample lodging, or research that
 partly fails, and Duffel and Tavily cannot be told to. An example's
 `scripted_tools` metadata scripts flights, stays or web search. A
 `ScriptedProvider` registered as `scripted` serves it, and
-`build_agent(search_tools=…)` takes a `ScriptedSearch`. Seven things there are
+`build_agent(search_tools=…)` takes a `ScriptedSearch`. Eight things there are
 easy to undo:
 
 - **A script reaches its run through a `ContextVar`,** set around the stream in
@@ -823,6 +823,16 @@ easy to undo:
   examples lost their varied searches, because offers that plainly miss the
   brief prompt a retry at either level. Compare search counts across
   `evals/results/` too.
+- **`thin-stay-search` does not count a lifted ceiling as variety.** That is
+  what `medium` did on the hard set's Edinburgh example, so `briefed` leaves the
+  ceiling out, and `_varies` reads "Leith, Edinburgh" as a new area where `_same`
+  reads Edinburgh. `ScriptedProvider` applies the ceiling after the script,
+  because applied first it empties the base a patch is built on. Either route
+  to the stay is fair, so they sit in `finds`, not `expected_calls`, which
+  `search_arguments` would make mandatory.
+  It separates what `thin-first-search` cannot: `varied_thin_search` was 3/3 at
+  `high` and 1/3 at `medium`, with the rubric at 1.0 in all six runs. Reporting
+  no stay under the ceiling is an honest reply, so only that check sees the loss.
 
 `main()` sets `TRAVEL_AGENT_PROVIDER=sample-data` over `.env`, because every
 rubric expects the sample-data label, except on a `_scripted` set, which runs
@@ -880,10 +890,11 @@ payload. Don't add one to tune a role.
   omits the kwarg. Haiku 5.5 accepts it. For the same reason the CLI only applies
   `DEFAULT_EFFORT` when `--model` is left at its default.
 - The analyst moved to Haiku 5.5 at `medium` on measurement: the hard traps held
-  and the mixed-currency rubric rose. `lisbon-over` now scores 0.75 for four
-  cuts rather than two or three, accepted on purpose. The prompts ask for two or
-  three cuts that close the gap, which cannot always both hold, and Haiku 4.5
-  passed by keeping to three and leaving $760 uncovered.
+  and the mixed-currency rubric rose. The prompts used to ask for "two or three
+  cuts that close the gap", which cannot always both hold: Haiku 4.5 passed by
+  keeping to three and leaving $760 uncovered, and Haiku 5.5 scored 0.75 for
+  closing it with four. They now ask for as few cuts as close the gap, and for
+  what is left when they cannot, so a shortfall is stated rather than implied.
 - No model here matches a built-in `HarnessProfile` any more, so every agent's
   prompt is the whole prompt. Only `claude-haiku-4-5` ever did, and moving the
   analyst dropped the generic Claude suffix it appended.

@@ -122,8 +122,8 @@ none rather than giving it a figure. A placeholder budget comes back as an
 over- or under-budget verdict on a number the traveler never gave.
 
 When you cost a plan yourself and it is over budget, propose in your reply the
-two or three specific cuts that close the gap, each with its saving. A saving
-that sits only in `{WORKSPACE}/budget.md` never reaches the traveler, and a
+specific cuts that close the gap, as few as will do it, each with its saving. If
+they cannot close all of it, say how much is left. A saving that sits only in `{WORKSPACE}/budget.md` never reaches the traveler, and a
 combined figure cannot be weighed one cut at a time. Do not drop cost lines to
 make the total fit.
 
@@ -246,8 +246,9 @@ Write the breakdown to the file path given in your instructions. Return:
 the total, whether it fits the budget when there is one, and the largest line
 items.
 
-If the plan is over budget, propose the two or three specific cuts that close
-the gap, with the saving for each. Do not silently drop items to make the
+If the plan is over budget, propose the specific cuts that close the gap, as
+few as will do it, with the saving for each. If they cannot close all of it, say
+how much is left. Do not silently drop items to make the
 numbers work — show what you would cut and what it costs the traveler.
 
 Flag any figure that came from sample data rather than a live price, so the

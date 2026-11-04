@@ -453,6 +453,9 @@ def test_every_scripted_rule_is_reached_by_the_search_the_brief_asks_for(example
     # example quietly measures nothing.
     script = example["metadata"]["scripted_tools"]
     expected = _expected(example)
+    # Searches the brief does not ask for, but the example exists to reward.
+    varied = example["outputs"].get("varied_search", {})
+    expected += [(varied["tool"], args) for args in varied.get("finds", [])]
     for kind in ("flights", "stays"):
         for rule in script.get(kind, {}).get("rules", []):
             reached = any(
@@ -463,6 +466,35 @@ def test_every_scripted_rule_is_reached_by_the_search_the_brief_asks_for(example
                 for name, args in expected
             )
             assert reached, (example["key"], kind, rule["match"])
+
+
+def test_only_real_variety_reaches_the_stay_under_the_ceiling(monkeypatch):
+    # The example separates the scout's effort levels only if the search
+    # `medium` makes finds nothing and the ones `high` makes find the stay.
+    # Sample data cannot show that, which is why this script exists.
+    monkeypatch.setenv("TRAVEL_AGENT_PROVIDER", scripted.PROVIDER)
+    monkeypatch.setattr(scripted, "_SCRIPTS", {})
+    example = next(
+        e for e in _examples("availability_scout_scripted") if e["key"] == "thin-stay-search"
+    )
+    outputs = example["outputs"]
+    briefed = outputs["expected_calls"]["search_stays"]
+    varied = outputs["varied_search"]
+    name = varied["better_offer"][0]
+    scripted.register([SimpleNamespace(inputs=example["inputs"], metadata=example["metadata"])])
+
+    def names(args: dict) -> str:
+        with scripted.active(example["inputs"]):
+            result = _scout_tools()["search_stays"].invoke(args)
+        assert result["warning"], args
+        return " | ".join(offer["name"] for offer in result["offers"])
+
+    assert names(briefed) == ""
+    assert names({**briefed, "location": "Edinburgh, UK"}) == ""
+    lifted = names({**briefed, "max_nightly_rate": None})
+    assert lifted and name not in lifted
+    for args in varied["finds"]:
+        assert name in names(args), args
 
 
 def test_scripted_inputs_are_unique_across_every_dataset():
