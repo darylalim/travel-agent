@@ -32,15 +32,15 @@ from __future__ import annotations
 
 import contextvars
 import json
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from langchain_core.tools import BaseTool
+from langchain_core.tools.base import ArgsSchema
 from langchain_tavily.tavily_search import TavilySearchInput
-from pydantic import BaseModel
 
 from travel_agent.tools import availability
 from travel_agent.tools.availability import SAMPLE_DISCLAIMER, SampleProvider
@@ -94,7 +94,7 @@ def register(examples: list[Any]) -> int:
 
 
 @contextmanager
-def active(inputs: dict) -> Iterator[None]:
+def active(inputs: dict) -> Generator[None]:
     """Make the script registered for `inputs`, if any, the one this run reads."""
     script = _SCRIPTS.get(_input_key(inputs))
     token = _CURRENT.set(_Run(script) if script else None)
@@ -241,7 +241,7 @@ class ScriptedSearch(BaseTool):
         "Useful for when you need to answer questions about current events. "
         "Input should be a search query."
     )
-    args_schema: type[BaseModel] = TavilySearchInput
+    args_schema: ArgsSchema | None = TavilySearchInput
 
     def _run(self, query: str, **kwargs: Any) -> dict:
         run = _CURRENT.get()

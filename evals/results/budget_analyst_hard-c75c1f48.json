@@ -1,0 +1,1390 @@
+{
+  "experiment": "budget_analyst_hard-c75c1f48",
+  "metadata": {
+    "judge": "anthropic:claude-sonnet-5-5",
+    "provider": "sample-data",
+    "repetitions": 3,
+    "subagent": "budget-analyst",
+    "model": "anthropic:claude-haiku-5-5",
+    "effort": "medium"
+  },
+  "runs": [
+    {
+      "key": "nights-vs-days",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a $2250 USD budget for 2 travelers in Lisbon. They arrive 2027-05-10 and leave 2027-05-15. Flights JFK-LIS return: $480 per person. Lodging: $140 per night for every night of the stay. Food: $40 per person per day, counting both the arrival and the departure day. Airport transfers: $60 total. Figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "The Lisbon plan comes to **$2,200.00 USD**, which fits your $2,250 budget with **$50.00** left over (97.8% used).\n\n**Largest line items:**\n1. Flights, JFK-LIS return for 2 travelers: $960.00\n2. Lodging, 5 nights at $140: $700.00\n3. Food, 2 travelers \u00d7 6 days at $40: $480.00\n\nAirport transfers add $60.00.\n\n**Assumptions:**\n- Lodging is one room at $140 per night, not per person.\n- Food covers 6 days (May 10\u201315) for each traveler, including the arrival and departure days.\n- Everything is in USD, so no conversion was needed.\n\n**Caveats:**\n- All figures are sample data, not live prices, so the $2,200 is an estimate, not a quote.\n- The total excludes activities, local transport beyond the airport transfers, and any fees or city taxes. Those would come out of the $50 margin.\n\nThe breakdown is written to `/trip/budget.md`.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "JFK-LIS return flight, per person (sample data)",
+                  "category": "flights",
+                  "amount": 480,
+                  "quantity": 2,
+                  "estimated": true
+                },
+                {
+                  "label": "Lodging, per night, 5 nights 2027-05-10 to 2027-05-15 (sample data)",
+                  "category": "lodging",
+                  "amount": 140,
+                  "quantity": 5,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, $40 per person per day, 2 travelers x 6 days (arrival and departure days included) (sample data)",
+                  "category": "food",
+                  "amount": 40,
+                  "quantity": 12,
+                  "estimated": true
+                },
+                {
+                  "label": "Airport transfers, total (sample data)",
+                  "category": "transport",
+                  "amount": 60,
+                  "quantity": 1,
+                  "estimated": true
+                }
+              ],
+              "budget_total": 2250,
+              "currency": "USD"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Lisbon Trip Budget\n\n**Travelers:** 2\n**Dates:** arrive 2027-05-10, depart 2027-05-15 (5 nights, 6 food days)\n**Budget:** $2,250.00 USD\n**Currency:** USD (all figures in USD; no conversion applied)\n\n## Total\n\n**Estimated total: $2,200.00 USD**\nRemaining against budget: **$50.00** (97.8% of budget used). The plan fits the budget.\n\n## Caveat\n\nAll figures are sample data, not live prices. Every line is an estimate, so the total is not a quote and may change once real fares, rates and transfer prices are checked.\n\n## Line items\n\n| Category  | Item | Unit cost | Quantity | Subtotal |\n|-----------|------|-----------|----------|----------|\n| Flights   | JFK-LIS return, per person | $480.00 | 2 | $960.00 |\n| Lodging   | Per night, 2027-05-10 to 2027-05-15 | $140.00 | 5 nights | $700.00 |\n| Food      | $40 per person per day, 6 days (both arrival and departure days) | $40.00 | 12 person-days | $480.00 |\n| Transport | Airport transfers, total | $60.00 | 1 | $60.00 |\n\n## Subtotals by category\n\n- Flights: $960.00\n- Lodging: $700.00\n- Food: $480.00\n- Transport: $60.00\n- Fees: $0.00\n- Activities: $0.00\n- Other: $0.00\n\n**Total: $2,200.00**\n\n## Largest items\n\n1. Flights, JFK-LIS return for 2: $960.00\n2. Lodging, 5 nights: $700.00\n3. Food, 12 person-days: $480.00\n\n## Assumptions\n\n- Lodging is one room for the stay at $140 per night; it is not charged per person.\n- Food covers 6 calendar days (May 10 through May 15) for each of 2 travelers.\n- No activities, local transport beyond the airport transfers, city taxes, or fees are included. Costs outside these lines are not in the total.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"USD\", \"budget_total\": 2250.0, \"total_estimated\": 2200.0, \"remaining\": 50.0, \"over_budget\": false, \"overage\": 0.0, \"percent_of_budget_used\": 97.8, \"by_category\": {\"flights\": 960.0, \"lodging\": 700.0, \"food\": 480.0, \"transport\": 60.0}, \"largest_line_items\": [{\"label\": \"JFK-LIS return flight, per person (sample data)\", \"category\": \"flights\", \"unit_amount\": 480.0, \"quantity\": 2, \"subtotal\": 960.0, \"estimated\": true}, {\"label\": \"Lodging, per night, 5 nights 2027-05-10 to 2027-05-15 (sample data)\", \"category\": \"lodging\", \"unit_amount\": 140.0, \"quantity\": 5, \"subtotal\": 700.0, \"estimated\": true}, {\"label\": \"Food, $40 per person per day, 2 travelers x 6 days (arrival and departure days included) (sample data)\", \"category\": \"food\", \"unit_amount\": 40.0, \"quantity\": 12, \"subtotal\": 480.0, \"estimated\": true}], \"all_lines_estimated\": true, \"line_count\": 4}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Lisbon Trip Budget\n\n**Travelers:** 2\n**Dates:** arrive 2027-05-10, depart 2027-05-15 (5 nights, 6 food days)\n**Budget:** $2,250.00 USD\n**Currency:** USD (all figures in USD; no conversion applied)\n\n## Total\n\n**Estimated total: $2,200.00 USD**\nRemaining against budget: **$50.00** (97.8% of budget used). The plan fits the budget.\n\n## Caveat\n\nAll figures are sample data, not live prices. Every line is an estimate, so the total is not a quote and may change once real fares, rates and transfer prices are checked.\n\n## Line items\n\n| Category  | Item | Unit cost | Quantity | Subtotal |\n|-----------|------|-----------|----------|----------|\n| Flights   | JFK-LIS return, per person | $480.00 | 2 | $960.00 |\n| Lodging   | Per night, 2027-05-10 to 2027-05-15 | $140.00 | 5 nights | $700.00 |\n| Food      | $40 per person per day, 6 days (both arrival and departure days) | $40.00 | 12 person-days | $480.00 |\n| Transport | Airport transfers, total | $60.00 | 1 | $60.00 |\n\n## Subtotals by category\n\n- Flights: $960.00\n- Lodging: $700.00\n- Food: $480.00\n- Transport: $60.00\n- Fees: $0.00\n- Activities: $0.00\n- Other: $0.00\n\n**Total: $2,200.00**\n\n## Largest items\n\n1. Flights, JFK-LIS return for 2: $960.00\n2. Lodging, 5 nights: $700.00\n3. Food, 12 person-days: $480.00\n\n## Assumptions\n\n- Lodging is one room for the stay at $140 per night; it is not charged per person.\n- Food covers 6 calendar days (May 10 through May 15) for each of 2 travelers.\n- No activities, local transport beyond the airport transfers, city taxes, or fees are included. Costs outside these lines are not in the total.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 17046,
+          "cache_read": 14842,
+          "cache_creation": 2196,
+          "output_tokens": 1892
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": 1,
+          "comment": "total 2200.0 against 2250.0; expected 2200 against 2250"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "USD"
+        },
+        {
+          "key": "foreign_amounts_converted",
+          "score": null,
+          "comment": "no foreign amounts in this example"
+        },
+        {
+          "key": "booked_lines_confirmed",
+          "score": null,
+          "comment": "nothing already paid in this example"
+        },
+        {
+          "key": "budget_not_invented",
+          "score": null,
+          "comment": "a budget was given"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "mixed-currency",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a \u20ac3000 EUR budget for 2 travelers, 4 nights in Rome. Flights BOS-FCO return: $650 per person, quoted in US dollars. Lodging: \u20ac160 per night for 4 nights. Food: \u20ac50 per person per day for 4 days. Museum passes: \u20ac120 total. All figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "The Rome trip comes to **EUR 2,356** for two travelers over four nights. That fits the EUR 3,000 budget with **EUR 644 remaining** (78.5% used). The breakdown is in `/trip/budget.md`.\n\n**Largest line items:**\n1. Flights (BOS-FCO return, 2 people): EUR 1,196\n2. Lodging (4 nights): EUR 640\n3. Food (2 people \u00d7 4 days): EUR 400\n4. Museum passes: EUR 120\n\n**Points to check:**\n- **Exchange rate:** I converted the USD 650 per-person flight price at an assumed rate of 1 USD = 0.92 EUR. I had no live rate, so the total depends on that figure. Each 0.01 change in the rate moves the flight total by about EUR 13.\n- **Lodging basis:** I assumed EUR 160 per night is for one shared room. If it is per person, lodging becomes EUR 1,280 and the total EUR 2,996. That still fits, but leaves only EUR 4 of headroom.\n- **Sample data:** All figures are sample data, so the total is a planning estimate, not a quote.\n- **Not included:** Local transport, city tax, travel insurance, and incidentals.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "BOS-FCO return flights, 2 pax (USD 650 each, converted at 0.92 EUR/USD, EUR 598 each)",
+                  "category": "flights",
+                  "amount": 598,
+                  "quantity": 2,
+                  "estimated": true
+                },
+                {
+                  "label": "Lodging, 4 nights (EUR 160/night, one room assumed)",
+                  "category": "lodging",
+                  "amount": 160,
+                  "quantity": 4,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, 2 pax x 4 days (EUR 50 per person per day)",
+                  "category": "food",
+                  "amount": 50,
+                  "quantity": 8,
+                  "estimated": true
+                },
+                {
+                  "label": "Museum passes, 2 pax (total)",
+                  "category": "activities",
+                  "amount": 120,
+                  "quantity": 1,
+                  "estimated": true
+                }
+              ],
+              "budget_total": 3000,
+              "currency": "EUR"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Rome Trip Budget: 2 travelers, 4 nights\n\n**Budget:** EUR 3,000\n**Estimated total:** EUR 2,356\n**Remaining:** EUR 644 (78.5% of budget used). Within budget.\n\n## Currency conversion (assumption)\n\nThe flight price was quoted in US dollars. I converted it at **1 USD = 0.92 EUR**. This is an assumed planning rate, not a live quote. The total rests on this rate. At a different rate the flight line changes by about EUR 1 per EUR 0.01 of rate movement per person... more precisely, each 0.01 change in the rate moves the flight total by about EUR 13.\n\n## Breakdown\n\n| Category | Item | Unit cost | Qty | Subtotal (EUR) |\n|---|---|---|---|---|\n| Flights | BOS-FCO return, USD 650 per person (= EUR 598 at 0.92) | EUR 598 | 2 people | 1,196 |\n| Lodging | Hotel, one room assumed | EUR 160 / night | 4 nights | 640 |\n| Food | EUR 50 per person per day | EUR 50 | 8 person-days | 400 |\n| Activities | Museum passes (total for both) | EUR 120 | 1 | 120 |\n| **Total** | | | | **2,356** |\n\n## Largest line items\n\n1. Flights: EUR 1,196\n2. Lodging: EUR 640\n3. Food: EUR 400\n\n## Caveats\n\n- **Sample data:** All figures are sample data, not live prices. Every line is an estimate. Treat the total as a planning figure, not a quote.\n- **Exchange rate:** The flight figure depends on the assumed USD/EUR rate of 0.92.\n- **Lodging:** The EUR 160 per night is assumed to be for one room shared by both travelers. If it is per person, lodging rises to EUR 1,280 and the total to EUR 2,996, which still fits but leaves only EUR 4 of headroom.\n- **Not included:** Local transport, city tax, travel insurance, and incidentals are not in the figures above.\n"
+            }
+          },
+          {
+            "name": "edit_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "old_string": "At a different rate the flight line changes by about EUR 1 per EUR 0.01 of rate movement per person... more precisely, each 0.01 change in the rate moves the flight total by about EUR 13.",
+              "new_string": "Each 0.01 change in the rate moves the flight total by about EUR 13 (USD 1,300 for two people)."
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"EUR\", \"budget_total\": 3000.0, \"total_estimated\": 2356.0, \"remaining\": 644.0, \"over_budget\": false, \"overage\": 0.0, \"percent_of_budget_used\": 78.5, \"by_category\": {\"flights\": 1196.0, \"lodging\": 640.0, \"food\": 400.0, \"activities\": 120.0}, \"largest_line_items\": [{\"label\": \"BOS-FCO return flights, 2 pax (USD 650 each, converted at 0.92 EUR/USD, EUR 598 each)\", \"category\": \"flights\", \"unit_amount\": 598.0, \"quantity\": 2, \"subtotal\": 1196.0, \"estimated\": true}, {\"label\": \"Lodging, 4 nights (EUR 160/night, one room assumed)\", \"category\": \"lodging\", \"unit_amount\": 160.0, \"quantity\": 4, \"subtotal\": 640.0, \"estimated\": true}, {\"label\": \"Food, 2 pax x 4 days (EUR 50 per person per day)\", \"category\": \"food\", \"unit_amount\": 50.0, \"quantity\": 8, \"subtotal\": 400.0, \"estimated\": true}], \"all_lines_estimated\": true, \"line_count\": 4}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          },
+          {
+            "name": "edit_file",
+            "content": "Successfully replaced 1 instance(s) of the string in '/trip/budget.md'"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Rome Trip Budget: 2 travelers, 4 nights\n\n**Budget:** EUR 3,000\n**Estimated total:** EUR 2,356\n**Remaining:** EUR 644 (78.5% of budget used). Within budget.\n\n## Currency conversion (assumption)\n\nThe flight price was quoted in US dollars. I converted it at **1 USD = 0.92 EUR**. This is an assumed planning rate, not a live quote. The total rests on this rate. Each 0.01 change in the rate moves the flight total by about EUR 13 (USD 1,300 for two people).\n\n## Breakdown\n\n| Category | Item | Unit cost | Qty | Subtotal (EUR) |\n|---|---|---|---|---|\n| Flights | BOS-FCO return, USD 650 per person (= EUR 598 at 0.92) | EUR 598 | 2 people | 1,196 |\n| Lodging | Hotel, one room assumed | EUR 160 / night | 4 nights | 640 |\n| Food | EUR 50 per person per day | EUR 50 | 8 person-days | 400 |\n| Activities | Museum passes (total for both) | EUR 120 | 1 | 120 |\n| **Total** | | | | **2,356** |\n\n## Largest line items\n\n1. Flights: EUR 1,196\n2. Lodging: EUR 640\n3. Food: EUR 400\n\n## Caveats\n\n- **Sample data:** All figures are sample data, not live prices. Every line is an estimate. Treat the total as a planning figure, not a quote.\n- **Exchange rate:** The flight figure depends on the assumed USD/EUR rate of 0.92.\n- **Lodging:** The EUR 160 per night is assumed to be for one room shared by both travelers. If it is per person, lodging rises to EUR 1,280 and the total to EUR 2,996, which still fits but leaves only EUR 4 of headroom.\n- **Not included:** Local transport, city tax, travel insurance, and incidentals are not in the figures above.\n"
+        },
+        "usage": {
+          "model_calls": 4,
+          "input_tokens": 23994,
+          "cache_read": 21455,
+          "cache_creation": 2529,
+          "output_tokens": 2279
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": null,
+          "comment": "the total depends on an exchange rate the analyst picks"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "EUR"
+        },
+        {
+          "key": "foreign_amounts_converted",
+          "score": 1,
+          "comment": "converted"
+        },
+        {
+          "key": "booked_lines_confirmed",
+          "score": null,
+          "comment": "nothing already paid in this example"
+        },
+        {
+          "key": "budget_not_invented",
+          "score": null,
+          "comment": "a budget was given"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "no-budget-given",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this plan for 1 traveler, 3 nights in Edinburgh. No budget has been set; the traveler wants to know what it will cost. Flights LHR-EDI return: $210. Lodging: $175 per night for 3 nights. Food: $60 per day for 3 days. Castle and museum entries: $70 total. Figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "The estimated total for 1 traveler, 3 nights in Edinburgh is **$985.00**. No budget was set, so I have not compared this against a limit.\n\nBy category:\n- **Lodging:** $525.00 (3 nights at $175)\n- **Flights:** $210.00 (LHR-EDI return)\n- **Food:** $180.00 (3 days at $60)\n- **Activities:** $70.00 (castle and museum entries)\n\nThe largest items are lodging, the return flight, and food. All figures are in USD and were given as sample data, so none of them is a live price. The $985.00 is an estimate, not a quote. The breakdown is written to `/trip/budget.md`.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "LHR-EDI return flight, 1 pax",
+                  "category": "flights",
+                  "amount": 210,
+                  "quantity": 1,
+                  "estimated": true
+                },
+                {
+                  "label": "Lodging, Edinburgh, per night",
+                  "category": "lodging",
+                  "amount": 175,
+                  "quantity": 3,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, per day",
+                  "category": "food",
+                  "amount": 60,
+                  "quantity": 3,
+                  "estimated": true
+                },
+                {
+                  "label": "Castle and museum entries, total",
+                  "category": "activities",
+                  "amount": 70,
+                  "quantity": 1,
+                  "estimated": true
+                }
+              ],
+              "currency": "USD"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Edinburgh Trip Cost Breakdown\n\n**Travelers:** 1\n**Length:** 3 nights\n**Currency:** USD (all figures in USD; no conversion applied)\n**Budget:** None set. This is a cost estimate only, not a budget comparison.\n\n## Cost lines\n\n| Category   | Item                                  | Unit amount | Qty | Subtotal |\n|------------|---------------------------------------|-------------|-----|----------|\n| Flights    | LHR-EDI return flight, 1 pax          | $210.00     | 1   | $210.00  |\n| Lodging    | Edinburgh accommodation, per night    | $175.00     | 3   | $525.00  |\n| Food       | Food, per day                         | $60.00      | 3   | $180.00  |\n| Activities | Castle and museum entries, total      | $70.00      | 1   | $70.00   |\n\n## Totals by category\n\n- Flights: $210.00\n- Lodging: $525.00\n- Food: $180.00\n- Activities: $70.00\n\n**Estimated total: $985.00**\n\n## Largest line items\n\n1. Lodging, 3 nights at $175: $525.00\n2. Return flight LHR-EDI: $210.00\n3. Food, 3 days at $60: $180.00\n\n## Caveats\n\n- **All figures are sample data, not live prices.** Every line is an estimate. The $985.00 total is not a quote and should not be booked against.\n- No budget was set, so this total is not compared against any limit.\n- Food is costed at a flat $60 per day; actual spending will vary.\n- Entry fees are a single lump sum of $70 for the castle and museum combined.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"USD\", \"budget_total\": null, \"total_estimated\": 985.0, \"by_category\": {\"lodging\": 525.0, \"flights\": 210.0, \"food\": 180.0, \"activities\": 70.0}, \"largest_line_items\": [{\"label\": \"Lodging, Edinburgh, per night\", \"category\": \"lodging\", \"unit_amount\": 175.0, \"quantity\": 3, \"subtotal\": 525.0, \"estimated\": true}, {\"label\": \"LHR-EDI return flight, 1 pax\", \"category\": \"flights\", \"unit_amount\": 210.0, \"quantity\": 1, \"subtotal\": 210.0, \"estimated\": true}, {\"label\": \"Food, per day\", \"category\": \"food\", \"unit_amount\": 60.0, \"quantity\": 3, \"subtotal\": 180.0, \"estimated\": true}], \"all_lines_estimated\": true, \"line_count\": 4}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Edinburgh Trip Cost Breakdown\n\n**Travelers:** 1\n**Length:** 3 nights\n**Currency:** USD (all figures in USD; no conversion applied)\n**Budget:** None set. This is a cost estimate only, not a budget comparison.\n\n## Cost lines\n\n| Category   | Item                                  | Unit amount | Qty | Subtotal |\n|------------|---------------------------------------|-------------|-----|----------|\n| Flights    | LHR-EDI return flight, 1 pax          | $210.00     | 1   | $210.00  |\n| Lodging    | Edinburgh accommodation, per night    | $175.00     | 3   | $525.00  |\n| Food       | Food, per day                         | $60.00      | 3   | $180.00  |\n| Activities | Castle and museum entries, total      | $70.00      | 1   | $70.00   |\n\n## Totals by category\n\n- Flights: $210.00\n- Lodging: $525.00\n- Food: $180.00\n- Activities: $70.00\n\n**Estimated total: $985.00**\n\n## Largest line items\n\n1. Lodging, 3 nights at $175: $525.00\n2. Return flight LHR-EDI: $210.00\n3. Food, 3 days at $60: $180.00\n\n## Caveats\n\n- **All figures are sample data, not live prices.** Every line is an estimate. The $985.00 total is not a quote and should not be booked against.\n- No budget was set, so this total is not compared against any limit.\n- Food is costed at a flat $60 per day; actual spending will vary.\n- Entry fees are a single lump sum of $70 for the castle and museum combined.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 15798,
+          "cache_read": 14285,
+          "cache_creation": 1505,
+          "output_tokens": 1207
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": 1,
+          "comment": "total 985.0 against None; expected 985 against None"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "USD"
+        },
+        {
+          "key": "foreign_amounts_converted",
+          "score": null,
+          "comment": "no foreign amounts in this example"
+        },
+        {
+          "key": "booked_lines_confirmed",
+          "score": null,
+          "comment": "nothing already paid in this example"
+        },
+        {
+          "key": "budget_not_invented",
+          "score": 1,
+          "comment": "no budget supplied"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "booked-flights-not-cut",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a $4000 USD budget for 2 travelers, 6 nights in Reykjavik. The flights are already booked and paid: $890 per person return, a confirmed price. Lodging: $260 per night for 6 nights. Food: $85 per person per day for 6 days. Northern lights tour: $180 per person. Every figure except the flights is sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "The plan is over budget. The estimated total is **$4,720.00** against your $4,000 budget, which is **$720.00 over** (118% of budget used). All figures are in USD, so no conversion was needed.\n\n**Largest line items:**\n- Return flights, 2 people: $1,780.00 (confirmed and paid)\n- Lodging, 6 nights at $260: $1,560.00 (sample data)\n- Food, 2 people \u00d7 6 days at $85: $1,020.00 (sample data)\n- Northern lights tour, 2 people at $180: $360.00 (sample data)\n\nOnly the flights are a live, confirmed price. Everything else is sample data, so the $4,720 is an estimate, not a quote.\n\n**Cuts that close the gap:**\n1. **Lodging at $140 per night** saves $720.00 on its own and brings the trip to exactly $4,000. The cost is a cheaper room than the $260 sample rate.\n2. **Drop the northern lights tour** saves $360.00. The cost is missing that excursion.\n3. **Food at $60 per person-day** saves $300.00. The cost is a tighter daily food budget.\n\nOptions 2 and 3 together save $660, which is $60 short, so they would need a small lodging change too (for example, $250 per night saves $60). Option 1 is the simplest single change.\n\nThe full breakdown is in `/trip/budget.md`.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "Return flights, 2 pax (confirmed, paid)",
+                  "category": "flights",
+                  "amount": 890,
+                  "quantity": 2,
+                  "estimated": false
+                },
+                {
+                  "label": "Lodging, Reykjavik (sample data)",
+                  "category": "lodging",
+                  "amount": 260,
+                  "quantity": 6,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, 2 pax x 6 days (sample data)",
+                  "category": "food",
+                  "amount": 85,
+                  "quantity": 12,
+                  "estimated": true
+                },
+                {
+                  "label": "Northern lights tour, 2 pax (sample data)",
+                  "category": "activities",
+                  "amount": 180,
+                  "quantity": 2,
+                  "estimated": true
+                }
+              ],
+              "budget_total": 4000,
+              "currency": "USD"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Reykjavik Trip Budget: 2 travelers, 6 nights\n\nCurrency: USD (no conversion; all figures in USD)\nBudget: $4,000.00\n\n## Cost lines\n\n| Category | Item | Unit amount | Quantity | Subtotal | Source |\n|---|---|---|---|---|---|\n| Flights | Return flights, 2 pax | $890.00 per person | 2 | $1,780.00 | Confirmed, already paid |\n| Lodging | Reykjavik accommodation | $260.00 per night | 6 nights | $1,560.00 | Sample data |\n| Food | Food, 2 pax x 6 days | $85.00 per person-day | 12 | $1,020.00 | Sample data |\n| Activities | Northern lights tour | $180.00 per person | 2 | $360.00 | Sample data |\n\n## Totals\n\n- **Estimated total: $4,720.00**\n- Budget: $4,000.00\n- **Over budget by $720.00** (118% of budget used)\n\nBy category: flights $1,780.00; lodging $1,560.00; food $1,020.00; activities $360.00.\n\n## Caveats\n\n- Only the flights are a confirmed price. Every other figure is sample data, not a live price. The $4,720.00 total is an estimate and is not a quote.\n- The total is not converted from any other currency.\n\n## Options to close the $720.00 gap\n\nFlights ($1,780.00) are already paid and cannot be cut, so the savings must come from the other three categories.\n\n1. **Lodging to $140 per night.** Saves $120 per night x 6 nights = **$720.00**. On its own, this closes the gap exactly. Cost to you: a cheaper room than the $260 sample rate.\n2. **Drop the northern lights tour.** Saves **$360.00**. Cost to you: you would not take the tour. Other sightseeing would be on you.\n3. **Food to $60 per person-day.** Saves $25 per person-day x 12 person-days = **$300.00**. Cost to you: a tighter daily food budget.\n\nOptions 2 and 3 together save $660.00, which is $60.00 short of the gap, so they need to be combined with a lodging change (for example, $250 per night saves $60.00) to close it. Option 1 alone is the simplest single change.\n\n## Result if option 1 is applied\n\nLodging $840.00 (6 x $140.00); total $4,000.00; remaining $0.00. This is exactly at budget with no margin for unplanned costs.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"USD\", \"budget_total\": 4000.0, \"total_estimated\": 4720.0, \"remaining\": -720.0, \"over_budget\": true, \"overage\": 720.0, \"percent_of_budget_used\": 118.0, \"by_category\": {\"flights\": 1780.0, \"lodging\": 1560.0, \"food\": 1020.0, \"activities\": 360.0}, \"largest_line_items\": [{\"label\": \"Return flights, 2 pax (confirmed, paid)\", \"category\": \"flights\", \"unit_amount\": 890.0, \"quantity\": 2, \"subtotal\": 1780.0, \"estimated\": false}, {\"label\": \"Lodging, Reykjavik (sample data)\", \"category\": \"lodging\", \"unit_amount\": 260.0, \"quantity\": 6, \"subtotal\": 1560.0, \"estimated\": true}, {\"label\": \"Food, 2 pax x 6 days (sample data)\", \"category\": \"food\", \"unit_amount\": 85.0, \"quantity\": 12, \"subtotal\": 1020.0, \"estimated\": true}], \"all_lines_estimated\": false, \"line_count\": 4}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Reykjavik Trip Budget: 2 travelers, 6 nights\n\nCurrency: USD (no conversion; all figures in USD)\nBudget: $4,000.00\n\n## Cost lines\n\n| Category | Item | Unit amount | Quantity | Subtotal | Source |\n|---|---|---|---|---|---|\n| Flights | Return flights, 2 pax | $890.00 per person | 2 | $1,780.00 | Confirmed, already paid |\n| Lodging | Reykjavik accommodation | $260.00 per night | 6 nights | $1,560.00 | Sample data |\n| Food | Food, 2 pax x 6 days | $85.00 per person-day | 12 | $1,020.00 | Sample data |\n| Activities | Northern lights tour | $180.00 per person | 2 | $360.00 | Sample data |\n\n## Totals\n\n- **Estimated total: $4,720.00**\n- Budget: $4,000.00\n- **Over budget by $720.00** (118% of budget used)\n\nBy category: flights $1,780.00; lodging $1,560.00; food $1,020.00; activities $360.00.\n\n## Caveats\n\n- Only the flights are a confirmed price. Every other figure is sample data, not a live price. The $4,720.00 total is an estimate and is not a quote.\n- The total is not converted from any other currency.\n\n## Options to close the $720.00 gap\n\nFlights ($1,780.00) are already paid and cannot be cut, so the savings must come from the other three categories.\n\n1. **Lodging to $140 per night.** Saves $120 per night x 6 nights = **$720.00**. On its own, this closes the gap exactly. Cost to you: a cheaper room than the $260 sample rate.\n2. **Drop the northern lights tour.** Saves **$360.00**. Cost to you: you would not take the tour. Other sightseeing would be on you.\n3. **Food to $60 per person-day.** Saves $25 per person-day x 12 person-days = **$300.00**. Cost to you: a tighter daily food budget.\n\nOptions 2 and 3 together save $660.00, which is $60.00 short of the gap, so they need to be combined with a lodging change (for example, $250 per night saves $60.00) to close it. Option 1 alone is the simplest single change.\n\n## Result if option 1 is applied\n\nLodging $840.00 (6 x $140.00); total $4,000.00; remaining $0.00. This is exactly at budget with no margin for unplanned costs.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 17114,
+          "cache_read": 14585,
+          "cache_creation": 2521,
+          "output_tokens": 2381
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": 1,
+          "comment": "total 4720.0 against 4000.0; expected 4720 against 4000"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "USD"
+        },
+        {
+          "key": "foreign_amounts_converted",
+          "score": null,
+          "comment": "no foreign amounts in this example"
+        },
+        {
+          "key": "booked_lines_confirmed",
+          "score": 1,
+          "comment": "marked confirmed"
+        },
+        {
+          "key": "budget_not_invented",
+          "score": null,
+          "comment": "a budget was given"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "nights-vs-days",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a $2250 USD budget for 2 travelers in Lisbon. They arrive 2027-05-10 and leave 2027-05-15. Flights JFK-LIS return: $480 per person. Lodging: $140 per night for every night of the stay. Food: $40 per person per day, counting both the arrival and the departure day. Airport transfers: $60 total. Figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "The Lisbon trip comes to **$2,200**, which fits the $2,250 budget with **$50 remaining** (97.8% of budget used). Every figure is sample data, not a live price, so treat the total as an estimate.\n\nLargest line items:\n- **Flights (JFK-LIS return, 2 people at $480 each):** $960\n- **Lodging (5 nights at $140):** $700\n- **Food (2 people \u00d7 6 days at $40, arrival and departure days both counted):** $480\n\nAirport transfers add $60. Everything is in USD, so no conversion was needed.\n\nThe $50 margin is thin. Any price rise above the sample figures, or any unlisted cost such as activities or city tax, would put the trip over budget. No activities or fees were given, so none are included.\n\nThe full breakdown is written to `/trip/budget.md`.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "JFK-LIS return flights, 2 pax (sample data)",
+                  "category": "flights",
+                  "amount": 480,
+                  "quantity": 2,
+                  "estimated": true
+                },
+                {
+                  "label": "Lodging, Lisbon, 5 nights (sample data)",
+                  "category": "lodging",
+                  "amount": 140,
+                  "quantity": 5,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, 2 pax x 6 days (arrival and departure days included) (sample data)",
+                  "category": "food",
+                  "amount": 40,
+                  "quantity": 12,
+                  "estimated": true
+                },
+                {
+                  "label": "Airport transfers, total (sample data)",
+                  "category": "transport",
+                  "amount": 60,
+                  "quantity": 1,
+                  "estimated": true
+                }
+              ],
+              "budget_total": 2250,
+              "currency": "USD"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Lisbon Trip Budget\n\n**Travelers:** 2\n**Dates:** 2027-05-10 (arrive) to 2027-05-15 (depart)\n**Nights:** 5\n**Food days:** 6 (arrival and departure days both counted)\n**Currency:** USD (no conversion applied)\n\n**Data status:** All figures are sample data, not live prices. Treat the total as an estimate, not a quote.\n\n## Cost lines\n\n| Category  | Item                                              | Unit cost | Qty | Subtotal |\n|-----------|---------------------------------------------------|-----------|-----|----------|\n| Flights   | JFK-LIS return, per person (sample data)          | $480      | 2   | $960     |\n| Lodging   | Lisbon, per night, 5 nights (sample data)         | $140      | 5   | $700     |\n| Food      | Per person per day, 2 pax x 6 days (sample data)  | $40       | 12  | $480     |\n| Transport | Airport transfers, total (sample data)            | $60       | 1   | $60      |\n| **Total** |                                                   |           |     | **$2,200** |\n\n## Subtotals by category\n\n- Flights: $960\n- Lodging: $700\n- Food: $480\n- Transport: $60\n- Fees: $0\n- Activities: $0\n- Other: $0\n\n## Budget comparison\n\n- Budget: $2,250\n- Estimated total: $2,200\n- Remaining: $50\n- Share of budget used: 97.8%\n- Status: within budget\n\n## Caveats\n\n- The total of $2,200 is built entirely from sample data. It is not a quote from any airline, hotel, or transfer provider.\n- The remaining $50 is a thin margin. Any price increase above the sample figures, or any cost not listed (activities, city tax, incidentals), would push the trip over budget.\n- Activities, fees, and other costs are not included because none were given.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"USD\", \"budget_total\": 2250.0, \"total_estimated\": 2200.0, \"remaining\": 50.0, \"over_budget\": false, \"overage\": 0.0, \"percent_of_budget_used\": 97.8, \"by_category\": {\"flights\": 960.0, \"lodging\": 700.0, \"food\": 480.0, \"transport\": 60.0}, \"largest_line_items\": [{\"label\": \"JFK-LIS return flights, 2 pax (sample data)\", \"category\": \"flights\", \"unit_amount\": 480.0, \"quantity\": 2, \"subtotal\": 960.0, \"estimated\": true}, {\"label\": \"Lodging, Lisbon, 5 nights (sample data)\", \"category\": \"lodging\", \"unit_amount\": 140.0, \"quantity\": 5, \"subtotal\": 700.0, \"estimated\": true}, {\"label\": \"Food, 2 pax x 6 days (arrival and departure days included) (sample data)\", \"category\": \"food\", \"unit_amount\": 40.0, \"quantity\": 12, \"subtotal\": 480.0, \"estimated\": true}], \"all_lines_estimated\": true, \"line_count\": 4}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Lisbon Trip Budget\n\n**Travelers:** 2\n**Dates:** 2027-05-10 (arrive) to 2027-05-15 (depart)\n**Nights:** 5\n**Food days:** 6 (arrival and departure days both counted)\n**Currency:** USD (no conversion applied)\n\n**Data status:** All figures are sample data, not live prices. Treat the total as an estimate, not a quote.\n\n## Cost lines\n\n| Category  | Item                                              | Unit cost | Qty | Subtotal |\n|-----------|---------------------------------------------------|-----------|-----|----------|\n| Flights   | JFK-LIS return, per person (sample data)          | $480      | 2   | $960     |\n| Lodging   | Lisbon, per night, 5 nights (sample data)         | $140      | 5   | $700     |\n| Food      | Per person per day, 2 pax x 6 days (sample data)  | $40       | 12  | $480     |\n| Transport | Airport transfers, total (sample data)            | $60       | 1   | $60      |\n| **Total** |                                                   |           |     | **$2,200** |\n\n## Subtotals by category\n\n- Flights: $960\n- Lodging: $700\n- Food: $480\n- Transport: $60\n- Fees: $0\n- Activities: $0\n- Other: $0\n\n## Budget comparison\n\n- Budget: $2,250\n- Estimated total: $2,200\n- Remaining: $50\n- Share of budget used: 97.8%\n- Status: within budget\n\n## Caveats\n\n- The total of $2,200 is built entirely from sample data. It is not a quote from any airline, hotel, or transfer provider.\n- The remaining $50 is a thin margin. Any price increase above the sample figures, or any cost not listed (activities, city tax, incidentals), would push the trip over budget.\n- Activities, fees, and other costs are not included because none were given.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 16726,
+          "cache_read": 14935,
+          "cache_creation": 1783,
+          "output_tokens": 1639
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": 1,
+          "comment": "total 2200.0 against 2250.0; expected 2200 against 2250"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "USD"
+        },
+        {
+          "key": "foreign_amounts_converted",
+          "score": null,
+          "comment": "no foreign amounts in this example"
+        },
+        {
+          "key": "booked_lines_confirmed",
+          "score": null,
+          "comment": "nothing already paid in this example"
+        },
+        {
+          "key": "budget_not_invented",
+          "score": null,
+          "comment": "a budget was given"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "no-budget-given",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this plan for 1 traveler, 3 nights in Edinburgh. No budget has been set; the traveler wants to know what it will cost. Flights LHR-EDI return: $210. Lodging: $175 per night for 3 nights. Food: $60 per day for 3 days. Castle and museum entries: $70 total. Figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "The estimated total for the 1-traveler, 3-night Edinburgh trip is **$985 USD**. No budget was set, so I did not compare it against one.\n\nLargest line items:\n1. **Lodging:** 3 nights at $175 = $525\n2. **Flights:** LHR-EDI return = $210\n3. **Food:** 3 days at $60 = $180\n\nThe other line is castle and museum entries at $70. All four figures are sample data, not live prices, so the $985 is an estimate and not a quote. Local transport and fees are not included.\n\nThe breakdown is written to `/trip/budget.md`.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "LHR-EDI return flight, 1 traveler (sample data)",
+                  "category": "flights",
+                  "amount": 210,
+                  "quantity": 1,
+                  "estimated": true
+                },
+                {
+                  "label": "Edinburgh lodging, per night (sample data)",
+                  "category": "lodging",
+                  "amount": 175,
+                  "quantity": 3,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, per day (sample data)",
+                  "category": "food",
+                  "amount": 60,
+                  "quantity": 3,
+                  "estimated": true
+                },
+                {
+                  "label": "Castle and museum entries, total (sample data)",
+                  "category": "activities",
+                  "amount": 70,
+                  "quantity": 1,
+                  "estimated": true
+                }
+              ],
+              "currency": "USD"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Edinburgh Trip Budget (1 traveler, 3 nights)\n\n**Status: ESTIMATE, not a quote.** All figures are sample data, not live prices. No budget was set, so this shows the total cost only; it is not compared against a budget.\n\nCurrency: USD. No conversion was needed; all figures were given in USD.\n\n## Cost lines\n\n| Category   | Item                                   | Unit amount | Qty | Subtotal |\n|------------|----------------------------------------|-------------|-----|----------|\n| Flights    | LHR-EDI return, 1 traveler (sample)    | $210        | 1   | $210     |\n| Lodging    | Edinburgh, per night (sample)          | $175        | 3   | $525     |\n| Food       | Per day (sample)                       | $60         | 3   | $180     |\n| Activities | Castle and museum entries, total (sample) | $70      | 1   | $70      |\n\n## Subtotals by category\n\n- Flights: $210\n- Lodging: $525\n- Food: $180\n- Activities: $70\n- Transport within Edinburgh: not included\n- Fees: not included\n\n## Total\n\n**Estimated total: $985 (USD)**\n\nCaveats:\n- All four lines are sample data, so the total is an estimate and not a quote.\n- The total covers only the items listed above. Local transport, fees, and any other costs are not included.\n\n## Largest line items\n\n1. Lodging, 3 nights at $175: $525\n2. Flights, LHR-EDI return: $210\n3. Food, 3 days at $60: $180\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"USD\", \"budget_total\": null, \"total_estimated\": 985.0, \"by_category\": {\"lodging\": 525.0, \"flights\": 210.0, \"food\": 180.0, \"activities\": 70.0}, \"largest_line_items\": [{\"label\": \"Edinburgh lodging, per night (sample data)\", \"category\": \"lodging\", \"unit_amount\": 175.0, \"quantity\": 3, \"subtotal\": 525.0, \"estimated\": true}, {\"label\": \"LHR-EDI return flight, 1 traveler (sample data)\", \"category\": \"flights\", \"unit_amount\": 210.0, \"quantity\": 1, \"subtotal\": 210.0, \"estimated\": true}, {\"label\": \"Food, per day (sample data)\", \"category\": \"food\", \"unit_amount\": 60.0, \"quantity\": 3, \"subtotal\": 180.0, \"estimated\": true}], \"all_lines_estimated\": true, \"line_count\": 4}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Edinburgh Trip Budget (1 traveler, 3 nights)\n\n**Status: ESTIMATE, not a quote.** All figures are sample data, not live prices. No budget was set, so this shows the total cost only; it is not compared against a budget.\n\nCurrency: USD. No conversion was needed; all figures were given in USD.\n\n## Cost lines\n\n| Category   | Item                                   | Unit amount | Qty | Subtotal |\n|------------|----------------------------------------|-------------|-----|----------|\n| Flights    | LHR-EDI return, 1 traveler (sample)    | $210        | 1   | $210     |\n| Lodging    | Edinburgh, per night (sample)          | $175        | 3   | $525     |\n| Food       | Per day (sample)                       | $60         | 3   | $180     |\n| Activities | Castle and museum entries, total (sample) | $70      | 1   | $70      |\n\n## Subtotals by category\n\n- Flights: $210\n- Lodging: $525\n- Food: $180\n- Activities: $70\n- Transport within Edinburgh: not included\n- Fees: not included\n\n## Total\n\n**Estimated total: $985 (USD)**\n\nCaveats:\n- All four lines are sample data, so the total is an estimate and not a quote.\n- The total covers only the items listed above. Local transport, fees, and any other costs are not included.\n\n## Largest line items\n\n1. Lodging, 3 nights at $175: $525\n2. Flights, LHR-EDI return: $210\n3. Food, 3 days at $60: $180\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 15861,
+          "cache_read": 14539,
+          "cache_creation": 1314,
+          "output_tokens": 1182
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": 1,
+          "comment": "total 985.0 against None; expected 985 against None"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "USD"
+        },
+        {
+          "key": "foreign_amounts_converted",
+          "score": null,
+          "comment": "no foreign amounts in this example"
+        },
+        {
+          "key": "booked_lines_confirmed",
+          "score": null,
+          "comment": "nothing already paid in this example"
+        },
+        {
+          "key": "budget_not_invented",
+          "score": 1,
+          "comment": "no budget supplied"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "mixed-currency",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a \u20ac3000 EUR budget for 2 travelers, 4 nights in Rome. Flights BOS-FCO return: $650 per person, quoted in US dollars. Lodging: \u20ac160 per night for 4 nights. Food: \u20ac50 per person per day for 4 days. Museum passes: \u20ac120 total. All figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "The Rome trip comes to **EUR 2,356.00**, which is **within the EUR 3,000 budget** with EUR 644.00 left (78.5% used). The breakdown is in `/trip/budget.md`.\n\n**Largest line items:**\n1. Flights, BOS-FCO return for 2: EUR 1,196.00\n2. Lodging, 4 nights at EUR 160: EUR 640.00\n3. Food, 2 travelers \u00d7 4 days at EUR 50 per person per day: EUR 400.00\n\nMuseum passes are EUR 120.00.\n\n**Caveats:**\n- **Exchange rate is an assumption.** The flights are quoted in USD and the budget is in EUR. I used 1 USD = 0.92 EUR, which I could not check against a live rate. At that rate, $650 per person is EUR 598. The flight figure moves by about EUR 13 for every 0.01 change in the rate, so confirm the current rate before relying on the total.\n- **All figures are sample data**, not live prices, so the total is an estimate rather than a quote.\n- I assumed the EUR 160 nightly lodging rate is for the room, not per person. If it is per person, lodging doubles to EUR 1,280 and the total becomes EUR 2,996, still within budget but with only EUR 4 to spare.\n\nNo cuts are needed, since the plan fits the budget.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "BOS-FCO return flight, per person ($650 USD at assumed 0.92 EUR/USD), 2 pax",
+                  "category": "flights",
+                  "amount": 598,
+                  "quantity": 2,
+                  "estimated": true
+                },
+                {
+                  "label": "Lodging, Rome, 4 nights at EUR 160/night",
+                  "category": "lodging",
+                  "amount": 160,
+                  "quantity": 4,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, EUR 50 per person per day, 2 travelers x 4 days",
+                  "category": "food",
+                  "amount": 50,
+                  "quantity": 8,
+                  "estimated": true
+                },
+                {
+                  "label": "Museum passes, total",
+                  "category": "activities",
+                  "amount": 120,
+                  "quantity": 1,
+                  "estimated": true
+                }
+              ],
+              "budget_total": 3000,
+              "currency": "EUR"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Rome Trip Budget (2 travelers, 4 nights)\n\n**Budget:** EUR 3,000\n**Estimated total:** EUR 2,356.00\n**Remaining:** EUR 644.00 (78.5% of budget used). The plan is **within budget**.\n\n## Currency conversion (assumption)\n\nThe flights are quoted in US dollars; the budget is in euros.\n\n- Rate used: **1 USD = 0.92 EUR** (assumed planning rate, not a live quote).\n- $650 per person = EUR 598.00 per person; EUR 1,196.00 for 2 travelers.\n- The total rests on this rate. Each USD 100 of fare movement at a different rate changes the total by about EUR 92 for two travelers... more precisely, 2 x $100 x (rate change). Re-check the rate before booking.\n\n## Line items\n\n| Category   | Item                                              | Qty | Unit (EUR) | Subtotal (EUR) |\n|------------|---------------------------------------------------|-----|------------|----------------|\n| Flights    | BOS-FCO return, $650/person at 0.92 EUR/USD       | 2   | 598.00     | 1,196.00       |\n| Lodging    | Rome, per night                                   | 4   | 160.00     | 640.00         |\n| Food       | EUR 50 per person per day (2 travelers x 4 days)  | 8   | 50.00      | 400.00         |\n| Activities | Museum passes, total                              | 1   | 120.00     | 120.00         |\n| **Total**  |                                                   |     |            | **2,356.00**   |\n\n## By category\n\n- Flights: EUR 1,196.00\n- Lodging: EUR 640.00\n- Food: EUR 400.00\n- Activities: EUR 120.00\n\n## Largest line items\n\n1. Flights, BOS-FCO return, 2 travelers: EUR 1,196.00\n2. Lodging, Rome, 4 nights: EUR 640.00\n3. Food, 2 travelers x 4 days: EUR 400.00\n\n## Caveats\n\n- **All figures are sample data, not live prices.** Treat the total as an estimate, not a quote.\n- **Exchange rate:** the flight figure depends on an assumed 0.92 EUR/USD rate. Confirm the current rate before relying on it.\n- **Lodging:** the EUR 160/night figure is used as given, assumed to be the total for the room per night.\n- The total does not include anything not listed above (e.g., local transport, tips, or taxes beyond the quoted rates).\n"
+            }
+          },
+          {
+            "name": "edit_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "old_string": "- The total rests on this rate. Each USD 100 of fare movement at a different rate changes the total by about EUR 92 for two travelers... more precisely, 2 x $100 x (rate change). Re-check the rate before booking.",
+              "new_string": "- The total rests on this rate. For the two flights, every 0.01 change in the EUR/USD rate moves the flight cost by about EUR 13. Re-check the rate before booking."
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"EUR\", \"budget_total\": 3000.0, \"total_estimated\": 2356.0, \"remaining\": 644.0, \"over_budget\": false, \"overage\": 0.0, \"percent_of_budget_used\": 78.5, \"by_category\": {\"flights\": 1196.0, \"lodging\": 640.0, \"food\": 400.0, \"activities\": 120.0}, \"largest_line_items\": [{\"label\": \"BOS-FCO return flight, per person ($650 USD at assumed 0.92 EUR/USD), 2 pax\", \"category\": \"flights\", \"unit_amount\": 598.0, \"quantity\": 2, \"subtotal\": 1196.0, \"estimated\": true}, {\"label\": \"Lodging, Rome, 4 nights at EUR 160/night\", \"category\": \"lodging\", \"unit_amount\": 160.0, \"quantity\": 4, \"subtotal\": 640.0, \"estimated\": true}, {\"label\": \"Food, EUR 50 per person per day, 2 travelers x 4 days\", \"category\": \"food\", \"unit_amount\": 50.0, \"quantity\": 8, \"subtotal\": 400.0, \"estimated\": true}], \"all_lines_estimated\": true, \"line_count\": 4}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          },
+          {
+            "name": "edit_file",
+            "content": "Successfully replaced 1 instance(s) of the string in '/trip/budget.md'"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Rome Trip Budget (2 travelers, 4 nights)\n\n**Budget:** EUR 3,000\n**Estimated total:** EUR 2,356.00\n**Remaining:** EUR 644.00 (78.5% of budget used). The plan is **within budget**.\n\n## Currency conversion (assumption)\n\nThe flights are quoted in US dollars; the budget is in euros.\n\n- Rate used: **1 USD = 0.92 EUR** (assumed planning rate, not a live quote).\n- $650 per person = EUR 598.00 per person; EUR 1,196.00 for 2 travelers.\n- The total rests on this rate. For the two flights, every 0.01 change in the EUR/USD rate moves the flight cost by about EUR 13. Re-check the rate before booking.\n\n## Line items\n\n| Category   | Item                                              | Qty | Unit (EUR) | Subtotal (EUR) |\n|------------|---------------------------------------------------|-----|------------|----------------|\n| Flights    | BOS-FCO return, $650/person at 0.92 EUR/USD       | 2   | 598.00     | 1,196.00       |\n| Lodging    | Rome, per night                                   | 4   | 160.00     | 640.00         |\n| Food       | EUR 50 per person per day (2 travelers x 4 days)  | 8   | 50.00      | 400.00         |\n| Activities | Museum passes, total                              | 1   | 120.00     | 120.00         |\n| **Total**  |                                                   |     |            | **2,356.00**   |\n\n## By category\n\n- Flights: EUR 1,196.00\n- Lodging: EUR 640.00\n- Food: EUR 400.00\n- Activities: EUR 120.00\n\n## Largest line items\n\n1. Flights, BOS-FCO return, 2 travelers: EUR 1,196.00\n2. Lodging, Rome, 4 nights: EUR 640.00\n3. Food, 2 travelers x 4 days: EUR 400.00\n\n## Caveats\n\n- **All figures are sample data, not live prices.** Treat the total as an estimate, not a quote.\n- **Exchange rate:** the flight figure depends on an assumed 0.92 EUR/USD rate. Confirm the current rate before relying on it.\n- **Lodging:** the EUR 160/night figure is used as given, assumed to be the total for the room per night.\n- The total does not include anything not listed above (e.g., local transport, tips, or taxes beyond the quoted rates).\n"
+        },
+        "usage": {
+          "model_calls": 4,
+          "input_tokens": 24740,
+          "cache_read": 22100,
+          "cache_creation": 2630,
+          "output_tokens": 2631
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": null,
+          "comment": "the total depends on an exchange rate the analyst picks"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "EUR"
+        },
+        {
+          "key": "foreign_amounts_converted",
+          "score": 1,
+          "comment": "converted"
+        },
+        {
+          "key": "booked_lines_confirmed",
+          "score": null,
+          "comment": "nothing already paid in this example"
+        },
+        {
+          "key": "budget_not_invented",
+          "score": null,
+          "comment": "a budget was given"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "nights-vs-days",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a $2250 USD budget for 2 travelers in Lisbon. They arrive 2027-05-10 and leave 2027-05-15. Flights JFK-LIS return: $480 per person. Lodging: $140 per night for every night of the stay. Food: $40 per person per day, counting both the arrival and the departure day. Airport transfers: $60 total. Figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "The Lisbon trip comes to **$2,200.00** against your $2,250 budget, so it fits with **$50.00** to spare (97.8% used).\n\n**Largest line items:**\n1. Flights, JFK-LIS return for 2 people: $960.00 (2 \u00d7 $480)\n2. Lodging, 5 nights at $140: $700.00\n3. Food, 12 person-days at $40 (6 days for each of 2 travelers): $480.00\n\nAirport transfers add $60.00.\n\nAll figures are sample data, not live prices, so this total is an estimate rather than a quote. The $50 margin is thin: a fare or hotel rate increase of more than that would put the trip over budget.\n\nThe full breakdown is written to `/trip/budget.md`.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "JFK-LIS return flight, per person (sample data)",
+                  "category": "flights",
+                  "amount": 480,
+                  "quantity": 2,
+                  "estimated": true
+                },
+                {
+                  "label": "Lodging, Lisbon, $140/night x 5 nights (sample data)",
+                  "category": "lodging",
+                  "amount": 140,
+                  "quantity": 5,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, $40/person/day x 6 days (arrival and departure days) x 2 travelers (sample data)",
+                  "category": "food",
+                  "amount": 40,
+                  "quantity": 12,
+                  "estimated": true
+                },
+                {
+                  "label": "Airport transfers, total (sample data)",
+                  "category": "transport",
+                  "amount": 60,
+                  "quantity": 1,
+                  "estimated": true
+                }
+              ],
+              "budget_total": 2250,
+              "currency": "USD"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Lisbon Trip Budget\n\n**Travelers:** 2\n**Dates:** arrive 2027-05-10, depart 2027-05-15 (5 nights, 6 calendar days)\n**Budget:** $2,250.00 USD\n\n**Data basis:** All figures are sample data, not live prices. Nothing here is a quote.\n\n## Line items\n\n| Category  | Item | Unit cost | Qty | Subtotal |\n|-----------|------|-----------|-----|----------|\n| Flights   | JFK-LIS return, per person | $480.00 | 2 people | $960.00 |\n| Lodging   | Lisbon, per night | $140.00 | 5 nights | $700.00 |\n| Food      | $40/person/day, 6 days (arrival and departure days included) | $40.00 | 12 person-days | $480.00 |\n| Transport | Airport transfers, total | $60.00 | 1 | $60.00 |\n| **Total** | | | | **$2,200.00** |\n\n## By category\n\n- Flights: $960.00\n- Lodging: $700.00\n- Food: $480.00\n- Transport: $60.00\n- Fees: $0.00\n- Activities: $0.00\n- Other: $0.00\n\n## Against budget\n\n- Total estimated: $2,200.00\n- Budget: $2,250.00\n- Remaining: $50.00\n- Used: 97.8% of budget\n- Status: within budget\n\n## Largest line items\n\n1. Flights, JFK-LIS return, 2 people: $960.00\n2. Lodging, 5 nights: $700.00\n3. Food, 12 person-days: $480.00\n\n## Caveats\n\n- The total is an estimate built entirely from sample data. It is not a quote, and live fares and rates may differ.\n- Headroom is $50.00. Any price increase above that would put the trip over budget.\n- Food is costed at a flat $40 per person per day across all six days, including the arrival and departure days.\n- No activities, fees, or other costs are included.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"USD\", \"budget_total\": 2250.0, \"total_estimated\": 2200.0, \"remaining\": 50.0, \"over_budget\": false, \"overage\": 0.0, \"percent_of_budget_used\": 97.8, \"by_category\": {\"flights\": 960.0, \"lodging\": 700.0, \"food\": 480.0, \"transport\": 60.0}, \"largest_line_items\": [{\"label\": \"JFK-LIS return flight, per person (sample data)\", \"category\": \"flights\", \"unit_amount\": 480.0, \"quantity\": 2, \"subtotal\": 960.0, \"estimated\": true}, {\"label\": \"Lodging, Lisbon, $140/night x 5 nights (sample data)\", \"category\": \"lodging\", \"unit_amount\": 140.0, \"quantity\": 5, \"subtotal\": 700.0, \"estimated\": true}, {\"label\": \"Food, $40/person/day x 6 days (arrival and departure days) x 2 travelers (sample data)\", \"category\": \"food\", \"unit_amount\": 40.0, \"quantity\": 12, \"subtotal\": 480.0, \"estimated\": true}], \"all_lines_estimated\": true, \"line_count\": 4}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Lisbon Trip Budget\n\n**Travelers:** 2\n**Dates:** arrive 2027-05-10, depart 2027-05-15 (5 nights, 6 calendar days)\n**Budget:** $2,250.00 USD\n\n**Data basis:** All figures are sample data, not live prices. Nothing here is a quote.\n\n## Line items\n\n| Category  | Item | Unit cost | Qty | Subtotal |\n|-----------|------|-----------|-----|----------|\n| Flights   | JFK-LIS return, per person | $480.00 | 2 people | $960.00 |\n| Lodging   | Lisbon, per night | $140.00 | 5 nights | $700.00 |\n| Food      | $40/person/day, 6 days (arrival and departure days included) | $40.00 | 12 person-days | $480.00 |\n| Transport | Airport transfers, total | $60.00 | 1 | $60.00 |\n| **Total** | | | | **$2,200.00** |\n\n## By category\n\n- Flights: $960.00\n- Lodging: $700.00\n- Food: $480.00\n- Transport: $60.00\n- Fees: $0.00\n- Activities: $0.00\n- Other: $0.00\n\n## Against budget\n\n- Total estimated: $2,200.00\n- Budget: $2,250.00\n- Remaining: $50.00\n- Used: 97.8% of budget\n- Status: within budget\n\n## Largest line items\n\n1. Flights, JFK-LIS return, 2 people: $960.00\n2. Lodging, 5 nights: $700.00\n3. Food, 12 person-days: $480.00\n\n## Caveats\n\n- The total is an estimate built entirely from sample data. It is not a quote, and live fares and rates may differ.\n- Headroom is $50.00. Any price increase above that would put the trip over budget.\n- Food is costed at a flat $40 per person per day across all six days, including the arrival and departure days.\n- No activities, fees, or other costs are included.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 16814,
+          "cache_read": 14967,
+          "cache_creation": 1839,
+          "output_tokens": 1677
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": 1,
+          "comment": "total 2200.0 against 2250.0; expected 2200 against 2250"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "USD"
+        },
+        {
+          "key": "foreign_amounts_converted",
+          "score": null,
+          "comment": "no foreign amounts in this example"
+        },
+        {
+          "key": "booked_lines_confirmed",
+          "score": null,
+          "comment": "nothing already paid in this example"
+        },
+        {
+          "key": "budget_not_invented",
+          "score": null,
+          "comment": "a budget was given"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "booked-flights-not-cut",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a $4000 USD budget for 2 travelers, 6 nights in Reykjavik. The flights are already booked and paid: $890 per person return, a confirmed price. Lodging: $260 per night for 6 nights. Food: $85 per person per day for 6 days. Northern lights tour: $180 per person. Every figure except the flights is sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "The estimated total is **$4,720.00**, which is **$720.00 over** the $4,000 budget (118% used). The breakdown is in `/trip/budget.md`.\n\n**Largest line items:**\n1. Return flights, 2 travelers: $1,780.00 (confirmed, already paid)\n2. Lodging, 6 nights at $260: $1,560.00 (sample)\n3. Food, 12 person-days at $85: $1,020.00 (sample)\n\nThe northern lights tour ($360 for two) is the fourth line. Everything except the flights is sample data, so the total is an estimate, not a quote. No currency conversion was needed.\n\n**Cuts that close the gap:**\n1. **Drop the northern lights tour:** saves $360.\n2. **Cut one night (6 to 5 nights):** saves $260.\n3. **Reduce food to $75 per person per day:** saves $120.\n\nTogether these save $740 and bring the total to $3,980, $20 under budget. Alternatively, dropping the tour and cutting two nights saves $880 and leaves $160 spare.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "Return flights, 2 pax (confirmed, already paid)",
+                  "category": "flights",
+                  "amount": 890,
+                  "quantity": 2,
+                  "estimated": false
+                },
+                {
+                  "label": "Lodging, Reykjavik, 6 nights (sample rate)",
+                  "category": "lodging",
+                  "amount": 260,
+                  "quantity": 6,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, 2 pax x 6 days (sample rate, $85 per person per day)",
+                  "category": "food",
+                  "amount": 85,
+                  "quantity": 12,
+                  "estimated": true
+                },
+                {
+                  "label": "Northern lights tour, 2 pax (sample price)",
+                  "category": "activities",
+                  "amount": 180,
+                  "quantity": 2,
+                  "estimated": true
+                }
+              ],
+              "budget_total": 4000,
+              "currency": "USD"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Reykjavik Trip Budget: 2 travelers, 6 nights\n\nCurrency: USD. No currency conversion was needed; all figures are in USD.\nBudget: $4,000.00\n\n## Result\n\n- **Estimated total: $4,720.00**\n- **Over budget by $720.00** (118% of budget used)\n- Flights are a confirmed, already-paid price. All other lines are sample data, so the total is an estimate, not a quote.\n\n## Cost lines\n\n| Category | Item | Unit amount | Quantity | Subtotal | Price status |\n|---|---|---|---|---|---|\n| Flights | Return flights, 2 pax | $890.00 | 2 | $1,780.00 | Confirmed, already paid |\n| Lodging | Reykjavik, per night | $260.00 | 6 nights | $1,560.00 | Sample data |\n| Food | Per person per day | $85.00 | 12 person-days (2 pax x 6 days) | $1,020.00 | Sample data |\n| Activities | Northern lights tour | $180.00 | 2 pax | $360.00 | Sample data |\n| **Total** | | | | **$4,720.00** | |\n\n## Subtotals by category\n\n- Flights: $1,780.00\n- Lodging: $1,560.00\n- Food: $1,020.00\n- Activities: $360.00\n\n## Largest line items\n\n1. Return flights, 2 pax: $1,780.00 (confirmed)\n2. Lodging, 6 nights: $1,560.00 (sample)\n3. Food, 12 person-days: $1,020.00 (sample)\n\n## Caveats\n\n- The total of $4,720.00 rests on sample prices for lodging, food, and the northern lights tour. Only the flights are confirmed.\n- Flights are already paid. Cutting the trip length would not change the flight cost.\n\n## Options to close the $720.00 gap\n\nEach saving is calculated against the line items above.\n\n1. **Drop the northern lights tour: saves $360.00.** This removes both tour tickets.\n2. **Cut one night of lodging (6 to 5 nights): saves $260.00.** Lodging drops from $1,560.00 to $1,300.00.\n3. **Reduce food to $75 per person per day: saves $120.00.** Food drops from $1,020.00 to $900.00 across 12 person-days.\n\nCombined, options 1 to 3 save $740.00 and bring the estimated total to $3,980.00, which is $20.00 under budget. This is one way to close the gap, not the only one. Dropping the tour and cutting two nights ($880.00 saved, total $3,840.00) also fits, with $160.00 to spare.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"USD\", \"budget_total\": 4000.0, \"total_estimated\": 4720.0, \"remaining\": -720.0, \"over_budget\": true, \"overage\": 720.0, \"percent_of_budget_used\": 118.0, \"by_category\": {\"flights\": 1780.0, \"lodging\": 1560.0, \"food\": 1020.0, \"activities\": 360.0}, \"largest_line_items\": [{\"label\": \"Return flights, 2 pax (confirmed, already paid)\", \"category\": \"flights\", \"unit_amount\": 890.0, \"quantity\": 2, \"subtotal\": 1780.0, \"estimated\": false}, {\"label\": \"Lodging, Reykjavik, 6 nights (sample rate)\", \"category\": \"lodging\", \"unit_amount\": 260.0, \"quantity\": 6, \"subtotal\": 1560.0, \"estimated\": true}, {\"label\": \"Food, 2 pax x 6 days (sample rate, $85 per person per day)\", \"category\": \"food\", \"unit_amount\": 85.0, \"quantity\": 12, \"subtotal\": 1020.0, \"estimated\": true}], \"all_lines_estimated\": false, \"line_count\": 4}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Reykjavik Trip Budget: 2 travelers, 6 nights\n\nCurrency: USD. No currency conversion was needed; all figures are in USD.\nBudget: $4,000.00\n\n## Result\n\n- **Estimated total: $4,720.00**\n- **Over budget by $720.00** (118% of budget used)\n- Flights are a confirmed, already-paid price. All other lines are sample data, so the total is an estimate, not a quote.\n\n## Cost lines\n\n| Category | Item | Unit amount | Quantity | Subtotal | Price status |\n|---|---|---|---|---|---|\n| Flights | Return flights, 2 pax | $890.00 | 2 | $1,780.00 | Confirmed, already paid |\n| Lodging | Reykjavik, per night | $260.00 | 6 nights | $1,560.00 | Sample data |\n| Food | Per person per day | $85.00 | 12 person-days (2 pax x 6 days) | $1,020.00 | Sample data |\n| Activities | Northern lights tour | $180.00 | 2 pax | $360.00 | Sample data |\n| **Total** | | | | **$4,720.00** | |\n\n## Subtotals by category\n\n- Flights: $1,780.00\n- Lodging: $1,560.00\n- Food: $1,020.00\n- Activities: $360.00\n\n## Largest line items\n\n1. Return flights, 2 pax: $1,780.00 (confirmed)\n2. Lodging, 6 nights: $1,560.00 (sample)\n3. Food, 12 person-days: $1,020.00 (sample)\n\n## Caveats\n\n- The total of $4,720.00 rests on sample prices for lodging, food, and the northern lights tour. Only the flights are confirmed.\n- Flights are already paid. Cutting the trip length would not change the flight cost.\n\n## Options to close the $720.00 gap\n\nEach saving is calculated against the line items above.\n\n1. **Drop the northern lights tour: saves $360.00.** This removes both tour tickets.\n2. **Cut one night of lodging (6 to 5 nights): saves $260.00.** Lodging drops from $1,560.00 to $1,300.00.\n3. **Reduce food to $75 per person per day: saves $120.00.** Food drops from $1,020.00 to $900.00 across 12 person-days.\n\nCombined, options 1 to 3 save $740.00 and bring the estimated total to $3,980.00, which is $20.00 under budget. This is one way to close the gap, not the only one. Dropping the tour and cutting two nights ($880.00 saved, total $3,840.00) also fits, with $160.00 to spare.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 17736,
+          "cache_read": 14818,
+          "cache_creation": 2910,
+          "output_tokens": 2860
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": 1,
+          "comment": "total 4720.0 against 4000.0; expected 4720 against 4000"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "USD"
+        },
+        {
+          "key": "foreign_amounts_converted",
+          "score": null,
+          "comment": "no foreign amounts in this example"
+        },
+        {
+          "key": "booked_lines_confirmed",
+          "score": 1,
+          "comment": "marked confirmed"
+        },
+        {
+          "key": "budget_not_invented",
+          "score": null,
+          "comment": "a budget was given"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "no-budget-given",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this plan for 1 traveler, 3 nights in Edinburgh. No budget has been set; the traveler wants to know what it will cost. Flights LHR-EDI return: $210. Lodging: $175 per night for 3 nights. Food: $60 per day for 3 days. Castle and museum entries: $70 total. Figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "The estimated total for 1 traveler, 3 nights in Edinburgh, is **$985 USD**. No budget was set, so I did not compare it against one.\n\nLargest line items:\n1. **Lodging:** 3 nights at $175 = $525\n2. **Return flight LHR-EDI:** $210\n3. **Food:** 3 days at $60 = $180\n\nThe other line is castle and museum entries at $70.\n\nAll figures are sample data, not live prices, so treat $985 as an estimate rather than a quote. The total also excludes local transport, airport transfers, and any fees not listed. The breakdown is written to `/trip/budget.md`.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "LHR-EDI return flight, 1 pax (sample data)",
+                  "category": "flights",
+                  "amount": 210,
+                  "quantity": 1,
+                  "estimated": true
+                },
+                {
+                  "label": "Edinburgh lodging, per night (sample data)",
+                  "category": "lodging",
+                  "amount": 175,
+                  "quantity": 3,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, per day (sample data)",
+                  "category": "food",
+                  "amount": 60,
+                  "quantity": 3,
+                  "estimated": true
+                },
+                {
+                  "label": "Castle and museum entries, total (sample data)",
+                  "category": "activities",
+                  "amount": 70,
+                  "quantity": 1,
+                  "estimated": true
+                }
+              ],
+              "currency": "USD"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Edinburgh Trip Cost Breakdown\n\nTravelers: 1\nLength: 3 nights\nCurrency: USD (all figures quoted in USD; no conversion applied)\nBudget: none set. This is a cost estimate only, not a verdict against a budget.\n\n**Source note:** All figures are sample data, not live prices. Treat the total as an estimate, not a quote.\n\n## Cost lines\n\n| Category   | Item                                   | Unit amount | Quantity | Subtotal | Status            |\n|------------|----------------------------------------|-------------|----------|----------|-------------------|\n| Flights    | LHR-EDI return, 1 pax                  | $210        | 1        | $210     | Sample data       |\n| Lodging    | Edinburgh accommodation, per night     | $175        | 3 nights | $525     | Sample data       |\n| Food       | Food, per day                          | $60         | 3 days   | $180     | Sample data       |\n| Activities | Castle and museum entries, total       | $70         | 1        | $70      | Sample data       |\n\n## Subtotals by category\n\n- Flights: $210\n- Lodging: $525\n- Food: $180\n- Activities: $70\n- Fees: $0\n- Transport (other than flights): $0\n- Other: $0\n\n## Total\n\n**Estimated total: $985 (USD, sample data)**\n\n## Largest line items\n\n1. Lodging, 3 nights at $175: $525\n2. Return flight LHR-EDI: $210\n3. Food, 3 days at $60: $180\n\n## Caveats\n\n- Figures are sample data, not live prices. Flight and lodging prices in particular will change with date and availability.\n- The total covers only the four lines above. Local transport within Edinburgh, airport transfers, and any fees not listed are not included.\n- No budget has been set, so this total has not been compared against one.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"USD\", \"budget_total\": null, \"total_estimated\": 985.0, \"by_category\": {\"lodging\": 525.0, \"flights\": 210.0, \"food\": 180.0, \"activities\": 70.0}, \"largest_line_items\": [{\"label\": \"Edinburgh lodging, per night (sample data)\", \"category\": \"lodging\", \"unit_amount\": 175.0, \"quantity\": 3, \"subtotal\": 525.0, \"estimated\": true}, {\"label\": \"LHR-EDI return flight, 1 pax (sample data)\", \"category\": \"flights\", \"unit_amount\": 210.0, \"quantity\": 1, \"subtotal\": 210.0, \"estimated\": true}, {\"label\": \"Food, per day (sample data)\", \"category\": \"food\", \"unit_amount\": 60.0, \"quantity\": 3, \"subtotal\": 180.0, \"estimated\": true}], \"all_lines_estimated\": true, \"line_count\": 4}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Edinburgh Trip Cost Breakdown\n\nTravelers: 1\nLength: 3 nights\nCurrency: USD (all figures quoted in USD; no conversion applied)\nBudget: none set. This is a cost estimate only, not a verdict against a budget.\n\n**Source note:** All figures are sample data, not live prices. Treat the total as an estimate, not a quote.\n\n## Cost lines\n\n| Category   | Item                                   | Unit amount | Quantity | Subtotal | Status            |\n|------------|----------------------------------------|-------------|----------|----------|-------------------|\n| Flights    | LHR-EDI return, 1 pax                  | $210        | 1        | $210     | Sample data       |\n| Lodging    | Edinburgh accommodation, per night     | $175        | 3 nights | $525     | Sample data       |\n| Food       | Food, per day                          | $60         | 3 days   | $180     | Sample data       |\n| Activities | Castle and museum entries, total       | $70         | 1        | $70      | Sample data       |\n\n## Subtotals by category\n\n- Flights: $210\n- Lodging: $525\n- Food: $180\n- Activities: $70\n- Fees: $0\n- Transport (other than flights): $0\n- Other: $0\n\n## Total\n\n**Estimated total: $985 (USD, sample data)**\n\n## Largest line items\n\n1. Lodging, 3 nights at $175: $525\n2. Return flight LHR-EDI: $210\n3. Food, 3 days at $60: $180\n\n## Caveats\n\n- Figures are sample data, not live prices. Flight and lodging prices in particular will change with date and availability.\n- The total covers only the four lines above. Local transport within Edinburgh, airport transfers, and any fees not listed are not included.\n- No budget has been set, so this total has not been compared against one.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 15929,
+          "cache_read": 14526,
+          "cache_creation": 1395,
+          "output_tokens": 1277
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": 1,
+          "comment": "total 985.0 against None; expected 985 against None"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "USD"
+        },
+        {
+          "key": "foreign_amounts_converted",
+          "score": null,
+          "comment": "no foreign amounts in this example"
+        },
+        {
+          "key": "booked_lines_confirmed",
+          "score": null,
+          "comment": "nothing already paid in this example"
+        },
+        {
+          "key": "budget_not_invented",
+          "score": 1,
+          "comment": "no budget supplied"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "mixed-currency",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a \u20ac3000 EUR budget for 2 travelers, 4 nights in Rome. Flights BOS-FCO return: $650 per person, quoted in US dollars. Lodging: \u20ac160 per night for 4 nights. Food: \u20ac50 per person per day for 4 days. Museum passes: \u20ac120 total. All figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "The Rome trip comes to about **\u20ac2,356** for 2 travelers over 4 nights. That is **\u20ac644 under** the \u20ac3,000 budget, with 78.5% of the budget used.\n\n**Largest line items:**\n1. Flights (BOS-FCO return, 2 travelers): \u20ac1,196\n2. Lodging (4 nights at \u20ac160): \u20ac640\n3. Food (\u20ac50 per person per day, 4 days): \u20ac400\n\nMuseum passes are \u20ac120.\n\n**Caveats:**\n- **Exchange rate:** The flight is quoted in US dollars, so I converted it at an assumed rate of 1 USD = 0.92 EUR. I could not check a live rate. The total rests on that rate. At 0.85 the total would be about \u20ac2,220; at 1.00 it would be about \u20ac2,460. Confirm the current rate before relying on the figure.\n- **Sample data:** All figures are sample data, not live prices, so the total is an estimate rather than a quote.\n- **Not included:** Local transport, airport transfers, insurance and fees are not in the figures you gave, so they are not in the total.\n\nThe breakdown is written to `/trip/budget.md`.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "BOS-FCO return flight, per person ($650 USD converted at 0.92 EUR/USD, assumed rate), 2 pax",
+                  "category": "flights",
+                  "amount": 598,
+                  "quantity": 2,
+                  "estimated": true
+                },
+                {
+                  "label": "Lodging, Rome, per night, 4 nights",
+                  "category": "lodging",
+                  "amount": 160,
+                  "quantity": 4,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, 2 travelers x 4 days (EUR 50 per person per day)",
+                  "category": "food",
+                  "amount": 50,
+                  "quantity": 8,
+                  "estimated": true
+                },
+                {
+                  "label": "Museum passes, total for 2 travelers",
+                  "category": "activities",
+                  "amount": 120,
+                  "quantity": 1,
+                  "estimated": true
+                }
+              ],
+              "budget_total": 3000,
+              "currency": "EUR"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Rome Trip Budget: 2 travelers, 4 nights\n\n**Budget:** \u20ac3,000 EUR\n**Estimated total:** \u20ac2,356 EUR\n**Remaining:** \u20ac644 EUR (78.5% of budget used). The plan is within budget.\n\n## Currency conversion (read this first)\n\nThe flight price was quoted in US dollars. The budget is in euros.\n- Rate used: **1 USD = 0.92 EUR (assumed)**. I did not check a live exchange rate.\n- Flights: $650 per person x 2 = $1,300, which is \u20ac1,196 at that rate.\n- The total rests on this rate. At a different rate, the flight line and the total move by the same proportion (for example, 0.85 would give about \u20ac2,220 total for flights and everything else unchanged, while 1.00 would give about \u20ac2,460). Confirm the current rate before relying on the total.\n\n## Line items\n\n| Category   | Item                                                        | Unit cost | Qty | Subtotal |\n|------------|-------------------------------------------------------------|-----------|-----|----------|\n| Flights    | BOS-FCO return, per person ($650 at 0.92 EUR/USD)           | \u20ac598      | 2   | \u20ac1,196   |\n| Lodging    | Rome, per night (4 nights)                                  | \u20ac160      | 4   | \u20ac640     |\n| Food       | \u20ac50 per person per day, 2 travelers x 4 days                | \u20ac50       | 8   | \u20ac400     |\n| Activities | Museum passes, total for 2 travelers                        | \u20ac120      | 1   | \u20ac120     |\n| **Total**  |                                                             |           |     | **\u20ac2,356** |\n\n## Subtotals by category\n\n- Flights: \u20ac1,196\n- Lodging: \u20ac640\n- Food: \u20ac400\n- Activities: \u20ac120\n- Transport, fees, other: \u20ac0 (none provided)\n\n## Largest line items\n\n1. Flights, BOS-FCO return, 2 travelers: \u20ac1,196\n2. Lodging, Rome, 4 nights: \u20ac640\n3. Food, 2 travelers x 4 days: \u20ac400\n\n## Data status\n\n- **All figures are sample data, not live prices.** Treat the \u20ac2,356 total as an estimate, not a quote.\n- The flight price is a sample US-dollar figure converted at an assumed rate (see above).\n\n## Not included\n\n- Local transport within Rome, airport transfers, travel insurance, and fees are not in the figures given and are not in the total.\n- Costs outside the total: none specified.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"EUR\", \"budget_total\": 3000.0, \"total_estimated\": 2356.0, \"remaining\": 644.0, \"over_budget\": false, \"overage\": 0.0, \"percent_of_budget_used\": 78.5, \"by_category\": {\"flights\": 1196.0, \"lodging\": 640.0, \"food\": 400.0, \"activities\": 120.0}, \"largest_line_items\": [{\"label\": \"BOS-FCO return flight, per person ($650 USD converted at 0.92 EUR/USD, assumed rate), 2 pax\", \"category\": \"flights\", \"unit_amount\": 598.0, \"quantity\": 2, \"subtotal\": 1196.0, \"estimated\": true}, {\"label\": \"Lodging, Rome, per night, 4 nights\", \"category\": \"lodging\", \"unit_amount\": 160.0, \"quantity\": 4, \"subtotal\": 640.0, \"estimated\": true}, {\"label\": \"Food, 2 travelers x 4 days (EUR 50 per person per day)\", \"category\": \"food\", \"unit_amount\": 50.0, \"quantity\": 8, \"subtotal\": 400.0, \"estimated\": true}], \"all_lines_estimated\": true, \"line_count\": 4}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Rome Trip Budget: 2 travelers, 4 nights\n\n**Budget:** \u20ac3,000 EUR\n**Estimated total:** \u20ac2,356 EUR\n**Remaining:** \u20ac644 EUR (78.5% of budget used). The plan is within budget.\n\n## Currency conversion (read this first)\n\nThe flight price was quoted in US dollars. The budget is in euros.\n- Rate used: **1 USD = 0.92 EUR (assumed)**. I did not check a live exchange rate.\n- Flights: $650 per person x 2 = $1,300, which is \u20ac1,196 at that rate.\n- The total rests on this rate. At a different rate, the flight line and the total move by the same proportion (for example, 0.85 would give about \u20ac2,220 total for flights and everything else unchanged, while 1.00 would give about \u20ac2,460). Confirm the current rate before relying on the total.\n\n## Line items\n\n| Category   | Item                                                        | Unit cost | Qty | Subtotal |\n|------------|-------------------------------------------------------------|-----------|-----|----------|\n| Flights    | BOS-FCO return, per person ($650 at 0.92 EUR/USD)           | \u20ac598      | 2   | \u20ac1,196   |\n| Lodging    | Rome, per night (4 nights)                                  | \u20ac160      | 4   | \u20ac640     |\n| Food       | \u20ac50 per person per day, 2 travelers x 4 days                | \u20ac50       | 8   | \u20ac400     |\n| Activities | Museum passes, total for 2 travelers                        | \u20ac120      | 1   | \u20ac120     |\n| **Total**  |                                                             |           |     | **\u20ac2,356** |\n\n## Subtotals by category\n\n- Flights: \u20ac1,196\n- Lodging: \u20ac640\n- Food: \u20ac400\n- Activities: \u20ac120\n- Transport, fees, other: \u20ac0 (none provided)\n\n## Largest line items\n\n1. Flights, BOS-FCO return, 2 travelers: \u20ac1,196\n2. Lodging, Rome, 4 nights: \u20ac640\n3. Food, 2 travelers x 4 days: \u20ac400\n\n## Data status\n\n- **All figures are sample data, not live prices.** Treat the \u20ac2,356 total as an estimate, not a quote.\n- The flight price is a sample US-dollar figure converted at an assumed rate (see above).\n\n## Not included\n\n- Local transport within Rome, airport transfers, travel insurance, and fees are not in the figures given and are not in the total.\n- Costs outside the total: none specified.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 17391,
+          "cache_read": 15152,
+          "cache_creation": 2231,
+          "output_tokens": 2182
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": null,
+          "comment": "the total depends on an exchange rate the analyst picks"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "EUR"
+        },
+        {
+          "key": "foreign_amounts_converted",
+          "score": 1,
+          "comment": "converted"
+        },
+        {
+          "key": "booked_lines_confirmed",
+          "score": null,
+          "comment": "nothing already paid in this example"
+        },
+        {
+          "key": "budget_not_invented",
+          "score": null,
+          "comment": "a budget was given"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "booked-flights-not-cut",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a $4000 USD budget for 2 travelers, 6 nights in Reykjavik. The flights are already booked and paid: $890 per person return, a confirmed price. Lodging: $260 per night for 6 nights. Food: $85 per person per day for 6 days. Northern lights tour: $180 per person. Every figure except the flights is sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "The plan is over budget. The estimated total is **$4,720.00 against a $4,000 budget, $720 over** (118% of budget used).\n\n**Largest line items:**\n1. Return flights, 2 travelers: $1,780.00 (confirmed and paid)\n2. Lodging, 6 nights at $260: $1,560.00 (sample data)\n3. Food, 12 person-days at $85: $1,020.00 (sample data)\n\nThe northern lights tour ($360) is the fourth line. All figures are in USD, so no conversion was needed.\n\n**Sample-data flag:** Only the flights are a live price. Lodging, food, and the tour are sample figures, so the $4,720 total is an estimate, not a quote.\n\n**Cuts that close the gap:**\n1. Drop the northern lights tour: saves $360.\n2. Cut one lodging night (6 to 5 nights): saves $260.\n3. Reduce food to $70 per person-day: saves $180.\n\nTogether these save $800 and bring the total to $3,920, which is $80 under budget. The cost to you is skipping the tour, one fewer night in Reykjavik, and a tighter daily food allowance. A cheaper lodging rate could replace the one-night cut, but the saving depends on what you find.\n\nThe full breakdown is in `/trip/budget.md`.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "Return flights, 2 pax (confirmed, paid)",
+                  "category": "flights",
+                  "amount": 890,
+                  "quantity": 2,
+                  "estimated": false
+                },
+                {
+                  "label": "Lodging, Reykjavik, 6 nights (sample data)",
+                  "category": "lodging",
+                  "amount": 260,
+                  "quantity": 6,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, 2 pax x 6 days (sample data)",
+                  "category": "food",
+                  "amount": 85,
+                  "quantity": 12,
+                  "estimated": true
+                },
+                {
+                  "label": "Northern lights tour, 2 pax (sample data)",
+                  "category": "activities",
+                  "amount": 180,
+                  "quantity": 2,
+                  "estimated": true
+                }
+              ],
+              "budget_total": 4000,
+              "currency": "USD"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Reykjavik Trip Budget: 2 travelers, 6 nights\n\nCurrency: USD (all figures in USD; no conversion applied)\nBudget: $4,000.00\n\n## Result\n\n- **Estimated total: $4,720.00**\n- **Over budget by $720.00** (118% of budget used)\n\n## Line items\n\n| Category   | Item                                         | Unit cost | Qty | Subtotal | Price status        |\n|------------|----------------------------------------------|-----------|-----|----------|---------------------|\n| Flights    | Return flights, 2 pax                        | $890.00   | 2   | $1,780.00 | Confirmed, paid     |\n| Lodging    | Reykjavik, 6 nights                          | $260.00   | 6   | $1,560.00 | Sample data         |\n| Food       | 2 pax x 6 days (per person-day)              | $85.00    | 12  | $1,020.00 | Sample data         |\n| Activities | Northern lights tour, 2 pax                  | $180.00   | 2   | $360.00   | Sample data         |\n| **Total**  |                                              |           |     | **$4,720.00** |                 |\n\n## Subtotals by category\n\n- Flights: $1,780.00\n- Lodging: $1,560.00\n- Food: $1,020.00\n- Activities: $360.00\n\n## Largest line items\n\n1. Return flights, 2 pax: $1,780.00 (confirmed)\n2. Lodging, 6 nights: $1,560.00 (sample)\n3. Food, 12 person-days: $1,020.00 (sample)\n\n## Sample-data flag\n\nOnly the flights are a live, confirmed price. Lodging, food, and the northern lights tour are sample figures, not quotes. The $4,720.00 total is therefore an estimate and should not be treated as a quote.\n\n## Caveats\n\n- None. No costs have been identified as sitting outside this total.\n\n## Proposed cuts to close the $720 gap\n\nAny one of these alone does not close the gap, so the set below is needed together:\n\n1. **Drop the northern lights tour:** saves $360.00 (2 x $180).\n2. **Cut one lodging night (6 to 5 nights):** saves $260.00 (1 x $260).\n3. **Reduce food to $70 per person-day:** saves $180.00 (12 x $15).\n\nCombined savings: $800.00. Revised total: $3,920.00, which is $80.00 under budget.\n\nThe cost to the traveler: no northern lights tour, one fewer night in Reykjavik, and a tighter daily food allowance. Option 2 could be replaced with a cheaper lodging rate instead, if one is found, which would save more per night than the one-night cut, though the saving depends on the rate found.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"USD\", \"budget_total\": 4000.0, \"total_estimated\": 4720.0, \"remaining\": -720.0, \"over_budget\": true, \"overage\": 720.0, \"percent_of_budget_used\": 118.0, \"by_category\": {\"flights\": 1780.0, \"lodging\": 1560.0, \"food\": 1020.0, \"activities\": 360.0}, \"largest_line_items\": [{\"label\": \"Return flights, 2 pax (confirmed, paid)\", \"category\": \"flights\", \"unit_amount\": 890.0, \"quantity\": 2, \"subtotal\": 1780.0, \"estimated\": false}, {\"label\": \"Lodging, Reykjavik, 6 nights (sample data)\", \"category\": \"lodging\", \"unit_amount\": 260.0, \"quantity\": 6, \"subtotal\": 1560.0, \"estimated\": true}, {\"label\": \"Food, 2 pax x 6 days (sample data)\", \"category\": \"food\", \"unit_amount\": 85.0, \"quantity\": 12, \"subtotal\": 1020.0, \"estimated\": true}], \"all_lines_estimated\": false, \"line_count\": 4}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Reykjavik Trip Budget: 2 travelers, 6 nights\n\nCurrency: USD (all figures in USD; no conversion applied)\nBudget: $4,000.00\n\n## Result\n\n- **Estimated total: $4,720.00**\n- **Over budget by $720.00** (118% of budget used)\n\n## Line items\n\n| Category   | Item                                         | Unit cost | Qty | Subtotal | Price status        |\n|------------|----------------------------------------------|-----------|-----|----------|---------------------|\n| Flights    | Return flights, 2 pax                        | $890.00   | 2   | $1,780.00 | Confirmed, paid     |\n| Lodging    | Reykjavik, 6 nights                          | $260.00   | 6   | $1,560.00 | Sample data         |\n| Food       | 2 pax x 6 days (per person-day)              | $85.00    | 12  | $1,020.00 | Sample data         |\n| Activities | Northern lights tour, 2 pax                  | $180.00   | 2   | $360.00   | Sample data         |\n| **Total**  |                                              |           |     | **$4,720.00** |                 |\n\n## Subtotals by category\n\n- Flights: $1,780.00\n- Lodging: $1,560.00\n- Food: $1,020.00\n- Activities: $360.00\n\n## Largest line items\n\n1. Return flights, 2 pax: $1,780.00 (confirmed)\n2. Lodging, 6 nights: $1,560.00 (sample)\n3. Food, 12 person-days: $1,020.00 (sample)\n\n## Sample-data flag\n\nOnly the flights are a live, confirmed price. Lodging, food, and the northern lights tour are sample figures, not quotes. The $4,720.00 total is therefore an estimate and should not be treated as a quote.\n\n## Caveats\n\n- None. No costs have been identified as sitting outside this total.\n\n## Proposed cuts to close the $720 gap\n\nAny one of these alone does not close the gap, so the set below is needed together:\n\n1. **Drop the northern lights tour:** saves $360.00 (2 x $180).\n2. **Cut one lodging night (6 to 5 nights):** saves $260.00 (1 x $260).\n3. **Reduce food to $70 per person-day:** saves $180.00 (12 x $15).\n\nCombined savings: $800.00. Revised total: $3,920.00, which is $80.00 under budget.\n\nThe cost to the traveler: no northern lights tour, one fewer night in Reykjavik, and a tighter daily food allowance. Option 2 could be replaced with a cheaper lodging rate instead, if one is found, which would save more per night than the one-night cut, though the saving depends on the rate found.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 17293,
+          "cache_read": 14828,
+          "cache_creation": 2457,
+          "output_tokens": 2497
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": 1,
+          "comment": "total 4720.0 against 4000.0; expected 4720 against 4000"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "USD"
+        },
+        {
+          "key": "foreign_amounts_converted",
+          "score": null,
+          "comment": "no foreign amounts in this example"
+        },
+        {
+          "key": "booked_lines_confirmed",
+          "score": 1,
+          "comment": "marked confirmed"
+        },
+        {
+          "key": "budget_not_invented",
+          "score": null,
+          "comment": "a budget was given"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    }
+  ]
+}

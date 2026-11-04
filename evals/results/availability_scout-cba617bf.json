@@ -1,0 +1,422 @@
+{
+  "experiment": "availability_scout-cba617bf",
+  "metadata": {
+    "judge": "anthropic:claude-sonnet-5-5",
+    "provider": "sample-data",
+    "repetitions": 1,
+    "subagent": "availability-scout",
+    "model": "anthropic:claude-sonnet-5-5",
+    "effort": "medium"
+  },
+  "runs": [
+    {
+      "key": "premium-economy-spelled-loosely",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One traveler, Premium Economy, LHR to JFK on 2027-02-14, back 2027-02-21. Flights only, no lodging needed. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote four candidates to `/trip/options.md`. All four are sample data, so they're illustrative figures only. They aren't real availability and you can't book them. Every offer came back in Premium Economy, as requested. The fares are round-trip, in USD, for one traveler.\n\n- **Best on price:** Blue Corridor at $1,123.20. It has 2 stops and takes 580 minutes, with an 11:14 departure.\n- **Best on convenience:** Meridian Air at $1,638.40. It's nonstop, takes 360 minutes and leaves at 06:00.\n- **Tradeoff:** The nonstop costs about $515 more than the cheapest option. It saves roughly 3.5 hours each way and avoids two connections.\n- **Middle option:** Northwind is $1,201.60 with 1 stop and takes 470 minutes. It's only about $78 more than the cheapest.\n- **Other nonstop:** Anser Airways is nonstop at $1,748.80 and takes 405 minutes. Meridian Air is both cheaper and faster.\n\nThe results gave only outbound departure times and durations. They had no return-leg details.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "LHR",
+              "destination": "JFK",
+              "depart_date": "2027-02-14",
+              "return_date": "2027-02-21",
+              "travelers": 1,
+              "cabin": "premium_economy"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# LHR \u2192 JFK, 2027-02-14 (return 2027-02-21), 1 traveler, Premium Economy\n\n**SOURCE: sample-data (synthetic). Illustrative planning figures only, not real availability and not bookable.**\nAll offers came back in cabin: premium_economy (matches requested). Round-trip fares, USD.\n\n| Carrier | Depart (outbound) | Stops | Duration (min) | Fare |\n|---|---|---|---|---|\n| Blue Corridor | 11:14 | 2 | 580 | 1123.20 |\n| Northwind | 06:07 | 1 | 470 | 1201.60 |\n| Meridian Air | 06:00 | 0 | 360 | 1638.40 |\n| Anser Airways | 06:21 | 0 | 405 | 1748.80 |\n\nOnly outbound departure time and duration were given; return-leg details were not provided.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Blue Corridor\", \"origin\": \"LHR\", \"destination\": \"JFK\", \"depart_date\": \"2027-02-14\", \"return_date\": \"2027-02-21\", \"depart_time_local\": \"11:14\", \"stops\": 2, \"duration_minutes\": 580, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 1123.2, \"total_fare\": 1123.2, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Northwind\", \"origin\": \"LHR\", \"destination\": \"JFK\", \"depart_date\": \"2027-02-14\", \"return_date\": \"2027-02-21\", \"depart_time_local\": \"06:07\", \"stops\": 1, \"duration_minutes\": 470, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 1201.6, \"total_fare\": 1201.6, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Meridian Air\", \"origin\": \"LHR\", \"destination\": \"JFK\", \"depart_date\": \"2027-02-14\", \"return_date\": \"2027-02-21\", \"depart_time_local\": \"06:00\", \"stops\": 0, \"duration_minutes\": 360, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 1638.4, \"total_fare\": 1638.4, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Anser Airways\", \"origin\": \"LHR\", \"destination\": \"JFK\", \"depart_date\": \"2027-02-14\", \"return_date\": \"2027-02-21\", \"depart_time_local\": \"06:21\", \"stops\": 0, \"duration_minutes\": 405, \"cabin\": \"premium_economy\", \"fare_per_traveler\": 1748.8, \"total_fare\": 1748.8, \"travelers\": 1, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\", \"requested_cabin\": \"premium_economy\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# LHR \u2192 JFK, 2027-02-14 (return 2027-02-21), 1 traveler, Premium Economy\n\n**SOURCE: sample-data (synthetic). Illustrative planning figures only, not real availability and not bookable.**\nAll offers came back in cabin: premium_economy (matches requested). Round-trip fares, USD.\n\n| Carrier | Depart (outbound) | Stops | Duration (min) | Fare |\n|---|---|---|---|---|\n| Blue Corridor | 11:14 | 2 | 580 | 1123.20 |\n| Northwind | 06:07 | 1 | 470 | 1201.60 |\n| Meridian Air | 06:00 | 0 | 360 | 1638.40 |\n| Anser Airways | 06:21 | 0 | 405 | 1748.80 |\n\nOnly outbound departure time and duration were given; return-leg details were not provided.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 19878,
+          "cache_read": 12660,
+          "cache_creation": 7210,
+          "output_tokens": 936
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['premium_economy']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "business-for-two",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Two travelers, business class, LAX to SYD, depart 2027-01-20, return 2027-02-03. Also lodging in Sydney for those dates for 2 guests. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote the candidates to `/trip/options.md`. Both the flight and lodging results are sample data. They are illustrative only, and none of it is bookable.\n\n**Flights (business class, 2 travelers, round trip, USD)**\n- **Cheapest:** Northwind at $3,283.72 total ($1,641.86 each). It has 2 stops and takes about 619 minutes.\n- **Most convenient:** Anser Airways is nonstop at $4,723.72 total, with a 15:39 departure. Blue Corridor is also nonstop, at $5,110.12.\n- **Tradeoff:** Choosing the nonstop Anser over Northwind costs about $1,440 more. In return you skip two stops and save about 220 minutes in the air. Meridian Air is a middle option with 1 stop at $3,487.06.\n- All four offers came back in business class, with no cabin note.\n\n**Lodging (Sydney, 13 nights, 2 guests)**\n- **Cheapest:** The budget hostel's private room is $1,744.73, but it isn't cancellable for free and is rated 7.8.\n- **Best value:** The quiet guesthouse is $2,119.91, rated 9.1, with free cancellation.\n\n**Dates:** I searched lodging from 21 January, but real LAX\u2013SYD flights usually land two days after departure because of the date line. If you arrive on 22 January, the check-in date needs to change. The sample flight durations (about 6.5 to 10 hours) are also much shorter than real ones, which are around 14 hours for a nonstop.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "LAX",
+              "destination": "SYD",
+              "depart_date": "2027-01-20",
+              "return_date": "2027-02-03",
+              "travelers": 2,
+              "cabin": "business"
+            }
+          },
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Sydney",
+              "check_in": "2027-01-21",
+              "check_out": "2027-02-03",
+              "guests": 2
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# LAX\u2013SYD options, 2 travelers, business class, 2027-01-20 to 2027-02-03\n\n**All figures below are SAMPLE DATA (synthetic). They are illustrative only, not live availability, and not bookable.** Flights and lodging both came back as sample-data.\n\n## Flights (requested cabin: business; every offer returned as business; no cabin_note)\n| Carrier | Depart | Stops | Duration (min) | Per traveler | Total (2) |\n|---|---|---|---|---|---|\n| Northwind | 09:53 | 2 | 619 | $1,641.86 | $3,283.72 |\n| Meridian Air | 10:46 | 1 | 509 | $1,743.53 | $3,487.06 |\n| Anser Airways | 15:39 | 0 | 399 | $2,361.86 | $4,723.72 |\n| Blue Corridor | 15:00 | 0 | 444 | $2,555.06 | $5,110.12 |\nPrices are in USD and are round-trip totals. The sample data didn't give return flight times.\n\n## Lodging, Sydney, 2027-01-21 to 2027-02-03 (13 nights, 2 guests; sample data)\n| Name | Type | Nightly | Total | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | $134.21 | $1,744.73 | 7.8 | No |\n| Quiet guesthouse | guesthouse | $163.07 | $2,119.91 | 9.1 | Yes |\n| Business district hotel | hotel | $197.93 | $2,573.09 | 8.2 | No |\n| Riverside apartment | apartment | $226.79 | $2,948.27 | 8.6 | Yes |\n| Central boutique hotel | hotel | $257.65 | $3,349.45 | 8.9 | No |\nNo `due_at_accommodation` figures were returned.\n\n## Notes\n- Real LAX\u2013SYD flights usually land two days after departure because of the date line. I searched lodging from 01-21 as a guess. If arrival is 01-22, the check-in date needs to change.\n- The sample durations (6.5 to 10 hours) are shorter than real nonstop flights, which take about 14 hours. Treat them as illustrative.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 5, \"count\": 5, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Budget hostel, private room (Sydney)\", \"kind\": \"hostel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-21\", \"check_out\": \"2027-02-03\", \"nights\": 13, \"guests\": 2, \"nightly_rate\": 134.21, \"total_cost\": 1744.73, \"guest_rating\": 7.8, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Quiet guesthouse (Sydney)\", \"kind\": \"guesthouse\", \"location\": \"Sydney\", \"check_in\": \"2027-01-21\", \"check_out\": \"2027-02-03\", \"nights\": 13, \"guests\": 2, \"nightly_rate\": 163.07, \"total_cost\": 2119.91, \"guest_rating\": 9.1, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Business district hotel (Sydney)\", \"kind\": \"hotel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-21\", \"check_out\": \"2027-02-03\", \"nights\": 13, \"guests\": 2, \"nightly_rate\": 197.93, \"total_cost\": 2573.09, \"guest_rating\": 8.2, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Riverside apartment (Sydney)\", \"kind\": \"apartment\", \"location\": \"Sydney\", \"check_in\": \"2027-01-21\", \"check_out\": \"2027-02-03\", \"nights\": 13, \"guests\": 2, \"nightly_rate\": 226.79, \"total_cost\": 2948.27, \"guest_rating\": 8.6, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Central boutique hotel (Sydney)\", \"kind\": \"hotel\", \"location\": \"Sydney\", \"check_in\": \"2027-01-21\", \"check_out\": \"2027-02-03\", \"nights\": 13, \"guests\": 2, \"nightly_rate\": 257.65, \"total_cost\": 3349.45, \"guest_rating\": 8.9, \"free_cancellation\": false, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Northwind\", \"origin\": \"LAX\", \"destination\": \"SYD\", \"depart_date\": \"2027-01-20\", \"return_date\": \"2027-02-03\", \"depart_time_local\": \"09:53\", \"stops\": 2, \"duration_minutes\": 619, \"cabin\": \"business\", \"fare_per_traveler\": 1641.86, \"total_fare\": 3283.72, \"travelers\": 2, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Meridian Air\", \"origin\": \"LAX\", \"destination\": \"SYD\", \"depart_date\": \"2027-01-20\", \"return_date\": \"2027-02-03\", \"depart_time_local\": \"10:46\", \"stops\": 1, \"duration_minutes\": 509, \"cabin\": \"business\", \"fare_per_traveler\": 1743.53, \"total_fare\": 3487.06, \"travelers\": 2, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Anser Airways\", \"origin\": \"LAX\", \"destination\": \"SYD\", \"depart_date\": \"2027-01-20\", \"return_date\": \"2027-02-03\", \"depart_time_local\": \"15:39\", \"stops\": 0, \"duration_minutes\": 399, \"cabin\": \"business\", \"fare_per_traveler\": 2361.86, \"total_fare\": 4723.72, \"travelers\": 2, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Blue Corridor\", \"origin\": \"LAX\", \"destination\": \"SYD\", \"depart_date\": \"2027-01-20\", \"return_date\": \"2027-02-03\", \"depart_time_local\": \"15:00\", \"stops\": 0, \"duration_minutes\": 444, \"cabin\": \"business\", \"fare_per_traveler\": 2555.06, \"total_fare\": 5110.12, \"travelers\": 2, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\", \"requested_cabin\": \"business\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# LAX\u2013SYD options, 2 travelers, business class, 2027-01-20 to 2027-02-03\n\n**All figures below are SAMPLE DATA (synthetic). They are illustrative only, not live availability, and not bookable.** Flights and lodging both came back as sample-data.\n\n## Flights (requested cabin: business; every offer returned as business; no cabin_note)\n| Carrier | Depart | Stops | Duration (min) | Per traveler | Total (2) |\n|---|---|---|---|---|---|\n| Northwind | 09:53 | 2 | 619 | $1,641.86 | $3,283.72 |\n| Meridian Air | 10:46 | 1 | 509 | $1,743.53 | $3,487.06 |\n| Anser Airways | 15:39 | 0 | 399 | $2,361.86 | $4,723.72 |\n| Blue Corridor | 15:00 | 0 | 444 | $2,555.06 | $5,110.12 |\nPrices are in USD and are round-trip totals. The sample data didn't give return flight times.\n\n## Lodging, Sydney, 2027-01-21 to 2027-02-03 (13 nights, 2 guests; sample data)\n| Name | Type | Nightly | Total | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | $134.21 | $1,744.73 | 7.8 | No |\n| Quiet guesthouse | guesthouse | $163.07 | $2,119.91 | 9.1 | Yes |\n| Business district hotel | hotel | $197.93 | $2,573.09 | 8.2 | No |\n| Riverside apartment | apartment | $226.79 | $2,948.27 | 8.6 | Yes |\n| Central boutique hotel | hotel | $257.65 | $3,349.45 | 8.9 | No |\nNo `due_at_accommodation` figures were returned.\n\n## Notes\n- Real LAX\u2013SYD flights usually land two days after departure because of the date line. I searched lodging from 01-21 as a guess. If arrival is 01-22, the check-in date needs to change.\n- The sample durations (6.5 to 10 hours) are shorter than real nonstop flights, which take about 14 hours. Treat them as illustrative.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 22510,
+          "cache_read": 13704,
+          "cache_creation": 8798,
+          "output_tokens": 1749
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 0.5,
+          "comment": "search_stays: no call had check_in='2027-01-20'; nearest had check_in='2027-01-21'"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['business']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "one-way",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "One-way flight for one adult, SFO to NRT, 2027-02-10, economy. No lodging. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote four economy options to `/trip/options.md`. All four are **sample data**, so the prices and times are illustrative only. They aren't real availability and can't be booked.\n\n- **Best on price:** Meridian Air, $244.13. It leaves at 17:30 with 1 stop and takes 7h13m.\n- **Best on convenience:** Anser Airways, $311.04. It's nonstop, leaves at 14:23, and takes 5h23m, the shortest of the four.\n- **Tradeoff:** The nonstop costs about $67 more than the cheapest fare and saves about 1h50m. Northwind is only $1.13 more than Meridian but has 2 stops and takes 9h03m, so it isn't worth considering.\n\nThe fourth option is Blue Corridor, a nonstop at $380.04 that leaves at 11:44 and takes 6h08m. It costs more than Anser and takes longer.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "SFO",
+              "destination": "NRT",
+              "depart_date": "2027-02-10",
+              "travelers": 1,
+              "cabin": "economy"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# SFO \u2192 NRT, one-way, 2027-02-10, 1 adult, economy\n\n**Source: sample-data (synthetic). Illustrative planning figures only, not real availability and not bookable.** All offers returned in economy. No lodging requested.\n\n| Carrier | Depart | Stops | Duration | Fare (USD) |\n|---|---|---|---|---|\n| Meridian Air | 17:30 | 1 | 7h13m | 244.13 |\n| Northwind | 08:37 | 2 | 9h03m | 245.26 |\n| Anser Airways | 14:23 | 0 | 5h23m | 311.04 |\n| Blue Corridor | 11:44 | 0 | 6h08m | 380.04 |\n\nCheapest: Meridian Air $244.13. Most convenient: Anser Airways, nonstop, shortest, $311.04.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Meridian Air\", \"origin\": \"SFO\", \"destination\": \"NRT\", \"depart_date\": \"2027-02-10\", \"return_date\": null, \"depart_time_local\": \"17:30\", \"stops\": 1, \"duration_minutes\": 433, \"cabin\": \"economy\", \"fare_per_traveler\": 244.13, \"total_fare\": 244.13, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Northwind\", \"origin\": \"SFO\", \"destination\": \"NRT\", \"depart_date\": \"2027-02-10\", \"return_date\": null, \"depart_time_local\": \"08:37\", \"stops\": 2, \"duration_minutes\": 543, \"cabin\": \"economy\", \"fare_per_traveler\": 245.26, \"total_fare\": 245.26, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Anser Airways\", \"origin\": \"SFO\", \"destination\": \"NRT\", \"depart_date\": \"2027-02-10\", \"return_date\": null, \"depart_time_local\": \"14:23\", \"stops\": 0, \"duration_minutes\": 323, \"cabin\": \"economy\", \"fare_per_traveler\": 311.04, \"total_fare\": 311.04, \"travelers\": 1, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Blue Corridor\", \"origin\": \"SFO\", \"destination\": \"NRT\", \"depart_date\": \"2027-02-10\", \"return_date\": null, \"depart_time_local\": \"11:44\", \"stops\": 0, \"duration_minutes\": 368, \"cabin\": \"economy\", \"fare_per_traveler\": 380.04, \"total_fare\": 380.04, \"travelers\": 1, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\", \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# SFO \u2192 NRT, one-way, 2027-02-10, 1 adult, economy\n\n**Source: sample-data (synthetic). Illustrative planning figures only, not real availability and not bookable.** All offers returned in economy. No lodging requested.\n\n| Carrier | Depart | Stops | Duration | Fare (USD) |\n|---|---|---|---|---|\n| Meridian Air | 17:30 | 1 | 7h13m | 244.13 |\n| Northwind | 08:37 | 2 | 9h03m | 245.26 |\n| Anser Airways | 14:23 | 0 | 5h23m | 311.04 |\n| Blue Corridor | 11:44 | 0 | 6h08m | 380.04 |\n\nCheapest: Meridian Air $244.13. Most convenient: Anser Airways, nonstop, shortest, $311.04.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 19666,
+          "cache_read": 18259,
+          "cache_creation": 1399,
+          "output_tokens": 818
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['economy']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "lodging-only-with-ceiling",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Lodging only, the traveler already has flights. Barcelona, check in 2027-06-12, check out 2027-06-15, 2 guests, maximum $200 per night. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote four candidates to `/trip/options.md`. All four are sample data, so the prices are illustrative and none of them can be booked. The search returned no `due_at_accommodation` amounts.\n\n- **Best on price:** The budget hostel's private room is $115.50 a night, $346.50 for the 3 nights. It has a 7.8 rating and free cancellation.\n- **Best on convenience and quality:** The quiet guesthouse is the highest rated at 9.1, at $139.50 a night ($418.50 total). It is not refundable.\n- **Tradeoff:** The guesthouse costs $72 more than the hostel but has a much better rating. The hostel is cheaper and can be cancelled for free. The business district hotel ($496.50 total, 8.2, free cancellation) is a refundable middle option. The riverside apartment ($571.50, 8.6) is not refundable.",
+        "tool_calls": [
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Barcelona",
+              "check_in": "2027-06-12",
+              "check_out": "2027-06-15",
+              "guests": 2,
+              "max_nightly_rate": 200
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# Barcelona stays, 2027-06-12 to 2027-06-15 (3 nights, 2 guests, max $200/night)\n\n**Source: sample-data. These figures are illustrative only, not real availability, and nothing here is bookable.**\n\n| Name | Type | Nightly (USD) | Total (USD) | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | 115.50 | 346.50 | 7.8 | Yes |\n| Quiet guesthouse | guesthouse | 139.50 | 418.50 | 9.1 | No |\n| Business district hotel | hotel | 165.50 | 496.50 | 8.2 | Yes |\n| Riverside apartment | apartment | 190.50 | 571.50 | 8.6 | No |\n\nNo `due_at_accommodation` amounts were reported.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Budget hostel, private room (Barcelona)\", \"kind\": \"hostel\", \"location\": \"Barcelona\", \"check_in\": \"2027-06-12\", \"check_out\": \"2027-06-15\", \"nights\": 3, \"guests\": 2, \"nightly_rate\": 115.5, \"total_cost\": 346.5, \"guest_rating\": 7.8, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Quiet guesthouse (Barcelona)\", \"kind\": \"guesthouse\", \"location\": \"Barcelona\", \"check_in\": \"2027-06-12\", \"check_out\": \"2027-06-15\", \"nights\": 3, \"guests\": 2, \"nightly_rate\": 139.5, \"total_cost\": 418.5, \"guest_rating\": 9.1, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Business district hotel (Barcelona)\", \"kind\": \"hotel\", \"location\": \"Barcelona\", \"check_in\": \"2027-06-12\", \"check_out\": \"2027-06-15\", \"nights\": 3, \"guests\": 2, \"nightly_rate\": 165.5, \"total_cost\": 496.5, \"guest_rating\": 8.2, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Riverside apartment (Barcelona)\", \"kind\": \"apartment\", \"location\": \"Barcelona\", \"check_in\": \"2027-06-12\", \"check_out\": \"2027-06-15\", \"nights\": 3, \"guests\": 2, \"nightly_rate\": 190.5, \"total_cost\": 571.5, \"guest_rating\": 8.6, \"free_cancellation\": false, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# Barcelona stays, 2027-06-12 to 2027-06-15 (3 nights, 2 guests, max $200/night)\n\n**Source: sample-data. These figures are illustrative only, not real availability, and nothing here is bookable.**\n\n| Name | Type | Nightly (USD) | Total (USD) | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | 115.50 | 346.50 | 7.8 | Yes |\n| Quiet guesthouse | guesthouse | 139.50 | 418.50 | 9.1 | No |\n| Business district hotel | hotel | 165.50 | 496.50 | 8.2 | Yes |\n| Riverside apartment | apartment | 190.50 | 571.50 | 8.6 | No |\n\nNo `due_at_accommodation` amounts were reported.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 19720,
+          "cache_read": 18295,
+          "cache_creation": 1417,
+          "output_tokens": 820
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": null,
+          "comment": "no flight cabin briefed"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "no-cabin-means-economy",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Find flights and lodging for 2 travelers, SFO to Kyoto via KIX, 2027-04-05 returning 2027-04-10. Budget ceiling $4000 total. Write candidates to /trip/options.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "I wrote the candidates to `/trip/options.md`. All of the flight and lodging figures are sample data. They are illustrative only, not real availability, and you can't book them.\n\n- **Best on price:** Anser Airways (2 stops, $1,320.36 for both travelers) plus the private room in the budget hostel ($894.65 for 5 nights). That comes to **$2,215.01**. The hostel has no free cancellation, and its guest rating is the lowest at 7.8.\n- **Best on convenience:** the Northwind nonstop (10:49 departure, about 5h49m, $1,917.44 for both) plus the quiet guesthouse ($1,111.55, rated 9.1, free cancellation). That comes to **$3,028.99**.\n- **Tradeoff:** the convenient pairing costs about $814 more. In return you get a nonstop flight instead of 2 stops, a flight roughly 3.5 hours shorter, and a better-rated stay you can cancel.\n- **Budget:** every flight and stay combination fits under the $4,000 ceiling. The most expensive one, Meridian Air plus the central boutique hotel, is $3,817.69.\n\nAll flights came back in economy. None of the stays reported an amount due at the property. The totals leave out the transfer from KIX to Kyoto.",
+        "tool_calls": [
+          {
+            "name": "search_flights",
+            "args": {
+              "origin": "SFO",
+              "destination": "KIX",
+              "depart_date": "2027-04-05",
+              "return_date": "2027-04-10",
+              "travelers": 2,
+              "cabin": "economy"
+            }
+          },
+          {
+            "name": "search_stays",
+            "args": {
+              "location": "Kyoto",
+              "check_in": "2027-04-05",
+              "check_out": "2027-04-10",
+              "guests": 2
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/options.md",
+              "content": "# SFO -> Kyoto (via KIX), 2 travelers, 2027-04-05 to 2027-04-10 (5 nights)\nBudget ceiling: $4000 total\n\n**ALL DATA BELOW IS SAMPLE DATA (synthetic, source: sample-data). Flights and lodging both. Illustrative only, not real availability, nothing is bookable.**\n\n## Flights (economy, round trip, cabin returned = economy for all offers; no cabin_note)\n| Carrier | Depart | Stops | Duration (min) | Per traveler | Total (2) |\n|---|---|---|---|---|---|\n| Anser Airways | 12:03 | 2 | 569 | $660.18 | $1,320.36 |\n| Blue Corridor | 15:56 | 1 | 459 | $704.59 | $1,409.18 |\n| Northwind | 10:49 | 0 | 349 | $958.72 | $1,917.44 |\n| Meridian Air | 18:10 | 0 | 394 | $1,027.72 | $2,055.44 |\n\n## Stays in Kyoto (5 nights, 2 guests; no due_at_accommodation reported)\n| Name | Type | Nightly | Total | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | $178.93 | $894.65 | 7.8 | No |\n| Quiet guesthouse | guesthouse | $222.31 | $1,111.55 | 9.1 | Yes |\n| Business district hotel | hotel | $265.69 | $1,328.45 | 8.2 | No |\n| Riverside apartment | apartment | $307.07 | $1,535.35 | 8.6 | Yes |\n| Central boutique hotel | hotel | $352.45 | $1,762.25 | 8.9 | No |\n\n## Combos\n- Cheapest: Anser (2 stops) + hostel = $2,215.01\n- Best convenience/value: Northwind nonstop + Quiet guesthouse = $3,028.99 (free cancellation, rating 9.1)\n- Most expensive pairing (Meridian + boutique hotel) = $3,817.69, still under $4000\n- All combos fit the budget. Ground transfer KIX to Kyoto is not included.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "search_flights",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 4, \"count\": 4, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Anser Airways\", \"origin\": \"SFO\", \"destination\": \"KIX\", \"depart_date\": \"2027-04-05\", \"return_date\": \"2027-04-10\", \"depart_time_local\": \"12:03\", \"stops\": 2, \"duration_minutes\": 569, \"cabin\": \"economy\", \"fare_per_traveler\": 660.18, \"total_fare\": 1320.36, \"travelers\": 2, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Blue Corridor\", \"origin\": \"SFO\", \"destination\": \"KIX\", \"depart_date\": \"2027-04-05\", \"return_date\": \"2027-04-10\", \"depart_time_local\": \"15:56\", \"stops\": 1, \"duration_minutes\": 459, \"cabin\": \"economy\", \"fare_per_traveler\": 704.59, \"total_fare\": 1409.18, \"travelers\": 2, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Northwind\", \"origin\": \"SFO\", \"destination\": \"KIX\", \"depart_date\": \"2027-04-05\", \"return_date\": \"2027-04-10\", \"depart_time_local\": \"10:49\", \"stops\": 0, \"duration_minutes\": 349, \"cabin\": \"economy\", \"fare_per_traveler\": 958.72, \"total_fare\": 1917.44, \"travelers\": 2, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"carrier\": \"Meridian Air\", \"origin\": \"SFO\", \"destination\": \"KIX\", \"depart_date\": \"2027-04-05\", \"return_date\": \"2027-04-10\", \"depart_time_local\": \"18:10\", \"stops\": 0, \"duration_minutes\": 394, \"cabin\": \"economy\", \"fare_per_traveler\": 1027.72, \"total_fare\": 2055.44, \"travelers\": 2, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\", \"requested_cabin\": \"economy\"}"
+          },
+          {
+            "name": "search_stays",
+            "content": "{\"provider\": \"sample-data\", \"sources\": [\"sample-data\"], \"total_found\": 5, \"count\": 5, \"offers\": [{\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Budget hostel, private room (Kyoto)\", \"kind\": \"hostel\", \"location\": \"Kyoto\", \"check_in\": \"2027-04-05\", \"check_out\": \"2027-04-10\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 178.93, \"total_cost\": 894.65, \"guest_rating\": 7.8, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Quiet guesthouse (Kyoto)\", \"kind\": \"guesthouse\", \"location\": \"Kyoto\", \"check_in\": \"2027-04-05\", \"check_out\": \"2027-04-10\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 222.31, \"total_cost\": 1111.55, \"guest_rating\": 9.1, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Business district hotel (Kyoto)\", \"kind\": \"hotel\", \"location\": \"Kyoto\", \"check_in\": \"2027-04-05\", \"check_out\": \"2027-04-10\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 265.69, \"total_cost\": 1328.45, \"guest_rating\": 8.2, \"free_cancellation\": false, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Riverside apartment (Kyoto)\", \"kind\": \"apartment\", \"location\": \"Kyoto\", \"check_in\": \"2027-04-05\", \"check_out\": \"2027-04-10\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 307.07, \"total_cost\": 1535.35, \"guest_rating\": 8.6, \"free_cancellation\": true, \"currency\": \"USD\"}, {\"source\": \"sample-data\", \"synthetic\": true, \"name\": \"Central boutique hotel (Kyoto)\", \"kind\": \"hotel\", \"location\": \"Kyoto\", \"check_in\": \"2027-04-05\", \"check_out\": \"2027-04-10\", \"nights\": 5, \"guests\": 2, \"nightly_rate\": 352.45, \"total_cost\": 1762.25, \"guest_rating\": 8.9, \"free_cancellation\": false, \"currency\": \"USD\"}], \"warning\": \"These are synthetic sample offers, not live availability. Prices, times, and seat/room counts are illustrative only and nothing here is bookable. Tell the traveler this explicitly when you use these figures.\"}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/options.md"
+          }
+        ],
+        "files": {
+          "/trip/options.md": "# SFO -> Kyoto (via KIX), 2 travelers, 2027-04-05 to 2027-04-10 (5 nights)\nBudget ceiling: $4000 total\n\n**ALL DATA BELOW IS SAMPLE DATA (synthetic, source: sample-data). Flights and lodging both. Illustrative only, not real availability, nothing is bookable.**\n\n## Flights (economy, round trip, cabin returned = economy for all offers; no cabin_note)\n| Carrier | Depart | Stops | Duration (min) | Per traveler | Total (2) |\n|---|---|---|---|---|---|\n| Anser Airways | 12:03 | 2 | 569 | $660.18 | $1,320.36 |\n| Blue Corridor | 15:56 | 1 | 459 | $704.59 | $1,409.18 |\n| Northwind | 10:49 | 0 | 349 | $958.72 | $1,917.44 |\n| Meridian Air | 18:10 | 0 | 394 | $1,027.72 | $2,055.44 |\n\n## Stays in Kyoto (5 nights, 2 guests; no due_at_accommodation reported)\n| Name | Type | Nightly | Total | Rating | Free cancellation |\n|---|---|---|---|---|---|\n| Budget hostel, private room | hostel | $178.93 | $894.65 | 7.8 | No |\n| Quiet guesthouse | guesthouse | $222.31 | $1,111.55 | 9.1 | Yes |\n| Business district hotel | hotel | $265.69 | $1,328.45 | 8.2 | No |\n| Riverside apartment | apartment | $307.07 | $1,535.35 | 8.6 | Yes |\n| Central boutique hotel | hotel | $352.45 | $1,762.25 | 8.9 | No |\n\n## Combos\n- Cheapest: Anser (2 stops) + hostel = $2,215.01\n- Best convenience/value: Northwind nonstop + Quiet guesthouse = $3,028.99 (free cancellation, rating 9.1)\n- Most expensive pairing (Meridian + boutique hotel) = $3,817.69, still under $4000\n- All combos fit the budget. Ground transfer KIX to Kyoto is not included.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 22558,
+          "cache_read": 19432,
+          "cache_creation": 3118,
+          "output_tokens": 1677
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "search_arguments",
+          "score": 1.0,
+          "comment": "all briefed arguments sent"
+        },
+        {
+          "key": "cabin_as_briefed",
+          "score": 1,
+          "comment": "searched ['economy']"
+        },
+        {
+          "key": "forbidden_tools_unused",
+          "score": 1,
+          "comment": "none called"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    }
+  ]
+}

@@ -35,6 +35,7 @@ rather than re-parsing the markdown the agent wrote.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from datetime import date
@@ -66,6 +67,13 @@ WORKSPACE_FILES: tuple[tuple[str, str, str], ...] = (
 )
 
 ITINERARY_PATH = f"{WORKSPACE}/itinerary.md"
+
+# Content widths in pixels. A fixed `st.container(width=...)` is capped to its
+# parent, so these act as maximums, which is how the page adapts: Python never
+# learns the viewport. Here rather than in the entry script because `chat.py`
+# needs the same figure for its input and a page cannot import that script.
+PLAN_WIDTH = 820
+TRIP_WIDTH = 1280
 
 # Tools whose structured output the trip view renders directly.
 CAPTURED_TOOLS = ("search_flights", "search_stays", "summarize_budget")
@@ -402,6 +410,19 @@ def money_axis_title(prefix: str, code: str, fallback: str = "USD") -> str:
     `$1,275.00`.
     """
     return f"{prefix} ({currency_label(code, fallback)})"
+
+
+def escape_markdown(text: str) -> str:
+    """`text` with each `$` and `~` escaped, for anything Streamlit parses as markdown.
+
+    Text between two `$` signs renders as LaTeX, and between two `~` as
+    strikethrough, so a reply quoting prices loses its signs and an itinerary
+    reading "~€20 ... ~€12" looks cancelled. Call this at render time only: what
+    is stored stays raw, because the replay escapes it again. The lookbehind
+    leaves an already escaped `\\$` alone; a plain replace would double the
+    backslash and leave the sign live.
+    """
+    return re.sub(r"(?<!\\)([$~])", r"\\\1", text)
 
 
 def money_text(amount: Any, code: str, fallback: str = "USD") -> str:

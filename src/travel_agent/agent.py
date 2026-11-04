@@ -14,6 +14,8 @@ Two entry points:
 
 from __future__ import annotations
 
+from typing import Any
+
 from deepagents import create_deep_agent
 from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
 from langchain.chat_models import init_chat_model
@@ -88,7 +90,7 @@ def _chat_model(model: str, effort: Effort | None, max_tokens: int) -> BaseChatM
     Omitting the kwarg rather than passing `None` keeps a model that rejects
     effort (Haiku 4.5) on a request shape it accepts.
     """
-    kwargs = {"reasoning_effort": effort} if effort else {}
+    kwargs: dict[str, Any] = {"reasoning_effort": effort} if effort else {}
     return init_chat_model(model, max_tokens=max_tokens, **kwargs)
 
 

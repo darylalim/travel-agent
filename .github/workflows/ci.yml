@@ -133,7 +133,7 @@ jobs:
         # requires-python = ">=3.11,<4.0" the package advertises.
         #
         # Nothing sits between them. numpy is the only package uv.lock resolves
-        # to two versions (2.4.6 below 3.12, 2.5.2 at or above), and these two
+        # to two versions (2.4.6 below 3.12, 2.5.4 at or above), and these two
         # legs straddle that boundary, so a 3.12 leg would install a set neither
         # end misses. Add one back the day `uv lock` forks a *second* package at
         # a different boundary — two boundaries leave a middle band untested.

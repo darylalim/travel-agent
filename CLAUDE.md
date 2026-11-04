@@ -469,6 +469,14 @@ Other things that bite here:
   `on_activity` callback, never the yield channel.
 - Don't render the reply after `st.write_stream` — it already replaced its own
   placeholder, so a second write duplicates the message.
+- **Two `$` signs in one markdown string are a LaTeX span, and two `~` are
+  strikethrough.** A reply quoting two prices loses both signs and the words
+  between them turn into maths, and "~€20 ... ~€12" strikes through a stretch of
+  itinerary, with nothing raised. `escape_markdown` runs at render time only: `tee` stores the raw
+  chunk and yields the escaped one, so the stored message stays what was written
+  and the replay escapes it the same way. Any new render of model or
+  traveler text needs it. Fixed strings do not: `money_text` spells the ISO code
+  rather than `$`, and no provider note contains one.
 - `@st.cache_resource` is process-wide: that is what makes `/memories/` outlive
   a reload, and it also means every browser session shares one store. Editing
   the body of `get_agent()` invalidates the cache, dropping traveler memory on
@@ -534,6 +542,20 @@ Other things that bite here:
   and shows up in `at.status` with a meaningless `state`, which `test_pages.py`
   compares element for element. The browser renders it correctly either way;
   only the page's testability breaks. Prefix the icon into the label instead.
+- **`st.warning` reads the `yellow*` tokens, not `orangeColor`,** and it carries
+  the sample-data notice, so that notice depends on them. `st.info`, `st.error`
+  and metric deltas read `blue*`, `red*` and `green*`.
+- **Dark `primaryColor` stays `#2DD4BF`, so don't add a `type="primary"` button
+  without revisiting it.** White on it is only 1.86:1. A darker teal (`#0E857B`)
+  fixed that button but made the selected option in `st.segmented_control` hard
+  to read.
+- **Python never learns the viewport,** so `if width < 640` is not an option and
+  everything adapts in the browser. Widths are capped by `st.container(width=...)`,
+  which acts as a maximum (`PLAN_WIDTH`, `TRIP_WIDTH` in `ui.py`). `st.chat_input`
+  goes through `st.bottom`, or it renders inline inside that container. KPI columns
+  are built from the card count, since a fixed three leaves gaps on a no-budget
+  trip, and they stack at 640px. A pinned `large` column fills a phone-width
+  table and hides everything after it.
 - **One palette serves both modes by choice, not by constraint.** As of
   Streamlit 1.62 `chartCategoricalColors` *is* accepted in `[theme.light]` /
   `[theme.dark]` and their sidebar sections, inheriting from `[theme]` when

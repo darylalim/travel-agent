@@ -1,0 +1,422 @@
+{
+  "experiment": "budget_analyst-cfccea69",
+  "metadata": {
+    "judge": "anthropic:claude-sonnet-5-5",
+    "provider": "sample-data",
+    "repetitions": 1,
+    "subagent": "budget-analyst",
+    "model": "anthropic:claude-haiku-4-5",
+    "effort": null
+  },
+  "runs": [
+    {
+      "key": "due-at-accommodation-is-a-caveat",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a $2000 USD budget, 1 traveler, 4 nights. Flights: $450 return. Lodging: $960 total_cost for the 4 nights; the provider also reports $85 due_at_accommodation, and it is not known whether that is already inside the $960. Food: $50 per day for 4 days. Figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "## Summary\n\nYour trip is **within budget** at $1,610 of your $2,000 ceiling, leaving **$390 remaining**.\n\n**Breakdown by category:**\n- Lodging: $960\n- Flights: $450\n- Food: $200 ($50/day \u00d7 4 days)\n\n**Largest expenses:** Lodging ($960) and flights ($450) account for $1,410 of the total.\n\n\u26a0\ufe0f **Critical caveat:** The lodging provider mentions $85 due at the accommodation, but it's unclear whether this is already included in the $960 quote or an additional charge. Clarify this before booking \u2014 if it's additional, your true cost would be $1,695, though you'd still stay within budget with $305 to spare.\n\n**All figures are sample data** \u2014 verify against actual quotes before finalizing your plans.\n\nThe breakdown has been written to `/trip/budget.md`.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "Return flights, 1 pax",
+                  "category": "flights",
+                  "amount": 450,
+                  "estimated": true
+                },
+                {
+                  "label": "Lodging, 4 nights",
+                  "category": "lodging",
+                  "amount": 960,
+                  "quantity": 1,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, 4 days",
+                  "category": "food",
+                  "amount": 50,
+                  "quantity": 4,
+                  "estimated": true
+                }
+              ],
+              "budget_total": 2000,
+              "currency": "USD"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Trip Budget Breakdown\n\n**Trip Details:** 1 traveler, 4 nights  \n**Budget:** $2,000 USD  \n**Total Estimated Cost:** $1,610 USD (all figures are sample data)\n\n## Summary\n\n| Metric | Amount |\n|--------|--------|\n| Budget | $2,000.00 |\n| Estimated Total | $1,610.00 |\n| Remaining | $390.00 |\n| % of Budget Used | 80.5% |\n\n**Status:** \u2713 **Within Budget** \u2014 $390 remaining\n\n---\n\n## Cost Breakdown by Category\n\n| Category | Amount |\n|----------|--------|\n| Lodging | $960.00 |\n| Flights | $450.00 |\n| Food | $200.00 |\n| **Total** | **$1,610.00** |\n\n---\n\n## Largest Line Items\n\n1. **Lodging, 4 nights** \u2013 $960.00\n2. **Return flights, 1 pax** \u2013 $450.00\n3. **Food, 4 days** \u2013 $200.00 ($50/day \u00d7 4 days)\n\n---\n\n## Important Notes\n\n- **All figures are sample data** and should be verified with actual quotes before finalizing.\n- **Possible additional cost at accommodation:** The lodging provider reports $85 due at the accommodation. It is **unknown whether this $85 is already included** in the quoted $960 total or if it represents an additional charge. Clarify this with the provider to confirm whether the true lodging cost may be $1,045 instead of $960.\n  - If the $85 is additional, the trip total would be **$1,695**, still leaving $305 of buffer within the $2,000 budget.\n\n---\n\n*Budget breakdown prepared on 4 November 2026*\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"USD\", \"budget_total\": 2000.0, \"total_estimated\": 1610.0, \"remaining\": 390.0, \"over_budget\": false, \"overage\": 0.0, \"percent_of_budget_used\": 80.5, \"by_category\": {\"lodging\": 960.0, \"flights\": 450.0, \"food\": 200.0}, \"largest_line_items\": [{\"label\": \"Lodging, 4 nights\", \"category\": \"lodging\", \"unit_amount\": 960.0, \"quantity\": 1, \"subtotal\": 960.0, \"estimated\": true}, {\"label\": \"Return flights, 1 pax\", \"category\": \"flights\", \"unit_amount\": 450.0, \"quantity\": 1, \"subtotal\": 450.0, \"estimated\": true}, {\"label\": \"Food, 4 days\", \"category\": \"food\", \"unit_amount\": 50.0, \"quantity\": 4, \"subtotal\": 200.0, \"estimated\": true}], \"all_lines_estimated\": true, \"line_count\": 3}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Trip Budget Breakdown\n\n**Trip Details:** 1 traveler, 4 nights  \n**Budget:** $2,000 USD  \n**Total Estimated Cost:** $1,610 USD (all figures are sample data)\n\n## Summary\n\n| Metric | Amount |\n|--------|--------|\n| Budget | $2,000.00 |\n| Estimated Total | $1,610.00 |\n| Remaining | $390.00 |\n| % of Budget Used | 80.5% |\n\n**Status:** \u2713 **Within Budget** \u2014 $390 remaining\n\n---\n\n## Cost Breakdown by Category\n\n| Category | Amount |\n|----------|--------|\n| Lodging | $960.00 |\n| Flights | $450.00 |\n| Food | $200.00 |\n| **Total** | **$1,610.00** |\n\n---\n\n## Largest Line Items\n\n1. **Lodging, 4 nights** \u2013 $960.00\n2. **Return flights, 1 pax** \u2013 $450.00\n3. **Food, 4 days** \u2013 $200.00 ($50/day \u00d7 4 days)\n\n---\n\n## Important Notes\n\n- **All figures are sample data** and should be verified with actual quotes before finalizing.\n- **Possible additional cost at accommodation:** The lodging provider reports $85 due at the accommodation. It is **unknown whether this $85 is already included** in the quoted $960 total or if it represents an additional charge. Clarify this with the provider to confirm whether the true lodging cost may be $1,045 instead of $960.\n  - If the $85 is additional, the trip total would be **$1,695**, still leaving $305 of buffer within the $2,000 budget.\n\n---\n\n*Budget breakdown prepared on 4 November 2026*\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 13779,
+          "cache_read": 4572,
+          "cache_creation": 5112,
+          "output_tokens": 994
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": 1,
+          "comment": "total 1610.0 against 2000.0; expected 1610 against 2000"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "USD"
+        },
+        {
+          "key": "due_at_accommodation_excluded",
+          "score": 1,
+          "comment": "kept out"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "kyoto-fits",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this plan against a $4000 USD budget for 2 travelers, 5 nights in Kyoto. Flights SFO-KIX return: $620 per person. Lodging: $180 per night, 5 nights. Food: $55 per person per day, 5 days. Local transport passes: $120 total. Activities and temple entries: $300 total. All figures are sample data, not live prices. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "\u2713 **Done.** Your Kyoto trip for 2 travelers comes to **$3,110 USD** \u2014 well within your $4,000 budget with **$890 remaining**.\n\n**Key findings:**\n- **Flights** are your largest expense at $1,240 (40% of budget)\n- **Lodging** is your second largest at $900 (23% of budget)\n- **Food** totals $550 at $55/person/day\n- You have a healthy $890 cushion for unexpected costs or splurges\n\n**Important:** All figures you provided are sample data. Confirm actual prices for flights, accommodation, meals, and activities before booking, as these estimates may shift once you get live quotes.\n\nThe breakdown has been written to `/trip/budget.md`.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "SFO-KIX return, 2 pax",
+                  "category": "flights",
+                  "amount": 620,
+                  "quantity": 2,
+                  "estimated": true
+                },
+                {
+                  "label": "Lodging, 5 nights",
+                  "category": "lodging",
+                  "amount": 180,
+                  "quantity": 5,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, 2 pax, 5 days",
+                  "category": "food",
+                  "amount": 55,
+                  "quantity": 10,
+                  "estimated": true
+                },
+                {
+                  "label": "Local transport passes",
+                  "category": "transport",
+                  "amount": 120,
+                  "quantity": 1,
+                  "estimated": true
+                },
+                {
+                  "label": "Activities and temple entries",
+                  "category": "activities",
+                  "amount": 300,
+                  "quantity": 1,
+                  "estimated": true
+                }
+              ],
+              "budget_total": 4000,
+              "currency": "USD"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Kyoto Trip Budget \u2014 2 travelers, 5 nights\n\n**Total Estimated Cost: $3,110 USD**\n\n**Budget: $4,000 USD**\n\n**Status: \u2713 Under budget \u2014 $890 remaining (77.8% of budget used)**\n\n---\n\n## Breakdown by Category\n\n| Category | Subtotal |\n|----------|----------|\n| Flights | $1,240.00 |\n| Lodging | $900.00 |\n| Food | $550.00 |\n| Transport | $120.00 |\n| Activities | $300.00 |\n| **Total** | **$3,110.00** |\n\n---\n\n## Largest Line Items\n\n1. **SFO-KIX return, 2 pax** \u2014 $1,240 (flights)\n   - $620 per person\n\n2. **Lodging, 5 nights** \u2014 $900\n   - $180 per night\n\n3. **Food, 2 pax, 5 days** \u2014 $550\n   - $55 per person per day\n\n---\n\n## Notes\n\n\u26a0\ufe0f **All figures are sample data, not live prices.** Confirm actual rates before booking:\n- Flights\n- Accommodation\n- Food costs\n- Local transport passes\n- Activity and temple entry fees\n\nThis plan leaves a comfortable $890 buffer for contingencies, souvenirs, or upgrades.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"USD\", \"budget_total\": 4000.0, \"total_estimated\": 3110.0, \"remaining\": 890.0, \"over_budget\": false, \"overage\": 0.0, \"percent_of_budget_used\": 77.8, \"by_category\": {\"flights\": 1240.0, \"lodging\": 900.0, \"food\": 550.0, \"activities\": 300.0, \"transport\": 120.0}, \"largest_line_items\": [{\"label\": \"SFO-KIX return, 2 pax\", \"category\": \"flights\", \"unit_amount\": 620.0, \"quantity\": 2, \"subtotal\": 1240.0, \"estimated\": true}, {\"label\": \"Lodging, 5 nights\", \"category\": \"lodging\", \"unit_amount\": 180.0, \"quantity\": 5, \"subtotal\": 900.0, \"estimated\": true}, {\"label\": \"Food, 2 pax, 5 days\", \"category\": \"food\", \"unit_amount\": 55.0, \"quantity\": 10, \"subtotal\": 550.0, \"estimated\": true}], \"all_lines_estimated\": true, \"line_count\": 5}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Kyoto Trip Budget \u2014 2 travelers, 5 nights\n\n**Total Estimated Cost: $3,110 USD**\n\n**Budget: $4,000 USD**\n\n**Status: \u2713 Under budget \u2014 $890 remaining (77.8% of budget used)**\n\n---\n\n## Breakdown by Category\n\n| Category | Subtotal |\n|----------|----------|\n| Flights | $1,240.00 |\n| Lodging | $900.00 |\n| Food | $550.00 |\n| Transport | $120.00 |\n| Activities | $300.00 |\n| **Total** | **$3,110.00** |\n\n---\n\n## Largest Line Items\n\n1. **SFO-KIX return, 2 pax** \u2014 $1,240 (flights)\n   - $620 per person\n\n2. **Lodging, 5 nights** \u2014 $900\n   - $180 per night\n\n3. **Food, 2 pax, 5 days** \u2014 $550\n   - $55 per person per day\n\n---\n\n## Notes\n\n\u26a0\ufe0f **All figures are sample data, not live prices.** Confirm actual rates before booking:\n- Flights\n- Accommodation\n- Food costs\n- Local transport passes\n- Activity and temple entry fees\n\nThis plan leaves a comfortable $890 buffer for contingencies, souvenirs, or upgrades.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 13926,
+          "cache_read": 4692,
+          "cache_creation": 5130,
+          "output_tokens": 973
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": 1,
+          "comment": "total 3110.0 against 4000.0; expected 3110 against 4000"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "USD"
+        },
+        {
+          "key": "due_at_accommodation_excluded",
+          "score": null,
+          "comment": "nothing to exclude in this example"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "stockholm-sek",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a 15000 SEK budget, 1 traveler, 4 nights in Stockholm. All amounts are in SEK. Flights AMS-ARN return: 2400. Lodging: 1450 per night for 4 nights. Food: 600 per day for 4 days. Transport card: 400. Figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "**Budget Summary:**\n\nYour 4-night Stockholm trip totals **11,000 SEK** \u2014 well within your 15,000 SEK budget, leaving you **4,000 SEK** cushion (73.3% used).\n\n**Largest line items:**\n1. **Lodging** \u2013 5,800 SEK (4 nights at 1,450/night)\n2. **Flights** \u2013 2,400 SEK (AMS-ARN return)\n3. **Food** \u2013 2,400 SEK (600/day for 4 days)\n\nThe plan is comfortably under budget with good buffer room. All figures flagged as sample data\u2014verify actual prices before booking to ensure the total remains accurate.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "Flights AMS-ARN return, 1 pax",
+                  "category": "flights",
+                  "amount": 2400,
+                  "estimated": true
+                },
+                {
+                  "label": "Lodging, 4 nights",
+                  "category": "lodging",
+                  "amount": 1450,
+                  "quantity": 4,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, 4 days",
+                  "category": "food",
+                  "amount": 600,
+                  "quantity": 4,
+                  "estimated": true
+                },
+                {
+                  "label": "Transport card",
+                  "category": "transport",
+                  "amount": 400,
+                  "estimated": true
+                }
+              ],
+              "budget_total": 15000,
+              "currency": "SEK"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Stockholm Trip Budget Breakdown\n**Trip Duration:** 4 nights, 1 traveler  \n**Budget:** 15,000 SEK  \n**Currency:** SEK\n\n## Summary\n**Total Cost:** 11,000 SEK  \n**Remaining:** 4,000 SEK  \n**Status:** \u2713 Within budget (73.3% of budget used)\n\n---\n\n## Cost Breakdown by Category\n\n| Category | Amount | Notes |\n|----------|--------|-------|\n| Lodging | 5,800 SEK | 1,450/night \u00d7 4 nights |\n| Flights | 2,400 SEK | AMS-ARN return, 1 pax |\n| Food | 2,400 SEK | 600/day \u00d7 4 days |\n| Transport | 400 SEK | Transport card |\n| **Total** | **11,000 SEK** | |\n\n---\n\n## Largest Line Items\n1. **Lodging, 4 nights** \u2013 5,800 SEK (52.7% of total)\n2. **Flights AMS-ARN return, 1 pax** \u2013 2,400 SEK (21.8% of total)\n3. **Food, 4 days** \u2013 2,400 SEK (21.8% of total)\n\n---\n\n## Important Notes\n\u26a0\ufe0f **All figures are sample data and not confirmed prices.** Actual costs may vary. The breakdown above is based on estimated rates and should be verified with real quotes before booking.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"SEK\", \"budget_total\": 15000.0, \"total_estimated\": 11000.0, \"remaining\": 4000.0, \"over_budget\": false, \"overage\": 0.0, \"percent_of_budget_used\": 73.3, \"by_category\": {\"lodging\": 5800.0, \"flights\": 2400.0, \"food\": 2400.0, \"transport\": 400.0}, \"largest_line_items\": [{\"label\": \"Lodging, 4 nights\", \"category\": \"lodging\", \"unit_amount\": 1450.0, \"quantity\": 4, \"subtotal\": 5800.0, \"estimated\": true}, {\"label\": \"Flights AMS-ARN return, 1 pax\", \"category\": \"flights\", \"unit_amount\": 2400.0, \"quantity\": 1, \"subtotal\": 2400.0, \"estimated\": true}, {\"label\": \"Food, 4 days\", \"category\": \"food\", \"unit_amount\": 600.0, \"quantity\": 4, \"subtotal\": 2400.0, \"estimated\": true}], \"all_lines_estimated\": true, \"line_count\": 4}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Stockholm Trip Budget Breakdown\n**Trip Duration:** 4 nights, 1 traveler  \n**Budget:** 15,000 SEK  \n**Currency:** SEK\n\n## Summary\n**Total Cost:** 11,000 SEK  \n**Remaining:** 4,000 SEK  \n**Status:** \u2713 Within budget (73.3% of budget used)\n\n---\n\n## Cost Breakdown by Category\n\n| Category | Amount | Notes |\n|----------|--------|-------|\n| Lodging | 5,800 SEK | 1,450/night \u00d7 4 nights |\n| Flights | 2,400 SEK | AMS-ARN return, 1 pax |\n| Food | 2,400 SEK | 600/day \u00d7 4 days |\n| Transport | 400 SEK | Transport card |\n| **Total** | **11,000 SEK** | |\n\n---\n\n## Largest Line Items\n1. **Lodging, 4 nights** \u2013 5,800 SEK (52.7% of total)\n2. **Flights AMS-ARN return, 1 pax** \u2013 2,400 SEK (21.8% of total)\n3. **Food, 4 days** \u2013 2,400 SEK (21.8% of total)\n\n---\n\n## Important Notes\n\u26a0\ufe0f **All figures are sample data and not confirmed prices.** Actual costs may vary. The breakdown above is based on estimated rates and should be verified with real quotes before booking.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 13762,
+          "cache_read": 4602,
+          "cache_creation": 5072,
+          "output_tokens": 908
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": 1,
+          "comment": "total 11000.0 against 15000.0; expected 11000 against 15000"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "SEK"
+        },
+        {
+          "key": "due_at_accommodation_excluded",
+          "score": null,
+          "comment": "nothing to exclude in this example"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    },
+    {
+      "key": "lisbon-over",
+      "inputs": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Cost this against a $1500 USD budget, 2 travelers, 7 nights in Lisbon. Flights JFK-LIS return: $540 per person. Lodging: $130 per night for 7 nights. Food: $45 per person per day for 7 days. Activities: $150 total. Figures are sample data. Write the breakdown to /trip/budget.md."
+          }
+        ]
+      },
+      "outputs": {
+        "response": "## Summary\n\n**This plan is over budget by $1,270** ($2,770 total vs. $1,500 budget).\n\n### Largest line items:\n1. **Flights:** $1,080 (2 passengers @ $540 each)\n2. **Lodging:** $910 (7 nights @ $130/night)\n3. **Food:** $630 (14 person-days @ $45/person/day)\n\n### To close the gap, consider:\n\n1. **Reduce trip to 5 nights** instead of 7: saves $260 on lodging\n2. **Lower food budget to $35/person/day**: saves $70\n3. **Find flights at $450/person instead of $540**: saves $180\n\nThese cuts (savings of $510) would bring the plan to $2,260\u2014still $760 over budget. You'll need additional reductions, such as shortening to 4 nights or finding much cheaper lodging.\n\n**Note:** All figures are sample data and flagged as estimated in the breakdown. Confirm actual prices with vendors before finalizing.",
+        "tool_calls": [
+          {
+            "name": "summarize_budget",
+            "args": {
+              "items": [
+                {
+                  "label": "JFK-LIS return, 2 pax",
+                  "category": "flights",
+                  "amount": 540,
+                  "quantity": 2,
+                  "estimated": true
+                },
+                {
+                  "label": "Lodging, 7 nights",
+                  "category": "lodging",
+                  "amount": 130,
+                  "quantity": 7,
+                  "estimated": true
+                },
+                {
+                  "label": "Food, 2 pax, 7 days",
+                  "category": "food",
+                  "amount": 45,
+                  "quantity": 14,
+                  "estimated": true
+                },
+                {
+                  "label": "Activities",
+                  "category": "activities",
+                  "amount": 150,
+                  "quantity": 1,
+                  "estimated": true
+                }
+              ],
+              "budget_total": 1500,
+              "currency": "USD"
+            }
+          },
+          {
+            "name": "write_file",
+            "args": {
+              "file_path": "/trip/budget.md",
+              "content": "# Lisbon Trip Budget Breakdown\n\n**Trip Details:** 2 travelers, 7 nights in Lisbon\n\n**Budget:** $1,500 USD\n\n---\n\n## Cost Summary\n\n| Category | Amount | Details |\n|----------|--------|---------|\n| Flights | $1,080 | JFK-LIS return, 2 pax @ $540/person |\n| Lodging | $910 | 7 nights @ $130/night |\n| Food | $630 | 14 person-days @ $45/person/day |\n| Activities | $150 | Total activities |\n| **TOTAL** | **$2,770** | |\n\n---\n\n## Budget Status\n\n**Total Estimated Cost:** $2,770 USD  \n**Budget:** $1,500 USD  \n**Over Budget:** $1,270 USD (184.7% of budget)\n\n\u26a0\ufe0f **This plan exceeds the budget by $1,270.**\n\n---\n\n## Largest Line Items\n\n1. **Flights:** $1,080 (39% of total)\n2. **Lodging:** $910 (33% of total)\n3. **Food:** $630 (23% of total)\n\n---\n\n## Proposed Cuts to Close the Gap\n\nTo fit the $1,500 budget, consider these adjustments:\n\n### Option 1: Reduce Trip Length + Lower Lodging\n- **Cut 2 nights of lodging** (from 7 to 5 nights): Save $260\n- **Reduce food budget to $35/person/day** (from $45): Save $70\n- **Remaining overage:** $940\n\n### Option 2: Find Cheaper Flights + Lower Lodging\n- **Reduce flights to $450/person** (find cheaper flights): Save $180\n- **Reduce lodging to $100/night** (find cheaper accommodation): Save $210\n- **Reduce activities to $50**: Save $100\n- **Remaining overage:** $780\n\n### Option 3: Significant Scope Reduction\n- **Shorten trip to 4 nights** (lodging: $520, save $390)\n- **Reduce food budget to $35/person/day** (save $70)\n- **Total after cuts:** $2,310 (still $810 over)\n- **Further reduce flights or lodging needed**\n\n---\n\n## Data Quality Note\n\n\u26a0\ufe0f **All figures are sample data and estimated.** Actual prices should be confirmed with vendors (airlines, accommodation providers, local guides) before finalizing the plan. The total rests on these estimates and may differ significantly from actual costs.\n"
+            }
+          }
+        ],
+        "tool_results": [
+          {
+            "name": "summarize_budget",
+            "content": "{\"currency\": \"USD\", \"budget_total\": 1500.0, \"total_estimated\": 2770.0, \"remaining\": -1270.0, \"over_budget\": true, \"overage\": 1270.0, \"percent_of_budget_used\": 184.7, \"by_category\": {\"flights\": 1080.0, \"lodging\": 910.0, \"food\": 630.0, \"activities\": 150.0}, \"largest_line_items\": [{\"label\": \"JFK-LIS return, 2 pax\", \"category\": \"flights\", \"unit_amount\": 540.0, \"quantity\": 2, \"subtotal\": 1080.0, \"estimated\": true}, {\"label\": \"Lodging, 7 nights\", \"category\": \"lodging\", \"unit_amount\": 130.0, \"quantity\": 7, \"subtotal\": 910.0, \"estimated\": true}, {\"label\": \"Food, 2 pax, 7 days\", \"category\": \"food\", \"unit_amount\": 45.0, \"quantity\": 14, \"subtotal\": 630.0, \"estimated\": true}], \"all_lines_estimated\": true, \"line_count\": 4}"
+          },
+          {
+            "name": "write_file",
+            "content": "Updated file /trip/budget.md"
+          }
+        ],
+        "files": {
+          "/trip/budget.md": "# Lisbon Trip Budget Breakdown\n\n**Trip Details:** 2 travelers, 7 nights in Lisbon\n\n**Budget:** $1,500 USD\n\n---\n\n## Cost Summary\n\n| Category | Amount | Details |\n|----------|--------|---------|\n| Flights | $1,080 | JFK-LIS return, 2 pax @ $540/person |\n| Lodging | $910 | 7 nights @ $130/night |\n| Food | $630 | 14 person-days @ $45/person/day |\n| Activities | $150 | Total activities |\n| **TOTAL** | **$2,770** | |\n\n---\n\n## Budget Status\n\n**Total Estimated Cost:** $2,770 USD  \n**Budget:** $1,500 USD  \n**Over Budget:** $1,270 USD (184.7% of budget)\n\n\u26a0\ufe0f **This plan exceeds the budget by $1,270.**\n\n---\n\n## Largest Line Items\n\n1. **Flights:** $1,080 (39% of total)\n2. **Lodging:** $910 (33% of total)\n3. **Food:** $630 (23% of total)\n\n---\n\n## Proposed Cuts to Close the Gap\n\nTo fit the $1,500 budget, consider these adjustments:\n\n### Option 1: Reduce Trip Length + Lower Lodging\n- **Cut 2 nights of lodging** (from 7 to 5 nights): Save $260\n- **Reduce food budget to $35/person/day** (from $45): Save $70\n- **Remaining overage:** $940\n\n### Option 2: Find Cheaper Flights + Lower Lodging\n- **Reduce flights to $450/person** (find cheaper flights): Save $180\n- **Reduce lodging to $100/night** (find cheaper accommodation): Save $210\n- **Reduce activities to $50**: Save $100\n- **Remaining overage:** $780\n\n### Option 3: Significant Scope Reduction\n- **Shorten trip to 4 nights** (lodging: $520, save $390)\n- **Reduce food budget to $35/person/day** (save $70)\n- **Total after cuts:** $2,310 (still $810 over)\n- **Further reduce flights or lodging needed**\n\n---\n\n## Data Quality Note\n\n\u26a0\ufe0f **All figures are sample data and estimated.** Actual prices should be confirmed with vendors (airlines, accommodation providers, local guides) before finalizing the plan. The total rests on these estimates and may differ significantly from actual costs.\n"
+        },
+        "usage": {
+          "model_calls": 3,
+          "input_tokens": 14021,
+          "cache_read": 4609,
+          "cache_creation": 5327,
+          "output_tokens": 1253
+        }
+      },
+      "error": null,
+      "scores": [
+        {
+          "key": "budget_total",
+          "score": 1,
+          "comment": "total 2770.0 against 1500.0; expected 2770 against 1500"
+        },
+        {
+          "key": "budget_currency",
+          "score": 1,
+          "comment": "USD"
+        },
+        {
+          "key": "due_at_accommodation_excluded",
+          "score": null,
+          "comment": "nothing to exclude in this example"
+        },
+        {
+          "key": "rubric",
+          "score": 1.0,
+          "comment": "all criteria met"
+        }
+      ]
+    }
+  ]
+}

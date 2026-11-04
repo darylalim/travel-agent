@@ -27,7 +27,7 @@ metricValueFontWeight = 600
 # *intersection* of the two OKLCH lightness bands — light 0.43-0.77, dark
 # 0.48-0.67 — i.e. the dark band. The earlier hues were picked by eye at
 # Tailwind 400/500 and five of the seven sat above 0.67, too light to hold
-# against #17161A. Each hue below is the same family re-stepped to land inside
+# against #171513. Each hue below is the same family re-stepped to land inside
 # 0.48-0.67, which also lifts every slot past 3:1 on the light surface.
 #
 # Checked, not eyeballed, with the dataviz skill's validate_palette.js: all
@@ -67,8 +67,20 @@ borderColor = "#E5E0D6"
 showWidgetBorder = true
 dataframeBorderColor = "#E5E0D6"
 dataframeHeaderBackgroundColor = "#F4F1EB"
-# Amber carries the synthetic-fare notice: visible, not alarming.
-orangeColor = "#B45309"
+# `st.warning` reads the yellow tokens, not orange, and it carries the
+# sample-data notice: visible, not alarming.
+yellowColor = "#B45309"
+yellowBackgroundColor = "#FBF0DC"
+yellowTextColor = "#7A3E08"
+blueColor = "#0369A1"
+blueBackgroundColor = "#E3F0F7"
+blueTextColor = "#075985"
+redColor = "#B91C1C"
+redBackgroundColor = "#FBE9E7"
+redTextColor = "#991B1B"
+greenColor = "#15803D"
+greenBackgroundColor = "#E6F4EA"
+greenTextColor = "#166534"
 
 [theme.light.sidebar]
 backgroundColor = "#F7F4EE"
@@ -79,20 +91,32 @@ primaryColor = "#0F766E"
 
 [theme.dark]
 primaryColor = "#2DD4BF"
-backgroundColor = "#17161A"
-secondaryBackgroundColor = "#211F25"
-codeBackgroundColor = "#26242B"
+backgroundColor = "#171513"
+secondaryBackgroundColor = "#221F1B"
+codeBackgroundColor = "#29251F"
 textColor = "#EDE9E3"
 linkColor = "#2DD4BF"
-borderColor = "#34313A"
+borderColor = "#3A352E"
 showWidgetBorder = true
-dataframeBorderColor = "#34313A"
-dataframeHeaderBackgroundColor = "#211F25"
-orangeColor = "#FBBF24"
+dataframeBorderColor = "#3A352E"
+dataframeHeaderBackgroundColor = "#221F1B"
+# See [theme.light]: the sample-data notice depends on the yellow tokens.
+yellowColor = "#FBBF24"
+yellowBackgroundColor = "#3B2E14"
+yellowTextColor = "#FBD77A"
+blueColor = "#38BDF8"
+blueBackgroundColor = "#14303F"
+blueTextColor = "#A5DDF7"
+redColor = "#F87171"
+redBackgroundColor = "#3F1D1B"
+redTextColor = "#FCB4AE"
+greenColor = "#4ADE80"
+greenBackgroundColor = "#17331F"
+greenTextColor = "#A7E8BC"
 
 [theme.dark.sidebar]
-backgroundColor = "#1C1B20"
-secondaryBackgroundColor = "#26242B"
-borderColor = "#34313A"
+backgroundColor = "#1C1A17"
+secondaryBackgroundColor = "#29251F"
+borderColor = "#3A352E"
 textColor = "#EDE9E3"
 primaryColor = "#2DD4BF"
