@@ -911,3 +911,16 @@ payload. Don't add one to tune a role.
   instruction-following, which the tool docstrings and `AVAILABILITY_PROMPT`
   govern, not thinking depth. The Trip page doesn't depend on the scout's prose
   at all; only the chat path does.
+- Haiku 5.5 on the scout was measured and rejected too, on cost more than
+  quality. At `xhigh` it cost about a sixth of Sonnet per scout run and passed
+  most of the subagent sets, but ten whole trips only fell from $2.61 to $2.34,
+  because Opus is most of the bill. Searches doubled, 42 to 89, and on a live
+  token each one is a real call. At `high` it varied an empty lodging search in
+  13 of 18 runs, against 17 of 18 at `xhigh` and 12 of 12 on Sonnet. Price a
+  scout change on whole trips, not on the scout sets.
+- Two lines in `AVAILABILITY_PROMPT` came out of that test and stayed. Haiku
+  retried "Edinburgh, Scotland" as if it were a new area, and left an empty
+  search unlabelled in 2 of 9 runs, so "no stay fits" read as a finding about
+  real inventory. Sonnet had not shown either fault, and scored full marks with
+  the lines in place, so they guard the rule rather than fix a measured Sonnet
+  failure.
