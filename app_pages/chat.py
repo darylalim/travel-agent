@@ -15,7 +15,7 @@ from typing import Any
 
 import streamlit as st
 
-from travel_agent.ui import stream_turn
+from travel_agent.ui import escape_dollars, stream_turn
 
 SUGGESTIONS = {
     "5 days in Kyoto": "5 days in Kyoto in September, 2 people, $4000 total, flying from SFO.",
@@ -49,14 +49,14 @@ def _render_activity(entry: dict[str, Any]) -> None:
 for entry in st.session_state.messages:
     with st.chat_message(entry["role"]):
         if entry["role"] != "assistant":
-            st.markdown(entry["content"])
+            st.markdown(escape_dollars(entry["content"]))
             continue
         _render_activity(entry)
         for caveat in entry.get("caveats", []):
             st.warning(caveat, icon=":material/warning:")
-        st.markdown(entry["content"])
+        st.markdown(escape_dollars(entry["content"]))
         if entry.get("error"):
-            st.error(entry["error"], icon=":material/error:")
+            st.error(escape_dollars(entry["error"]), icon=":material/error:")
 
 # Suggestions stand in for a first prompt and disappear once the chat starts.
 suggested = None
@@ -80,7 +80,7 @@ prompt = typed or suggested
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
-        st.markdown(prompt)
+        st.markdown(escape_dollars(prompt))
 
     slots: dict[str, Any] = {}
     labels: dict[str, str] = {}
@@ -122,10 +122,13 @@ if prompt:
                 so the replayed bubble would show less than the live one did.
                 Collecting here keeps the two equal, and the joined chunks
                 match what `st.write_stream` would have returned.
+
+                The copy stays raw and only the yield is escaped, so the stored
+                message is what was written and the replay escapes it the same way.
                 """
                 for chunk in chunks:
                     streamed.append(chunk)
-                    yield chunk
+                    yield escape_dollars(chunk)
 
             try:
                 # Only `str` is ever yielded, so this streams as markdown
@@ -140,7 +143,7 @@ if prompt:
             status.update(label=status_label, state=status_state)
 
             if failure is not None:
-                st.error(failure, icon=":material/error:")
+                st.error(escape_dollars(failure), icon=":material/error:")
 
             # Caveats are shown once, when first raised; the Trip page keeps
             # the standing list so a warning is never only visible in

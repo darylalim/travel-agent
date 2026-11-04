@@ -206,6 +206,70 @@ def _quiet(thread_id, prompt, record, on_activity=None):
     yield "I plan trips: flights, lodging, budget, and a day-by-day itinerary."
 
 
+def _prices(thread_id, prompt, record, on_activity=None):
+    """A reply quoting two prices, split so neither chunk holds both."""
+    yield "Fly for $1,520 with one stop, "
+    yield "and stay at $1,260."
+
+
+def test_prices_render_as_text_live_and_on_replay(chat_page):
+    """Two `$` signs in one reply must not become a LaTeX span.
+
+    Escaping belongs to the render, not the record: the stored message stays
+    what was actually written, and the replay escapes it the same way.
+    """
+    app = chat_page(_prices)
+    app.chat_input[0].set_value("Under $3000, or $2500 at a push").run()
+    question = r"Under \$3000, or \$2500 at a push"
+    reply = r"Fly for \$1,520 with one stop, and stay at \$1,260."
+    assert [element.value for element in app.markdown] == [question, reply]
+
+    app.run()
+    assert [element.value for element in app.markdown] == [question, reply]
+
+    user, assistant = app.session_state["messages"]
+    assert user["content"] == "Under $3000, or $2500 at a push"
+    assert assistant["content"] == "Fly for $1,520 with one stop, and stay at $1,260."
+
+
+def test_the_agent_gets_the_travelers_prompt_unescaped(chat_page):
+    seen: list[str] = []
+
+    def stream(thread_id, prompt, record, on_activity=None):
+        seen.append(prompt)
+        yield "Noted."
+
+    chat_page(stream).chat_input[0].set_value("Budget $4000").run()
+    assert seen == ["Budget $4000"]
+
+
+def test_a_failure_quoting_prices_renders_as_text(chat_page):
+    def fails(thread_id, prompt, record, on_activity=None):
+        yield "Partial."
+        raise RuntimeError("limit is $5 of $10")
+
+    app = chat_page(fails)
+    app.chat_input[0].set_value("Go").run()
+    shown = r"The agent stopped: limit is \$5 of \$10"
+    assert [element.value for element in app.error] == [shown]
+    app.run()
+    assert [element.value for element in app.error] == [shown]
+    assert app.session_state["messages"][-1]["error"] == "The agent stopped: limit is $5 of $10"
+
+
+def test_workspace_prices_render_as_text_and_stay_raw(trip_page):
+    itinerary = "Day 1: lunch $20, dinner $45"
+    research = "Hotels from $90 to $140"
+    record = trip_page.session_state["record"]
+    record.files = {ui.ITINERARY_PATH: itinerary, ui.WORKSPACE_FILES[0][0]: research}
+    trip_page.run()
+
+    shown = [element.value for element in trip_page.markdown]
+    assert r"Day 1: lunch \$20, dinner \$45" in shown
+    assert r"Hotels from \$90 to \$140" in shown
+    assert record.files[ui.ITINERARY_PATH] == itinerary
+
+
 def test_a_failed_turn_stays_in_history(chat_page):
     """The traveler's question must not be left hanging with no reply.
 

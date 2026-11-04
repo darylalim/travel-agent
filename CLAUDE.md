@@ -469,6 +469,13 @@ Other things that bite here:
   `on_activity` callback, never the yield channel.
 - Don't render the reply after `st.write_stream` — it already replaced its own
   placeholder, so a second write duplicates the message.
+- **Two `$` signs in one markdown string are a LaTeX span.** A reply quoting two
+  prices loses both signs and the words between them turn into maths, with
+  nothing raised. `escape_dollars` runs at render time only: `tee` stores the raw
+  chunk and yields the escaped one, so the stored message stays what was written
+  and the replay escapes it the same way. Any new render of model or
+  traveler text needs it. Fixed strings do not: `money_text` spells the ISO code
+  rather than `$`, and no provider note contains one.
 - `@st.cache_resource` is process-wide: that is what makes `/memories/` outlive
   a reload, and it also means every browser session shares one store. Editing
   the body of `get_agent()` invalidates the cache, dropping traveler memory on

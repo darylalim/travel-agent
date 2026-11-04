@@ -26,6 +26,7 @@ from travel_agent.ui import (
     costing_series,
     currency_code,
     currency_label,
+    escape_dollars,
     money_axis_title,
     money_format,
     money_format_for,
@@ -638,7 +639,7 @@ itinerary = record.files.get(ITINERARY_PATH)
 if itinerary:
     st.subheader("Itinerary", anchor=False)
     with st.container(border=True):
-        st.markdown(itinerary)
+        st.markdown(escape_dollars(itinerary))
 
 written = [entry for entry in WORKSPACE_FILES if record.files.get(entry[0])]
 if written:
@@ -656,4 +657,4 @@ if written:
         # which `test_pages.py` compares element for element. Nothing renders
         # differently in the browser; the page just stops being testable.
         with st.expander(f"{icon} {label}"):
-            st.markdown(record.files[path])
+            st.markdown(escape_dollars(record.files[path]))

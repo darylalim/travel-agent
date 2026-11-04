@@ -35,6 +35,7 @@ rather than re-parsing the markdown the agent wrote.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from datetime import date
@@ -402,6 +403,18 @@ def money_axis_title(prefix: str, code: str, fallback: str = "USD") -> str:
     `$1,275.00`.
     """
     return f"{prefix} ({currency_label(code, fallback)})"
+
+
+def escape_dollars(text: str) -> str:
+    """`text` with each `$` escaped, for anything Streamlit parses as markdown.
+
+    Text between two `$` signs renders as LaTeX, so a reply quoting two prices
+    loses both signs and the words between them turn into maths. Call this at
+    render time only: what is stored stays raw, because the replay escapes it
+    again. The lookbehind leaves an already escaped `\\$` alone; a plain replace
+    would double the backslash and leave the `$` live.
+    """
+    return re.sub(r"(?<!\\)\$", r"\\$", text)
 
 
 def money_text(amount: Any, code: str, fallback: str = "USD") -> str:
