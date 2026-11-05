@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main '5 days in Kyoto, 2 people, $4000'
 
-uv run pytest                            # 522 tests, ~7s, no network, no model calls
+uv run pytest                            # 526 tests, ~7s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -509,6 +509,8 @@ Other things that bite here:
   into the store under `TRIPS_NAMESPACE`, in `chat.py`'s `finally` so an
   interrupted turn is kept. A field added to either has to be added there too.
   CLI trips have checkpoints and no snapshot, so they are not listed.
+  `delete_trip` removes both halves, checkpoints first so a failure cannot strand
+  them. The open trip offers no delete, because its next turn would save it again.
 - **A "Live" label says where a fare came from, not that it still stands.**
   Reopened offers are what the search returned then, so `reopened_on` drives a
   notice on the Trip page. It is not a `warning`, which means one thing: not real

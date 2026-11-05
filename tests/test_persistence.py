@@ -251,6 +251,31 @@ def test_a_reopened_trip_continues_the_conversation_after_a_restart(
     assert "plan Kyoto" in [message.text for message in model.calls[0]]
 
 
+def test_deleting_a_trip_removes_its_checkpoints_and_keeps_the_profile(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _restart_the_ui(
+        monkeypatch,
+        _write(MEMORY_PATH, "Prefers aisle seats."),
+        AIMessage(content="ok"),
+        AIMessage(content="ok"),
+    )
+    try:
+        list(ui.stream_turn("kyoto", "plan Kyoto", ui.TripRecord()))
+        list(ui.stream_turn("lisbon", "plan Lisbon", ui.TripRecord()))
+    finally:
+        ui.get_agent.clear()
+    ui.save_trip("kyoto", [{"role": "user", "content": "plan Kyoto"}], ui.TripRecord(), [])
+
+    ui.delete_trip("kyoto")
+
+    checkpointer, store = ui._storage()
+    assert ui.saved_trips() == []
+    assert checkpointer.get_tuple({"configurable": {"thread_id": "kyoto"}}) is None
+    assert checkpointer.get_tuple({"configurable": {"thread_id": "lisbon"}}) is not None
+    assert store.get(("filesystem",), "/traveler_profile.md") is not None
+
+
 def test_each_cli_run_is_a_new_trip_unless_it_names_one(
     spy: _Spy, capsys: pytest.CaptureFixture[str]
 ):

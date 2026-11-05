@@ -975,7 +975,41 @@ def test_past_trips_marks_the_open_trip_instead_of_offering_it(past_trips_page):
 
     assert not past_trips_page.exception
     assert {text.value for text in past_trips_page.text} == {"Trip one", "Trip two"}
-    assert [button.key for button in past_trips_page.button] == ["open-other"]
+    assert [button.key for button in past_trips_page.button] == ["open-other", "ask-delete-other"]
+
+
+def test_deleting_a_trip_asks_first(past_trips_page):
+    _save("other")
+    past_trips_page.run()
+    past_trips_page.button(key="ask-delete-other").click().run()
+
+    assert [trip.thread_id for trip in ui.saved_trips()] == ["other"]
+    assert [b.key for b in past_trips_page.button] == ["delete-other", "keep-other"]
+
+    past_trips_page.button(key="delete-other").click().run()
+    assert not past_trips_page.exception
+    assert ui.saved_trips() == []
+    assert "No saved trips yet" in past_trips_page.info[0].value
+
+
+def test_keeping_a_trip_cancels_the_delete(past_trips_page):
+    _save("other")
+    past_trips_page.run()
+    past_trips_page.button(key="ask-delete-other").click().run()
+    past_trips_page.button(key="keep-other").click().run()
+
+    assert len(ui.saved_trips()) == 1
+    assert [b.key for b in past_trips_page.button] == ["open-other", "ask-delete-other"]
+
+
+def test_only_the_trip_asked_about_awaits_confirmation(past_trips_page):
+    _save("one")
+    _save("two")
+    past_trips_page.run()
+    past_trips_page.button(key="ask-delete-one").click().run()
+
+    keys = {button.key for button in past_trips_page.button}
+    assert keys == {"delete-one", "keep-one", "open-two", "ask-delete-two"}
 
 
 @pytest.fixture
