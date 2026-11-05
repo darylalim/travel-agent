@@ -788,7 +788,11 @@ def test_a_saved_trip_keeps_its_provenance_across_a_restart():
     """The checkpoint cannot supply these: subagent results never reach it."""
     offer = {"carrier": "Meridian Air", "total_fare": 900.0, "synthetic": True}
     record = TripRecord(
-        payloads={"search_flights": [{"offers": [offer], "warning": "Sample data."}]},
+        payloads={
+            "search_flights": [
+                {"offers": [offer], "warning": "Sample data.", "searched_on": "2026-09-14"}
+            ]
+        },
         files={"/trip/brief.md": "Kyoto"},
     )
     messages = [
@@ -867,14 +871,45 @@ def _trip_saved_on(day: datetime, payloads: dict) -> ui.SavedTrip:
     )
 
 
-@pytest.mark.parametrize(
-    "payloads",
-    [{}, {"search_flights": [{"offers": []}]}],
-    ids=["no search", "saved before searches were stamped"],
-)
-def test_a_trip_with_no_stamped_search_falls_back_to_its_save(payloads):
-    trip = _trip_saved_on(datetime(2026, 11, 5, 9, 0, tzinfo=UTC), payloads)
+def test_a_trip_with_no_search_falls_back_to_its_save():
+    trip = _trip_saved_on(datetime(2026, 11, 5, 9, 0, tzinfo=UTC), {})
     assert trip.prices_dated_on == trip.saved_on == "Nov 5, 2026"
+
+
+def _saved_on(day: str, record: TripRecord) -> ui.SavedTrip:
+    """Save `record`, backdate the save, and read the trip back as a reopen would."""
+    ui.save_trip("trip", [{"role": "user", "content": "Kyoto"}], record, [])
+    _, store = ui._storage()
+    store.conn.execute(f"UPDATE store SET updated_at = '{day} 12:00:00'")
+    (trip,) = ui.saved_trips()
+    return trip
+
+
+def test_a_trip_saved_before_stamping_keeps_its_date_after_a_turn():
+    """A turn saves, so without the backfill the note would follow the save."""
+    old = TripRecord(payloads={"search_flights": [{"offers": []}, {"offers": []}]})
+    reopened = _saved_on("2026-10-20", old)
+    assert reopened.prices_dated_on == "Oct 20, 2026"
+
+    after_a_turn = _saved_on("2026-11-05", reopened.record)
+
+    assert after_a_turn.saved_on == "Nov 5, 2026"
+    assert after_a_turn.prices_dated_on == "Oct 20, 2026"
+
+
+def test_the_backfill_leaves_a_record_with_a_stamp_alone():
+    """Its unstamped searches ran before the stamped one, so the save would overstate them."""
+    payloads = {"search_flights": [{"offers": []}, {"offers": [], "searched_on": "2026-10-02"}]}
+    trip = _saved_on("2026-11-05", TripRecord(payloads=payloads))
+
+    assert trip.prices_dated_on == "Oct 2, 2026"
+    assert "searched_on" not in trip.record.payloads["search_flights"][0]
+
+
+def test_the_backfill_stamps_no_costing():
+    record = TripRecord(payloads={"summarize_budget": [{"total_estimated": 900}]})
+    trip = _saved_on("2026-11-05", record)
+    assert "searched_on" not in trip.record.payloads["summarize_budget"][0]
 
 
 def test_a_stamped_search_outranks_an_older_unstamped_one():
