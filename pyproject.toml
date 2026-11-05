@@ -1,6 +1,6 @@
 [project]
 name = "travel-agent"
-version = "0.5.0"
+version = "0.5.1"
 description = "Multi-agent travel planner on Deep Agents. Researches destinations, searches flights and stays via Duffel, and builds a costed day-by-day itinerary. Planning only: it never books."
 readme = "README.md"
 # PEP 639: an SPDX expression plus the file it resolves to, so the built wheel
