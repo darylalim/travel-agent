@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main '5 days in Kyoto, 2 people, $4000'
 
-uv run pytest                            # 552 tests, ~8s, no network, no model calls
+uv run pytest                            # 564 tests, ~8s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -515,13 +515,12 @@ Other things that bite here:
   Reopened offers are what the search returned then, so `reopened_on` drives a
   notice on the Trip page. It is not a `warning`, which means one thing: not real
   inventory. A new way into a trip has to set it, and "Start a new trip" clears it.
-- **The agent cannot tell how old a resumed fare is.** A checkpoint carries no
-  dates, so `resume_note_on` puts `resumed_message` on the first turn after a
+- **The agent cannot tell how old a resumed fare is.** Messages in a checkpoint
+  carry no dates, so `resume_note_on` puts `resumed_message` on the first turn after a
   reopen. `chat.py` wraps the prompt for the agent alone, so the transcript keeps
   the traveler's words. The note stays queued until a turn succeeds, because a
   failed one may never have reached the agent. `reopened_on` is separate, since
-  the Trip page reads it for as long as the trip is open. The CLI's `--thread`
-  has no equivalent yet.
+  the Trip page reads it for as long as the trip is open.
 - **The note's date is the last search, not the last save.** Every turn saves, so
   a save date moves forward on a turn that searched nothing and makes old fares
   look newer. `record_tool` stamps `searched_on` on each search payload, which
@@ -532,6 +531,13 @@ Other things that bite here:
   alone, since its unstamped searches ran earlier. A trip with no search falls back
   to the save, and the note says "or earlier" so every date stays true.
   `reopened_on` stays the save date, because it says when the trip was left.
+- **A resumed CLI trip gets the same note from a different source.** It has no
+  snapshot, so no `searched_on`. `prices_dated_on` in `main.py` walks
+  `get_state_history` for the first checkpoint holding the last `availability-scout`
+  result, because the newest checkpoint is the save date again and moves on a turn
+  that searched nothing. That dates the scout's return, not each search, and a
+  scout whose searches all failed still counts, so the date can run late but
+  stays a true upper bound. A `--thread` id with no history gets no note.
 - `AppTest` on `streamlit_app.py` runs its real `load_dotenv()`, which writes to
   `os.environ` where no fixture undoes it, so credentials would reach every later
   test. The `whole_app` fixture in `test_pages.py` disables it first. Any new

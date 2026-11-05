@@ -32,6 +32,11 @@ def today() -> date:
     return datetime.now().astimezone().date()
 
 
+def long_date(day: date) -> str:
+    """`Nov 5, 2026`, with no leading zero on the day."""
+    return f"{day:%b} {day.day}, {day.year}"
+
+
 def current_date_note(day: date) -> str:
     """The system-prompt line stating the date, e.g. "Today is Friday, 2 October 2026."."""
     return (

@@ -71,6 +71,9 @@ def test_cli_runs_are_named_and_tagged(monkeypatch: pytest.MonkeyPatch):
             seen.append(config)
             return iter(())
 
+        def get_state_history(self, _config):
+            return iter(())
+
     monkeypatch.setattr(agent_module, "build_agent", lambda *a, **k: _Agent())
     monkeypatch.setattr(main, "load_dotenv", lambda: None)
     monkeypatch.setattr("builtins.input", lambda _prompt: "exit")

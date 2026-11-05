@@ -272,11 +272,6 @@ def _trip_title(messages: list[dict[str, Any]]) -> str:
     return f"{text[: _TITLE_LENGTH - 1].rstrip()}…"
 
 
-def _long_date(day: date) -> str:
-    """`Nov 5, 2026`, with no leading zero on the day."""
-    return f"{day:%b} {day.day}, {day.year}"
-
-
 @dataclass(frozen=True)
 class SavedTrip:
     """Everything needed to put a past trip back on screen."""
@@ -294,7 +289,7 @@ class SavedTrip:
     @property
     def saved_on(self) -> str:
         """The local date of the last save, e.g. `Nov 5, 2026`."""
-        return _long_date(self.saved_at)
+        return clock.long_date(self.saved_at)
 
     @property
     def prices_dated_on(self) -> str:
@@ -304,7 +299,7 @@ class SavedTrip:
         old fares look newer than they are. A trip with no search at all falls
         back to the save, which is still a true upper bound on its prices.
         """
-        return _long_date(self.record.last_searched_on() or self.saved_at)
+        return clock.long_date(self.record.last_searched_on() or self.saved_at)
 
     @property
     def summary(self) -> str:

@@ -267,7 +267,7 @@ itself leaves open.
 def resumed_message(prompt: str, dated_on: str) -> str:
     """The first message of a reopened trip, as the agent receives it.
 
-    A checkpoint carries no dates, so nothing else tells the agent that the
+    A checkpoint's messages carry no dates, so nothing else tells the agent that the
     fares above it are old. This is an instruction, so it goes to the model and
     never into the transcript. It is not a `warning`, which means one thing: not
     real inventory.

@@ -47,7 +47,8 @@ your traveler profile and your trips unencrypted, and its profile is separate
 from the one `langgraph dev` keeps.
 
 Each CLI run starts a new trip and prints a thread id. Pass it back with
-`--thread` to pick that trip up again. The browser UI saves each trip after every
+`--thread` to pick that trip up again, and the agent is told how old its prices
+are. The browser UI saves each trip after every
 reply and lists them on its Past trips page. CLI trips are not listed there,
 because the CLI does not capture the search results that page restores.
 
