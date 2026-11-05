@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
@@ -777,3 +778,96 @@ def test_costing_series_needs_two_points_to_be_a_series():
 )
 def test_every_dollar_sign_and_tilde_is_escaped_exactly_once(text, escaped):
     assert escape_markdown(text) == escaped
+
+
+def _saved(thread_id: str = "trip", opening: str = "5 days in Kyoto") -> None:
+    ui.save_trip(thread_id, [{"role": "user", "content": opening}], TripRecord(), [])
+
+
+def test_a_saved_trip_keeps_its_provenance_across_a_restart():
+    """The checkpoint cannot supply these: subagent results never reach it."""
+    offer = {"carrier": "Meridian Air", "total_fare": 900.0, "synthetic": True}
+    record = TripRecord(
+        payloads={"search_flights": [{"offers": [offer], "warning": "Sample data."}]},
+        files={"/trip/brief.md": "Kyoto"},
+    )
+    messages = [
+        {"role": "user", "content": "5 days in Kyoto"},
+        {"role": "assistant", "content": "Done", "status_label": "2 steps", "caveats": ["x"]},
+    ]
+    ui.save_trip("trip", messages, record, ["Sample data."])
+
+    ui._storage.clear()
+    (trip,) = ui.saved_trips()
+
+    assert trip.thread_id == "trip"
+    assert trip.messages == messages
+    assert trip.record == record
+    assert trip.record.caveats() == ["Sample data."]
+    assert ui.offers(trip.record.latest("search_flights")) == [offer]
+    assert trip.seen_caveats == ["Sample data."]
+
+
+def test_saving_a_trip_again_replaces_it():
+    _saved(opening="first")
+    _saved(opening="second")
+    assert [trip.title for trip in ui.saved_trips()] == ["second"]
+
+
+def test_the_most_recently_saved_trip_comes_first():
+    _saved("older")
+    _saved("newer")
+    _, store = ui._storage()
+    # Timestamps have one-second resolution, so two saves here would tie.
+    store.conn.execute("UPDATE store SET updated_at = '2026-01-01' WHERE key = 'older'")
+    assert [trip.thread_id for trip in ui.saved_trips()] == ["newer", "older"]
+
+
+def test_the_list_is_not_cut_to_the_stores_default_of_ten():
+    for number in range(12):
+        _saved(f"trip-{number}")
+    assert len(ui.saved_trips()) == 12
+
+
+def test_the_save_time_is_read_as_utc():
+    """SQLite stores UTC with no offset, so a naive read shifts it by the local one."""
+    _saved()
+    _, store = ui._storage()
+    store.conn.execute("UPDATE store SET updated_at = '2026-11-05 23:30:00'")
+    (trip,) = ui.saved_trips()
+    assert trip.saved_at == datetime(2026, 11, 5, 23, 30, tzinfo=UTC)
+
+
+def test_saved_trips_stay_out_of_the_agents_filesystem():
+    _saved()
+    _, store = ui._storage()
+    assert store.search(("filesystem",)) == []
+
+
+def test_a_trip_is_titled_by_its_opening_request_on_one_line():
+    messages = [
+        {"role": "assistant", "content": "Hello"},
+        {"role": "user", "content": "5 days\n  in Kyoto"},
+        {"role": "user", "content": "make it six"},
+    ]
+    assert ui._trip_title(messages) == "5 days in Kyoto"
+
+
+def test_a_long_title_is_cut_to_fit_a_row():
+    title = ui._trip_title([{"role": "user", "content": "x" * 200}])
+    assert len(title) == 80 and title.endswith("…")
+
+
+def test_a_trip_summary_gives_the_date_and_the_requests_made():
+    trip = ui.SavedTrip(
+        thread_id="trip",
+        messages=[
+            {"role": "user", "content": "a"},
+            {"role": "assistant", "content": "b"},
+            {"role": "user", "content": "c"},
+        ],
+        record=TripRecord(),
+        seen_caveats=[],
+        saved_at=datetime(2026, 11, 5, 9, 0, tzinfo=UTC),
+    )
+    assert trip.summary == "Nov 5, 2026 · 2 requests"

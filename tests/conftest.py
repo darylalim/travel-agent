@@ -26,7 +26,7 @@ from datetime import date
 import pytest
 from langsmith import tracing_context
 
-from travel_agent import clock
+from travel_agent import clock, ui
 from travel_agent.persistence import DB_ENV
 from travel_agent.tools.availability import _build_provider
 
@@ -45,6 +45,8 @@ def pin_today(monkeypatch: pytest.MonkeyPatch):
 def isolate_database(monkeypatch: pytest.MonkeyPatch, tmp_path):
     """Point the traveler database at a throwaway file."""
     monkeypatch.setenv(DB_ENV, str(tmp_path / "travel-agent.sqlite"))
+    # Cached per process, so it would otherwise stay on the first test's file.
+    ui._storage.clear()
 
 
 @pytest.fixture(autouse=True)

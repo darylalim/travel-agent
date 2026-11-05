@@ -15,7 +15,7 @@ from typing import Any
 
 import streamlit as st
 
-from travel_agent.ui import PLAN_WIDTH, escape_markdown, stream_turn
+from travel_agent.ui import PLAN_WIDTH, escape_markdown, save_trip, stream_turn
 
 SUGGESTIONS = {
     "5 days in Kyoto": "5 days in Kyoto in September, 2 people, $4000 total, flying from SFO.",
@@ -190,3 +190,4 @@ if prompt:
                 "status_state": status_state,
             }
         )
+        save_trip(thread_id, st.session_state.messages, record, st.session_state.seen_caveats)

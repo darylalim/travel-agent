@@ -17,7 +17,6 @@ from typing import Any
 import pytest
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage, BaseMessage
-from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.store.sqlite import SqliteStore
 from pydantic import Field
@@ -217,14 +216,39 @@ def test_the_cli_saves_trips_and_the_profile(spy: _Spy):
     assert isinstance(spy.built[0]["store"], SqliteStore)
 
 
-def test_the_ui_saves_the_profile_but_not_trips_it_cannot_reopen(spy: _Spy):
+def test_the_ui_saves_trips_and_the_profile(spy: _Spy):
     ui.get_agent.clear()
     try:
         ui.get_agent()
     finally:
         ui.get_agent.clear()
-    assert isinstance(spy.built[0]["checkpointer"], MemorySaver)
+    assert isinstance(spy.built[0]["checkpointer"], SqliteSaver)
     assert isinstance(spy.built[0]["store"], SqliteStore)
+
+
+def _restart_the_ui(monkeypatch: pytest.MonkeyPatch, *replies: AIMessage) -> _ScriptedModel:
+    """A new server process: nothing cached, same file."""
+    ui.get_agent.clear()
+    ui._storage.clear()
+    model = _ScriptedModel(messages=_replay(list(replies)), disable_streaming=True)
+    monkeypatch.setattr(agent_module, "_chat_model", lambda *a, **k: model)
+    return model
+
+
+def test_a_reopened_trip_continues_the_conversation_after_a_restart(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _restart_the_ui(monkeypatch, _write(f"{WORKSPACE}/brief.md", "Kyoto"), AIMessage(content="ok"))
+    record = ui.TripRecord()
+    list(ui.stream_turn("kyoto", "plan Kyoto", record))
+    assert f"{WORKSPACE}/brief.md" in record.files
+
+    model = _restart_the_ui(monkeypatch, AIMessage(content="sure"))
+    try:
+        list(ui.stream_turn("kyoto", "make it six days", ui.TripRecord()))
+    finally:
+        ui.get_agent.clear()
+    assert "plan Kyoto" in [message.text for message in model.calls[0]]
 
 
 def test_each_cli_run_is_a_new_trip_unless_it_names_one(

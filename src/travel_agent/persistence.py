@@ -69,8 +69,6 @@ def open_store() -> SqliteStore:
 def open_storage() -> tuple[SqliteSaver, SqliteStore]:
     """Open both, for an entry point that can resume a trip.
 
-    Each gets its own connection because each holds its own lock. The Streamlit
-    UI takes only the store: it has no way to reopen a trip, so checkpoints
-    written there would pile up on disk with nothing to read them.
+    Each gets its own connection because each holds its own lock.
     """
     return SqliteSaver(_connect()), open_store()
