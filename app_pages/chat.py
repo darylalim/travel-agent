@@ -15,6 +15,7 @@ from typing import Any
 
 import streamlit as st
 
+from travel_agent.prompts import resumed_message
 from travel_agent.ui import PLAN_WIDTH, escape_markdown, save_trip, stream_turn
 
 SUGGESTIONS = {
@@ -134,16 +135,22 @@ if prompt:
                     streamed.append(chunk)
                     yield escape_markdown(chunk)
 
+            # The transcript keeps `prompt`: the note is for the agent alone.
+            resume_note_on = st.session_state.get("resume_note_on")
+            agent_prompt = resumed_message(prompt, resume_note_on) if resume_note_on else prompt
+
             try:
                 # Only `str` is ever yielded, so this streams as markdown
                 # rather than falling through to a raw `st.write`.
-                st.write_stream(tee(stream_turn(thread_id, prompt, record, on_activity)))
+                st.write_stream(tee(stream_turn(thread_id, agent_prompt, record, on_activity)))
             except Exception as exc:  # noqa: BLE001 - surfaced to the traveler, not swallowed
                 failure = f"The agent stopped: {exc}"
                 status_label, status_state = "Could not finish", "error"
             else:
                 failure = None
                 status_label, status_state = f"{len(labels)} steps", "complete"
+                # Only here: a turn that failed may never have reached the agent.
+                st.session_state.resume_note_on = None
             status.update(label=status_label, state=status_state)
 
             if failure is not None:

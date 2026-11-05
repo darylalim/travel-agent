@@ -20,7 +20,7 @@ from langchain_core.tools import BaseTool
 import travel_agent.agent as agent_module
 from evals import run as harness
 from evals import scripted, upload
-from travel_agent.prompts import MEMORY_PATH, WORKSPACE
+from travel_agent.prompts import MEMORY_PATH, WORKSPACE, resumed_message
 from travel_agent.subagents import build_subagents
 from travel_agent.tools.availability import SampleProvider, _normalize_cabin
 from travel_agent.tools.budget import summarize_budget
@@ -456,6 +456,9 @@ def test_every_scripted_rule_is_reached_by_the_search_the_brief_asks_for(example
     # Searches the brief does not ask for, but the example exists to reward.
     varied = example["outputs"].get("varied_search", {})
     expected += [(varied["tool"], args) for args in varied.get("finds", [])]
+    # Searches the example allows but does not require.
+    optional = example["outputs"].get("optional_calls", {})
+    expected += [(name, args) for name, calls in optional.items() for args in calls]
     for kind in ("flights", "stays"):
         for rule in script.get(kind, {}).get("rules", []):
             reached = any(
@@ -552,3 +555,14 @@ def test_a_scripted_live_flight_looks_like_a_live_flight(example):
             for patch in response["offers"]:
                 assert {"carrier", "stops", "duration_minutes", "fare_per_traveler"} <= set(patch)
                 assert patch["carrier"] not in SampleProvider._CARRIERS, patch["carrier"]
+
+
+def test_the_noted_resumed_example_carries_the_note_the_app_sends():
+    # The example is only a measurement of the fix while it holds the fix's
+    # own words, and the control only while it differs in nothing else.
+    examples = {e["key"]: e for e in _examples("final_response_scripted")}
+    noted = examples["resumed-fare-noted"]["inputs"]["messages"]
+    control = examples["resumed-fare-no-note"]["inputs"]["messages"]
+
+    assert noted[:-1] == control[:-1]
+    assert noted[-1]["content"] == resumed_message(control[-1]["content"], "Sep 14, 2026")

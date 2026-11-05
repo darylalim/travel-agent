@@ -41,6 +41,8 @@ st.session_state.setdefault("record", TripRecord())
 st.session_state.setdefault("seen_caveats", [])
 # The date a reopened trip was last saved; None for a trip started here.
 st.session_state.setdefault("reopened_on", None)
+# The same date until the agent has been told, which `reopened_on` outlives.
+st.session_state.setdefault("resume_note_on", None)
 
 if not os.getenv("ANTHROPIC_API_KEY"):
     st.title(":material/travel_explore: Travel agent")
@@ -95,6 +97,7 @@ with (
             st.session_state.record = TripRecord()
             st.session_state.seen_caveats = []
             st.session_state.reopened_on = None
+            st.session_state.resume_note_on = None
             st.rerun()
 
     # Pages do not set their own title; the entry script owns it.

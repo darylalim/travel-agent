@@ -38,6 +38,7 @@ from streamlit.runtime.scriptrunner_utils.exceptions import StopException
 from streamlit.testing.v1 import AppTest
 
 from travel_agent import ui
+from travel_agent.prompts import resumed_message
 from travel_agent.ui import TripRecord
 
 PAGES = Path(__file__).resolve().parents[1] / "app_pages"
@@ -241,6 +242,44 @@ def test_the_agent_gets_the_travelers_prompt_unescaped(chat_page):
 
     chat_page(stream).chat_input[0].set_value("Budget $4000").run()
     assert seen == ["Budget $4000"]
+
+
+def test_the_first_turn_after_a_reopen_tells_the_agent_and_only_the_agent(chat_page):
+    seen: list[str] = []
+
+    def stream(thread_id, prompt, record, on_activity=None):
+        seen.append(prompt)
+        yield "Noted."
+
+    page = chat_page(stream)
+    page.session_state["resume_note_on"] = "Sep 14, 2026"
+    page.chat_input[0].set_value("Is it still fine?").run()
+    page.chat_input[0].set_value("And the hotel?").run()
+
+    assert seen == [resumed_message("Is it still fine?", "Sep 14, 2026"), "And the hotel?"]
+    assert "Sep 14, 2026" in seen[0]
+    assert page.session_state["messages"][0]["content"] == "Is it still fine?"
+    assert not any("Note from the app" in m.markdown[0].value for m in page.chat_message)
+
+
+def test_a_failed_turn_keeps_the_note_for_the_next_one(chat_page):
+    seen: list[str] = []
+
+    def stream(thread_id, prompt, record, on_activity=None):
+        seen.append(prompt)
+        if len(seen) == 1:
+            raise RuntimeError("overloaded_error")
+        yield "Noted."
+
+    page = chat_page(stream)
+    page.session_state["resume_note_on"] = "Sep 14, 2026"
+    page.chat_input[0].set_value("First").run()
+    page.chat_input[0].set_value("Second").run()
+
+    assert seen == [
+        resumed_message("First", "Sep 14, 2026"),
+        resumed_message("Second", "Sep 14, 2026"),
+    ]
 
 
 def test_a_failure_quoting_prices_renders_as_text(chat_page):
@@ -1042,6 +1081,16 @@ def test_opening_a_past_trip_restores_it_on_every_page(whole_app):
     assert len(whole_app.dataframe) == 1
 
 
+def test_opening_a_trip_queues_the_note_for_the_agent(whole_app):
+    _save("kyoto")
+    whole_app.run()
+    whole_app.button(key="open-kyoto").click().run()
+
+    saved_on = whole_app.session_state["reopened_on"]
+    assert saved_on
+    assert whole_app.session_state["resume_note_on"] == saved_on
+
+
 def test_a_new_trip_after_a_reopened_one_starts_clean(whole_app):
     _save("kyoto")
     whole_app.run()
@@ -1050,6 +1099,7 @@ def test_a_new_trip_after_a_reopened_one_starts_clean(whole_app):
 
     assert whole_app.session_state["thread_id"] != "kyoto"
     assert whole_app.session_state["reopened_on"] is None
+    assert whole_app.session_state["resume_note_on"] is None
     assert not whole_app.chat_message
 
 

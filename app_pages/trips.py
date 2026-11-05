@@ -57,6 +57,7 @@ for trip in trips:
                 st.session_state.record = trip.record
                 st.session_state.seen_caveats = trip.seen_caveats
                 st.session_state.reopened_on = trip.saved_on
+                st.session_state.resume_note_on = trip.saved_on
                 st.session_state.pop(_CONFIRMING, None)
                 st.switch_page("app_pages/chat.py")
             if st.button(

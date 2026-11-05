@@ -807,6 +807,18 @@ def _judge():
     return model.with_structured_output(RubricGrade, method="json_schema")
 
 
+def _brief(messages: list[dict]) -> str:
+    """What the judge reads as the request.
+
+    A lone message stays as it is, so earlier experiments keep their exact
+    prompt. Seeded history is spelled out, or a criterion about an earlier fare
+    has nothing to be checked against.
+    """
+    if len(messages) == 1:
+        return messages[0]["content"]
+    return "\n\n".join(f"{m['role']}: {m['content']}" for m in messages)
+
+
 def rubric(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
     """Share of the example's rubric criteria an LLM judge finds met."""
     criteria = reference_outputs.get("criteria", [])
@@ -816,7 +828,7 @@ def rubric(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
         # "subagent" unless the run says otherwise, so the subagent datasets
         # keep grading on the exact prompt their earlier experiments used.
         subject=outputs.get("subject", "subagent"),
-        brief=inputs["messages"][-1]["content"],
+        brief=_brief(inputs["messages"]),
         tool_calls=json.dumps(outputs["tool_calls"], indent=1, default=str),
         tool_results="\n\n".join(
             f"## {r['name']}\n{r['content']}" for r in outputs.get("tool_results", [])

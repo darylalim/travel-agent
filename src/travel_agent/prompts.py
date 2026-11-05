@@ -262,3 +262,20 @@ accommodation, say — record it as a caveat on the total in the breakdown. Do
 not add it as a line to make it visible; that decides a question the figure
 itself leaves open.
 """
+
+
+def resumed_message(prompt: str, saved_on: str) -> str:
+    """The first message of a reopened trip, as the agent receives it.
+
+    A checkpoint carries no dates, so nothing else tells the agent that the
+    fares above it are old. This is an instruction, so it goes to the model and
+    never into the transcript. It is not a `warning`, which means one thing: not
+    real inventory.
+    """
+    return (
+        f"{prompt}\n\n"
+        f"[Note from the app, not the traveler: this trip was reopened. It was last "
+        f"saved on {saved_on}, so every price, offer and availability above dates "
+        "from then or earlier and may have changed. Search again before treating "
+        "one as current, or say how old it is.]"
+    )
