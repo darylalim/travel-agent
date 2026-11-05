@@ -98,10 +98,11 @@ def get_agent(model: str = DEFAULT_MODEL) -> Any:
 
     `cache_resource` rather than `cache_data` because the agent is a live
     object graph — an Anthropic client, an HTTP pool, a checkpointer — not
-    something to serialise. The default global scope is deliberate: it is what
-    lets the in-memory store behind `/memories/` outlive a page reload. It
-    also means every browser session shares that store, which is right for
-    local single-traveler use and would need namespacing before deploying.
+    something to serialise. The default global scope is deliberate: one SQLite
+    connection serves every browser session, so they all share `/memories/`.
+    That is right for local single-traveler use and would need a per-user
+    namespace before deploying. Checkpoints stay in memory because nothing here
+    can reopen a past trip; see `persistence.open_storage`.
 
     `travel_agent.agent` is imported *inside* this function on purpose. That
     module builds its graph as an import side effect and reads
@@ -110,11 +111,11 @@ def get_agent(model: str = DEFAULT_MODEL) -> Any:
     search. `main.py` defers the same import for the same reason.
     """
     from langgraph.checkpoint.memory import MemorySaver
-    from langgraph.store.memory import InMemoryStore
 
     from travel_agent.agent import build_agent
+    from travel_agent.persistence import open_store
 
-    return build_agent(model, checkpointer=MemorySaver(), store=InMemoryStore())
+    return build_agent(model, checkpointer=MemorySaver(), store=open_store())
 
 
 def thread_config(thread_id: str) -> dict[str, Any]:

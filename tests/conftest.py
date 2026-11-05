@@ -14,6 +14,9 @@ LangSmith tracing is the third. `.env.example` sets `LANGSMITH_TRACING=true`,
 and anything that exports it makes every graph and tool invocation here POST
 runs to the LangSmith API — and the tracer's own callbacks shift the scripted
 fake model in `test_memory.py` enough to fail it.
+
+The traveler database is the fourth. It lives in the home directory, so a test
+reaching an entry point would write fixture trips into a real profile.
 """
 
 from __future__ import annotations
@@ -24,6 +27,7 @@ import pytest
 from langsmith import tracing_context
 
 from travel_agent import clock
+from travel_agent.persistence import DB_ENV
 from travel_agent.tools.availability import _build_provider
 
 # Earlier than every literal date in the suite. A test about the past-date
@@ -35,6 +39,12 @@ PINNED_TODAY = date(2026, 1, 1)
 def pin_today(monkeypatch: pytest.MonkeyPatch):
     """Freeze `clock.today()` so fixture dates never fall into the past."""
     monkeypatch.setattr(clock, "today", lambda: PINNED_TODAY)
+
+
+@pytest.fixture(autouse=True)
+def isolate_database(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    """Point the traveler database at a throwaway file."""
+    monkeypatch.setenv(DB_ENV, str(tmp_path / "travel-agent.sqlite"))
 
 
 @pytest.fixture(autouse=True)

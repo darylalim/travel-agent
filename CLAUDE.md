@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main '5 days in Kyoto, 2 people, $4000'
 
-uv run pytest                            # 490 tests, ~5s, no network, no model calls
+uv run pytest                            # 505 tests, ~7s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -170,11 +170,28 @@ are followed.
 
 The three entry points differ in more than ergonomics. `langgraph dev` has the
 server supply the checkpointer and store, so `/memories/` persists across runs.
-The CLI wires `MemorySaver`/`InMemoryStore` in-process, so traveler memory dies
-with the process. The Streamlit UI wires them in-process too, but holds the
-agent in `st.cache_resource`, which is scoped to the **server process** rather
-than the session — so memory survives a page reload and a second tab, and dies
-on server restart.
+The CLI and the Streamlit UI share one SQLite file through `persistence.py`
+(`TRAVEL_AGENT_DB`, default `~/.travel-agent/travel-agent.sqlite`). The CLI takes
+a checkpointer and a store from it. The UI takes only the store and keeps
+`MemorySaver`: it cannot reopen a trip, so checkpoints written there would pile
+up on disk, trip contents included, with nothing to read them. Giving the UI a
+way to reopen trips is what would justify moving it to `open_storage()`. Those
+two share a profile with each other and **not** with `langgraph dev`, whose store
+and namespace are its own, so a profile written there does not appear here. Evals
+and `test_memory.py` stay on `MemorySaver`/`InMemoryStore`, because each example
+needs a store no other run wrote.
+
+Durable checkpoints changed what a thread id means. The CLI's `--thread` used to
+default to the literal `"cli"`, which was harmless while checkpoints died with
+the process. On disk it would resume the previous conversation and its `/trip/*`
+files on every run, so a run now gets a fresh uuid and prints the id to resume
+with. `test_each_cli_run_is_a_new_trip_unless_it_names_one` pins it.
+
+`SqliteStore` needs an explicit `setup()` and `SqliteSaver` does not. Neither
+`from_conn_string` is usable here: both close on exit, and `st.cache_resource`
+holds the agent for the life of the process. A multi-user deployment needs a
+per-user memory namespace **before** Postgres, since `_memories_namespace` has no
+user in it and durable storage makes that sharing permanent.
 
 Three places pin 3.11 and have to stay in agreement: `[tool.ruff]
 target-version`, `[tool.ty.environment] python-version`, and `langgraph.json`'s
@@ -482,10 +499,11 @@ Other things that bite here:
   and the replay escapes it the same way. Any new render of model or
   traveler text needs it. Fixed strings do not: `money_text` spells the ISO code
   rather than `$`, and no provider note contains one.
-- `@st.cache_resource` is process-wide: that is what makes `/memories/` outlive
-  a reload, and it also means every browser session shares one store. Editing
-  the body of `get_agent()` invalidates the cache, dropping traveler memory on
-  that hot-reload.
+- `@st.cache_resource` is process-wide, so every browser session shares one
+  SQLite connection and one `/memories/`. Editing the body of `get_agent()`
+  invalidates the cache on that hot-reload: the profile is on disk and survives,
+  the in-memory checkpoints of any open trip do not, and the old connection stays
+  open until the process exits.
 - Repeat searches are kept separate on purpose. `availability-scout` is
   prompted to vary its query, so `record.payloads["search_flights"]` holds
   *different questions*, not retries. Merging them into one table would sort a
