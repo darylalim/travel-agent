@@ -264,7 +264,7 @@ itself leaves open.
 """
 
 
-def resumed_message(prompt: str, saved_on: str) -> str:
+def resumed_message(prompt: str, dated_on: str) -> str:
     """The first message of a reopened trip, as the agent receives it.
 
     A checkpoint carries no dates, so nothing else tells the agent that the
@@ -274,8 +274,7 @@ def resumed_message(prompt: str, saved_on: str) -> str:
     """
     return (
         f"{prompt}\n\n"
-        f"[Note from the app, not the traveler: this trip was reopened. It was last "
-        f"saved on {saved_on}, so every price, offer and availability above dates "
-        "from then or earlier and may have changed. Search again before treating "
-        "one as current, or say how old it is.]"
+        "[Note from the app, not the traveler: this trip was reopened. Every price, "
+        f"offer and availability above dates from {dated_on} or earlier and may have "
+        "changed. Search again before treating one as current, or say how old it is.]"
     )
