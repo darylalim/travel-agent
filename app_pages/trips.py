@@ -37,14 +37,19 @@ for trip in trips:
         if trip.thread_id == st.session_state.thread_id:
             st.badge("Open now", color="gray")
         elif st.session_state.get(_CONFIRMING) == trip.thread_id:
-            st.caption("Delete for good?")
-            if st.button("Delete", key=f"delete-{trip.thread_id}", width="content"):
-                delete_trip(trip.thread_id)
-                del st.session_state[_CONFIRMING]
-                st.rerun()
-            if st.button("Keep", key=f"keep-{trip.thread_id}", width="content"):
-                del st.session_state[_CONFIRMING]
-                st.rerun()
+            # One group, so a phone wraps it whole below the title instead of
+            # splitting the two answers. Keep goes last so that on a wide card
+            # it sits where the first Delete was: a slow double-tap must not
+            # land on the confirm.
+            with st.container(horizontal=True, vertical_alignment="center", width="content"):
+                st.caption("Delete for good?")
+                if st.button("Delete", key=f"delete-{trip.thread_id}", width="content"):
+                    delete_trip(trip.thread_id)
+                    del st.session_state[_CONFIRMING]
+                    st.rerun()
+                if st.button("Keep", key=f"keep-{trip.thread_id}", width="content"):
+                    del st.session_state[_CONFIRMING]
+                    st.rerun()
         else:
             if st.button("Open", key=f"open-{trip.thread_id}", width="content"):
                 st.session_state.thread_id = trip.thread_id
