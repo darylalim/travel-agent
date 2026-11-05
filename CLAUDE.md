@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main '5 days in Kyoto, 2 people, $4000'
 
-uv run pytest                            # 526 tests, ~7s, no network, no model calls
+uv run pytest                            # 543 tests, ~7s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -515,6 +515,13 @@ Other things that bite here:
   Reopened offers are what the search returned then, so `reopened_on` drives a
   notice on the Trip page. It is not a `warning`, which means one thing: not real
   inventory. A new way into a trip has to set it, and "Start a new trip" clears it.
+- **The agent cannot tell how old a resumed fare is.** A checkpoint carries no
+  dates, so `resume_note_on` puts `resumed_message` on the first turn after a
+  reopen. `chat.py` wraps the prompt for the agent alone, so the transcript keeps
+  the traveler's words. The note stays queued until a turn succeeds, because a
+  failed one may never have reached the agent. `reopened_on` is separate, since
+  the Trip page reads it for as long as the trip is open. The CLI's `--thread`
+  has no equivalent yet.
 - `AppTest` on `streamlit_app.py` runs its real `load_dotenv()`, which writes to
   `os.environ` where no fixture undoes it, so credentials would reach every later
   test. The `whole_app` fixture in `test_pages.py` disables it first. Any new
@@ -820,7 +827,7 @@ seconds from expiry, live flights beside sample lodging, or research that
 partly fails, and Duffel and Tavily cannot be told to. An example's
 `scripted_tools` metadata scripts flights, stays or web search. A
 `ScriptedProvider` registered as `scripted` serves it, and
-`build_agent(search_tools=…)` takes a `ScriptedSearch`. Eight things there are
+`build_agent(search_tools=…)` takes a `ScriptedSearch`. Nine things there are
 easy to undo:
 
 - **A script reaches its run through a `ContextVar`,** set around the stream in
@@ -866,6 +873,14 @@ easy to undo:
   It separates what `thin-first-search` cannot: `varied_thin_search` was 3/3 at
   `high` and 1/3 at `medium`, with the rubric at 1.0 in all six runs. Reporting
   no stay under the ceiling is an honest reply, so only that check sees the loss.
+- **The `resumed-fare` pair needs its control and its age criterion.** An
+  example can seed a whole conversation in `inputs`, and `_brief` shows it to the
+  judge. Scripted v3 scored both at 1.0: the seeded reply says fares can expire,
+  so the control passed on that hedge while giving $1,640 left, $465.20 too high,
+  in 3 of 3 runs. v4 requires the fare's age, and the control now scores 0.75
+  against 1.0 with the note. Across both versions the noted runs searched again
+  in 4 of 6 and the control in 0 of 6. A re-search is `optional_calls`, not
+  `expected_calls`, because stating the fare's age is an honest answer too.
 
 `main()` sets `TRAVEL_AGENT_PROVIDER=sample-data` over `.env`, because every
 rubric expects the sample-data label, except on a `_scripted` set, which runs

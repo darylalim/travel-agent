@@ -964,3 +964,11 @@ def test_a_thin_search_must_be_varied_and_the_better_offer_named():
     assert "does not name ANA" in missed["comment"]
     # The older scripted examples carry no reference and must not be marked down.
     assert harness.varied_thin_search(_outputs(first), {})["score"] is None
+
+
+def test_the_judge_sees_seeded_history_and_a_lone_brief_stays_verbatim():
+    lone = [{"role": "user", "content": "Plan Kyoto"}]
+    seeded = [*lone, {"role": "assistant", "content": "ANA is $1,180"}, lone[0]]
+
+    assert harness._brief(lone) == "Plan Kyoto"
+    assert "assistant: ANA is $1,180" in harness._brief(seeded)
