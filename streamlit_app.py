@@ -1,10 +1,9 @@
 """Streamlit entry point: `uv run streamlit run streamlit_app.py`.
 
-A third way to drive the agent, alongside `langgraph dev` and the CLI. Like
-the CLI it wires persistence in-process, so this is not the path that gives
-you durable traveler memory — but `st.cache_resource` holds the agent for the
-life of the server process, so memory survives page reloads and new browser
-tabs, which the CLI cannot manage.
+A third way to drive the agent, alongside `langgraph dev` and the CLI. It shares
+the CLI's SQLite file, so the traveler profile survives a server restart. Trips
+do not: the transcript lives in session state and the checkpoints in memory, so
+a past trip cannot be reopened here.
 
 `load_dotenv()` runs before anything that reaches `travel_agent.agent`,
 because that module builds its graph at import time and reads `TAVILY_API_KEY`

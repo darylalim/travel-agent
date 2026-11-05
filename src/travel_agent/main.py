@@ -1,14 +1,16 @@
 """Standalone CLI, for driving the agent without the LangGraph server.
 
-Persistence here is in-process: traveler memory lives as long as the process
-does. `langgraph dev` is the path that actually persists memory across runs —
-use this for quick one-off checks and debugging.
+Trips and traveler memory are saved to the SQLite file in `persistence.py`, so
+the profile outlives the process. Each run starts a new trip unless `--thread`
+names an earlier one: a fixed default would resume the last conversation, and
+its `/trip/*` files, without saying so.
 """
 
 from __future__ import annotations
 
 import argparse
 import sys
+import uuid
 
 from dotenv import load_dotenv
 
@@ -23,7 +25,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--model", default=DEFAULT_MODEL, help=f"Model id (default: {DEFAULT_MODEL})"
     )
-    parser.add_argument("--thread", default="cli", help="Conversation thread id.")
+    parser.add_argument(
+        "--thread", help="Thread id of a trip to resume (default: start a new trip)."
+    )
     args = parser.parse_args(argv)
 
     load_dotenv()
@@ -32,24 +36,22 @@ def main(argv: list[str] | None = None) -> int:
     # import time for langgraph.json, and that reads TAVILY_API_KEY to decide
     # whether search is available. Importing it at module scope would build
     # the agent against an unloaded environment, then build it again below.
-    from langgraph.checkpoint.memory import MemorySaver
-    from langgraph.store.memory import InMemoryStore
-
     from travel_agent.agent import build_agent
+    from travel_agent.persistence import database_path, open_storage
 
     # DEFAULT_EFFORT is tuned for DEFAULT_MODEL; any other model runs at its
     # own default, since not every model accepts effort (Haiku 4.5 rejects it).
     effort = DEFAULT_EFFORT if args.model == DEFAULT_MODEL else None
-    agent = build_agent(
-        args.model, effort=effort, checkpointer=MemorySaver(), store=InMemoryStore()
-    )
+    checkpointer, store = open_storage()
+    agent = build_agent(args.model, effort=effort, checkpointer=checkpointer, store=store)
+    thread = args.thread or str(uuid.uuid4())
     config = {
-        "configurable": {"thread_id": args.thread},
+        "configurable": {"thread_id": thread},
         "run_name": TRACE_NAME,
         "tags": ["cli"],
     }
 
-    print("Traveler memory is in-process only here; use `langgraph dev` to persist it.\n")
+    print(f"Saving to {database_path()}. Resume this trip with --thread {thread}\n")
 
     opening = " ".join(args.prompt).strip()
     while True:

@@ -10,6 +10,11 @@ build/
 *.egg-info/
 evals/results/
 
+# Traveler profiles and trips
+*.sqlite
+*.sqlite-*
+*.db
+
 # Secrets
 .env.*
 !.env.example

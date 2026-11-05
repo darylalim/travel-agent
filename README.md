@@ -37,11 +37,18 @@ Each wires persistence differently:
 | Entry point | Checkpointer and store | `/memories/` survives |
 |---|---|---|
 | `langgraph dev` | Supplied by the server | Across runs |
-| `streamlit run` | In-process, cached process-wide | A page reload and a second tab, but not a server restart |
-| `python -m travel_agent.main` | In-process | Nothing — it dies with the process |
+| `streamlit run` | Checkpoints in memory, store in a SQLite file | Across runs |
+| `python -m travel_agent.main` | SQLite file | Across runs |
 
-`langgraph dev` is the recommended path: memory persists and you get a visual
-trace of every subagent call.
+`langgraph dev` is the recommended path, because you get a visual trace of every
+subagent call. The CLI and the browser UI share one file, by default
+`~/.travel-agent/travel-agent.sqlite`; set `TRAVEL_AGENT_DB` to move it. It holds
+your traveler profile and your CLI trips unencrypted, and its profile is separate
+from the one `langgraph dev` keeps.
+
+Each CLI run starts a new trip and prints a thread id. Pass it back with
+`--thread` to pick that trip up again. The browser UI cannot reopen a past trip,
+so its trips are not saved.
 
 ### The browser UI
 
