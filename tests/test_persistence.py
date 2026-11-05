@@ -9,22 +9,26 @@ No network, no model calls.
 from __future__ import annotations
 
 import stat
+import time
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
-from langchain_core.messages import AIMessage, BaseMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.store.sqlite import SqliteStore
 from pydantic import Field
 
 import travel_agent.agent as agent_module
-from travel_agent import main, ui
+from travel_agent import clock, main, ui
+from travel_agent.config import SUBAGENT_MODELS
 from travel_agent.persistence import DB_ENV, database_path, open_storage
-from travel_agent.prompts import MEMORY_PATH, WORKSPACE
+from travel_agent.prompts import MEMORY_PATH, WORKSPACE, resumed_message
 
 
 class _ScriptedModel(GenericFakeChatModel):
@@ -191,14 +195,20 @@ class _Spy:
     def __init__(self) -> None:
         self.built: list[dict[str, Any]] = []
         self.threads: list[str] = []
+        self.sent: list[str] = []
+        self.history: list[Any] = []
 
     def build(self, *_args: Any, **kwargs: Any) -> _Spy:
         self.built.append(kwargs)
         return self
 
-    def stream(self, _input: Any, config: dict[str, Any], **_kwargs: Any) -> Iterator[Any]:
+    def stream(self, input: Any, config: dict[str, Any], **_kwargs: Any) -> Iterator[Any]:
         self.threads.append(config["configurable"]["thread_id"])
+        self.sent.append(input["messages"][0]["content"])
         return iter(())
+
+    def get_state_history(self, _config: dict[str, Any]) -> Iterator[Any]:
+        return iter(self.history)
 
 
 @pytest.fixture
@@ -287,3 +297,136 @@ def test_each_cli_run_is_a_new_trip_unless_it_names_one(
 
     main.main(["plan a trip", "--thread", spy.threads[0]])
     assert spy.threads[2] == spy.threads[0]
+
+
+def _snapshot(created_at: str, *messages: BaseMessage) -> Any:
+    return SimpleNamespace(created_at=created_at, values={"messages": list(messages)})
+
+
+def _delegated(subagent: str, call_id: str = "t1") -> list[BaseMessage]:
+    call = {"name": "task", "args": {"subagent_type": subagent}, "id": call_id}
+    return [
+        AIMessage(content="", tool_calls=[call]),
+        ToolMessage(content="found", name="task", tool_call_id=call_id),
+    ]
+
+
+def test_a_new_thread_has_no_prices_to_date():
+    assert main.prices_dated_on([]) is None
+
+
+def test_a_turn_with_no_search_does_not_make_old_fares_look_newer():
+    """Newest first, as `get_state_history` returns them."""
+    searched = _delegated("availability-scout")
+    history = [
+        _snapshot("2026-11-20T12:00:00+00:00", *searched, HumanMessage(content="and the hotel?")),
+        _snapshot("2026-09-14T12:00:00+00:00", *searched),
+        _snapshot("2026-09-13T12:00:00+00:00", searched[0]),
+    ]
+    assert main.prices_dated_on(history) == "Sep 14, 2026"
+
+
+def test_a_later_search_moves_the_date():
+    first = _delegated("availability-scout", "t1")
+    second = _delegated("availability-scout", "t2")
+    history = [
+        _snapshot("2026-10-02T12:00:00+00:00", *first, *second),
+        _snapshot("2026-09-14T12:00:00+00:00", *first),
+    ]
+    assert main.prices_dated_on(history) == "Oct 2, 2026"
+
+
+def test_a_scout_still_running_has_not_priced_anything():
+    """The call alone is not a result, so it cannot date one."""
+    call = _delegated("availability-scout")[0]
+    history = [
+        _snapshot("2026-11-20T12:00:00+00:00", call),
+        _snapshot("2026-09-14T12:00:00+00:00", call),
+    ]
+    assert main.prices_dated_on(history) == "Nov 20, 2026"
+
+
+def test_a_trip_with_no_search_falls_back_to_its_last_checkpoint():
+    history = [
+        _snapshot("2026-11-20T12:00:00+00:00", *_delegated("destination-researcher")),
+        _snapshot("2026-09-14T12:00:00+00:00"),
+    ]
+    assert main.prices_dated_on(history) == "Nov 20, 2026"
+
+
+def test_a_checkpoint_is_dated_in_local_time(monkeypatch: pytest.MonkeyPatch):
+    """Checkpoints stamp UTC, which is already tomorrow on an evening in Honolulu."""
+    monkeypatch.setenv("TZ", "Pacific/Honolulu")
+    time.tzset()
+    try:
+        dated = main.prices_dated_on([_snapshot("2026-09-15T02:00:00+00:00")])
+    finally:
+        monkeypatch.undo()
+        time.tzset()
+    assert dated == "Sep 14, 2026"
+
+
+def test_the_scout_name_is_on_the_roster():
+    """A stale name finds no search and quietly dates every trip by its last turn."""
+    assert main.SCOUT in SUBAGENT_MODELS
+
+
+def test_only_the_first_turn_of_a_resumed_cli_trip_carries_the_note(
+    spy: _Spy, monkeypatch: pytest.MonkeyPatch
+):
+    spy.history = [_snapshot("2026-09-14T12:00:00+00:00")]
+    replies = iter(["And the hotel?", "exit"])
+    monkeypatch.setattr("builtins.input", lambda _prompt: next(replies))
+
+    main.main(["Is it still fine?", "--thread", "kyoto"])
+
+    assert spy.sent == [resumed_message("Is it still fine?", "Sep 14, 2026"), "And the hotel?"]
+
+
+def test_the_note_waits_for_the_first_message_of_an_interactive_resume(
+    spy: _Spy, monkeypatch: pytest.MonkeyPatch
+):
+    """No opening prompt, and a blank line is not a turn."""
+    spy.history = [_snapshot("2026-09-14T12:00:00+00:00")]
+    replies = iter(["", "Is it still fine?", "exit"])
+    monkeypatch.setattr("builtins.input", lambda _prompt: next(replies))
+
+    main.main(["--thread", "kyoto"])
+
+    assert spy.sent == [resumed_message("Is it still fine?", "Sep 14, 2026")]
+
+
+def test_a_new_cli_trip_carries_no_note(spy: _Spy):
+    spy.history = [_snapshot("2026-09-14T12:00:00+00:00")]  # never read without --thread
+    main.main(["plan a trip"])
+    assert spy.sent == ["plan a trip"]
+
+
+def test_a_thread_id_with_no_history_carries_no_note(spy: _Spy):
+    main.main(["plan a trip", "--thread", "new"])
+    assert spy.sent == ["plan a trip"]
+
+
+def test_a_real_resume_reaches_the_agent_with_the_date_of_its_checkpoints(
+    restarted, monkeypatch: pytest.MonkeyPatch
+):
+    """The fakes above stand in for the history, so this pins its real shape."""
+    monkeypatch.setattr(main, "load_dotenv", lambda: None)
+    monkeypatch.setattr("builtins.input", lambda _prompt: "exit")
+    delegate = {
+        "name": "task",
+        "args": {"description": "find fares", "subagent_type": main.SCOUT},
+        "id": "t1",
+    }
+    agent, _ = restarted(
+        AIMessage(content="", tool_calls=[delegate]),
+        AIMessage(content="a fare"),
+        AIMessage(content="here is the plan"),
+    )
+    _turn(agent, "kyoto")
+
+    _, model = restarted(AIMessage(content="searching again"))
+    assert main.main(["Is it still fine?", "--thread", "kyoto"]) == 0
+
+    today = datetime.now().astimezone().date()
+    assert model.calls[0][-1].text == resumed_message("Is it still fine?", clock.long_date(today))
