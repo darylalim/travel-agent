@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main '5 days in Kyoto, 2 people, $4000'
 
-uv run pytest                            # 550 tests, ~8s, no network, no model calls
+uv run pytest                            # 552 tests, ~8s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -526,9 +526,12 @@ Other things that bite here:
   a save date moves forward on a turn that searched nothing and makes old fares
   look newer. `record_tool` stamps `searched_on` on each search payload, which
   rides the snapshot, and `prices_dated_on` takes the newest. Rejected searches
-  are never captured, so they do not move it. Trips with no stamp fall back to the
-  save, and the note says "or earlier" so both dates stay true. `reopened_on`
-  stays the save date, because it says when the trip was left.
+  are never captured, so they do not move it. A trip saved before stamping is
+  stamped with its save date when `saved_trips` reads it, because otherwise the
+  first turn after a reopen moves that date too. A record with any stamp is left
+  alone, since its unstamped searches ran earlier. A trip with no search falls back
+  to the save, and the note says "or earlier" so every date stays true.
+  `reopened_on` stays the save date, because it says when the trip was left.
 - `AppTest` on `streamlit_app.py` runs its real `load_dotenv()`, which writes to
   `os.environ` where no fixture undoes it, so credentials would reach every later
   test. The `whole_app` fixture in `test_pages.py` disables it first. Any new

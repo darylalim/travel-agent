@@ -228,6 +228,19 @@ class TripRecord:
         ]
         return date.fromisoformat(max(stamps)) if stamps else None
 
+    def date_unstamped_searches(self, day: date) -> None:
+        """Pin a trip saved before searches were stamped to `day`.
+
+        Without this its date is the save, which the next turn moves forward.
+        A record with any stamp is left alone: its unstamped searches ran before
+        that one, and `day` may be later than all of them.
+        """
+        if self.last_searched_on() is not None:
+            return
+        for tool_name in SEARCH_TOOLS:
+            for payload in self.payloads.get(tool_name, []):
+                payload["searched_on"] = day.isoformat()
+
     def caveats(self) -> list[str]:
         """Distinct synthetic-data warnings raised by any search so far.
 
@@ -288,7 +301,7 @@ class SavedTrip:
         """The newest date any saved price can be from, for the agent's note.
 
         Not `saved_on`: every turn saves, so a turn with no search would make
-        old fares look newer than they are. A trip with no stamped search falls
+        old fares look newer than they are. A trip with no search at all falls
         back to the save, which is still a true upper bound on its prices.
         """
         return _long_date(self.record.last_searched_on() or self.saved_at)
@@ -347,17 +360,22 @@ def saved_trips() -> list[SavedTrip]:
     no provenance to show for them.
     """
     _, store = _storage()
-    return [
-        SavedTrip(
-            thread_id=item.key,
-            messages=item.value["messages"],
-            record=TripRecord(payloads=item.value["payloads"], files=item.value["files"]),
-            seen_caveats=item.value["seen_caveats"],
-            # SQLite's `CURRENT_TIMESTAMP` is UTC, and arrives without saying so.
-            saved_at=item.updated_at.replace(tzinfo=UTC).astimezone(),
+    trips = []
+    for item in store.search(TRIPS_NAMESPACE, limit=MAX_LISTED_TRIPS):
+        # SQLite's `CURRENT_TIMESTAMP` is UTC, and arrives without saying so.
+        saved_at = item.updated_at.replace(tzinfo=UTC).astimezone()
+        record = TripRecord(payloads=item.value["payloads"], files=item.value["files"])
+        record.date_unstamped_searches(saved_at.date())
+        trips.append(
+            SavedTrip(
+                thread_id=item.key,
+                messages=item.value["messages"],
+                record=record,
+                seen_caveats=item.value["seen_caveats"],
+                saved_at=saved_at,
+            )
         )
-        for item in store.search(TRIPS_NAMESPACE, limit=MAX_LISTED_TRIPS)
-    ]
+    return trips
 
 
 def offers(payload: dict[str, Any] | None) -> list[dict[str, Any]]:
