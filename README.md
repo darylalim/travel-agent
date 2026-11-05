@@ -37,22 +37,23 @@ Each wires persistence differently:
 | Entry point | Checkpointer and store | `/memories/` survives |
 |---|---|---|
 | `langgraph dev` | Supplied by the server | Across runs |
-| `streamlit run` | Checkpoints in memory, store in a SQLite file | Across runs |
+| `streamlit run` | SQLite file | Across runs |
 | `python -m travel_agent.main` | SQLite file | Across runs |
 
 `langgraph dev` is the recommended path, because you get a visual trace of every
 subagent call. The CLI and the browser UI share one file, by default
 `~/.travel-agent/travel-agent.sqlite`; set `TRAVEL_AGENT_DB` to move it. It holds
-your traveler profile and your CLI trips unencrypted, and its profile is separate
+your traveler profile and your trips unencrypted, and its profile is separate
 from the one `langgraph dev` keeps.
 
 Each CLI run starts a new trip and prints a thread id. Pass it back with
-`--thread` to pick that trip up again. The browser UI cannot reopen a past trip,
-so its trips are not saved.
+`--thread` to pick that trip up again. The browser UI saves each trip after every
+reply and lists them on its Past trips page. CLI trips are not listed there,
+because the CLI does not capture the search results that page restores.
 
 ### The browser UI
 
-Two pages:
+Three pages:
 
 - **Plan:** chat with the agent. Its prose streams in, and tool calls appear as a
   collapsed activity trail beside it.
@@ -61,6 +62,9 @@ Two pages:
   several queries, such as nearby airports or shifted dates, a control switches
   between them. They are not merged, because a combined list sorted by price
   would rank a cheaper flight on other dates above the dates you asked for.
+- **Past trips:** reopen an earlier trip and carry on planning. Its chat and
+  figures come back as they were saved, and the Trip page says that those prices
+  date from then.
 
 Every synthetic result is labelled in its table and repeated as a standing notice
 at the top of the Trip page.

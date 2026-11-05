@@ -925,3 +925,101 @@ def test_a_plan_with_no_budget_shows_the_total_and_no_verdict(trip_page: AppTest
     assert [card.label for card in trip_page.metric] == ["Estimated total"]
     assert not trip_page.error
     assert any("No budget set" in caption for caption in _captions(trip_page))
+
+
+def test_a_finished_turn_is_saved(chat_page):
+    app = chat_page(_quiet)
+    app.chat_input[0].set_value("What can you do?").run()
+
+    (trip,) = ui.saved_trips()
+    assert trip.thread_id == "thread"
+    assert [entry["role"] for entry in trip.messages] == ["user", "assistant"]
+
+
+def test_an_interrupted_turn_is_saved_too(chat_page):
+    app = chat_page(_interrupted)
+    app.chat_input[0].set_value("Plan Kyoto").run()
+
+    (trip,) = ui.saved_trips()
+    assert trip.messages[-1]["status_label"] == "Interrupted"
+
+
+@pytest.fixture
+def past_trips_page():
+    """Past trips with `thread_id` as the trip open in this session."""
+    app = AppTest.from_file(str(PAGES / "trips.py"), default_timeout=60)
+    app.session_state["thread_id"] = "current"
+    return app
+
+
+def _save(thread_id: str, opening: str = "5 days in Kyoto") -> None:
+    messages = [
+        {"role": "user", "content": opening},
+        {"role": "assistant", "content": "Here is a plan", "activity": ["Searching flights"]},
+    ]
+    record = TripRecord()
+    record.record_tool(_flight_search("2026-09-10"))
+    ui.save_trip(thread_id, messages, record, [])
+
+
+def test_past_trips_says_so_when_there_are_none(past_trips_page):
+    past_trips_page.run()
+    assert not past_trips_page.exception
+    assert "No saved trips yet" in past_trips_page.info[0].value
+
+
+def test_past_trips_marks_the_open_trip_instead_of_offering_it(past_trips_page):
+    _save("current", "Trip one")
+    _save("other", "Trip two")
+    past_trips_page.run()
+
+    assert not past_trips_page.exception
+    assert {text.value for text in past_trips_page.text} == {"Trip one", "Trip two"}
+    assert [button.key for button in past_trips_page.button] == ["open-other"]
+
+
+@pytest.fixture
+def whole_app(monkeypatch: pytest.MonkeyPatch):
+    """The entry script, which a page test skips, on the Past trips page.
+
+    `load_dotenv` is disabled first: it writes straight to `os.environ`, where
+    no fixture would undo it, so a developer's environment file would reach
+    every later test, provider credentials included.
+    """
+    monkeypatch.setattr("dotenv.load_dotenv", lambda: None)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    app = AppTest.from_file(str(PAGES.parent / "streamlit_app.py"), default_timeout=60)
+    app.run()
+    return app.switch_page("app_pages/trips.py").run()
+
+
+def test_opening_a_past_trip_restores_it_on_every_page(whole_app):
+    _save("kyoto")
+    whole_app.run()
+    whole_app.button(key="open-kyoto").click().run()
+
+    assert not whole_app.exception
+    assert whole_app.session_state["thread_id"] == "kyoto"
+    assert [message.name for message in whole_app.chat_message] == ["user", "assistant"]
+
+    whole_app.switch_page("app_pages/trip.py").run()
+    assert not whole_app.exception
+    assert any("Reopened from" in notice.value for notice in whole_app.info)
+    assert len(whole_app.dataframe) == 1
+
+
+def test_a_new_trip_after_a_reopened_one_starts_clean(whole_app):
+    _save("kyoto")
+    whole_app.run()
+    whole_app.button(key="open-kyoto").click().run()
+    next(b for b in whole_app.button if b.label == "Start a new trip").click().run()
+
+    assert whole_app.session_state["thread_id"] != "kyoto"
+    assert whole_app.session_state["reopened_on"] is None
+    assert not whole_app.chat_message
+
+
+def test_a_trip_started_here_carries_no_reopened_notice(trip_page):
+    trip_page.session_state["record"].record_tool(_flight_search("2026-09-10"))
+    trip_page.run()
+    assert not any("Reopened from" in notice.value for notice in trip_page.info)

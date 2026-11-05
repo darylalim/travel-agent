@@ -13,7 +13,7 @@ uv run langgraph dev                     # LangGraph Studio at :2024 — main wa
 uv run streamlit run streamlit_app.py    # browser UI at :8501
 uv run python -m travel_agent.main '5 days in Kyoto, 2 people, $4000'
 
-uv run pytest                            # 505 tests, ~7s, no network, no model calls
+uv run pytest                            # 522 tests, ~7s, no network, no model calls
 uv run pytest tests/test_duffel.py::test_supplier_timeout_is_clamped_to_duffels_range
 uv run ruff check . && uv run ruff format . && uv run ty check
 
@@ -171,13 +171,10 @@ are followed.
 The three entry points differ in more than ergonomics. `langgraph dev` has the
 server supply the checkpointer and store, so `/memories/` persists across runs.
 The CLI and the Streamlit UI share one SQLite file through `persistence.py`
-(`TRAVEL_AGENT_DB`, default `~/.travel-agent/travel-agent.sqlite`). The CLI takes
-a checkpointer and a store from it. The UI takes only the store and keeps
-`MemorySaver`: it cannot reopen a trip, so checkpoints written there would pile
-up on disk, trip contents included, with nothing to read them. Giving the UI a
-way to reopen trips is what would justify moving it to `open_storage()`. Those
-two share a profile with each other and **not** with `langgraph dev`, whose store
-and namespace are its own, so a profile written there does not appear here. Evals
+(`TRAVEL_AGENT_DB`, default `~/.travel-agent/travel-agent.sqlite`), and both take
+a checkpointer and a store from `open_storage()`. Those two share a profile with
+each other and **not** with `langgraph dev`, whose store and namespace are its
+own, so a profile written there does not appear here. Evals
 and `test_memory.py` stay on `MemorySaver`/`InMemoryStore`, because each example
 needs a store no other run wrote.
 
@@ -499,11 +496,27 @@ Other things that bite here:
   and the replay escapes it the same way. Any new render of model or
   traveler text needs it. Fixed strings do not: `money_text` spells the ISO code
   rather than `$`, and no provider note contains one.
-- `@st.cache_resource` is process-wide, so every browser session shares one
-  SQLite connection and one `/memories/`. Editing the body of `get_agent()`
-  invalidates the cache on that hot-reload: the profile is on disk and survives,
-  the in-memory checkpoints of any open trip do not, and the old connection stays
-  open until the process exits.
+- `@st.cache_resource` is process-wide, so every browser session shares one pair
+  of SQLite connections, one `/memories/` and one list of past trips. `_storage`
+  is cached apart from `get_agent` because saving a trip needs the store without
+  building an agent. Tests clear it in `isolate_database`, or it stays on the
+  first test's file.
+- **Reopening a trip takes two saved halves, and the checkpoint is the wrong one
+  to rebuild a page from.** The checkpoint gives the agent its context back, but
+  subagent results never reach it, so a Trip page rebuilt from `get_state` loses
+  every `warning` and `synthetic` and renders unlabelled, with nothing raised.
+  `save_trip` therefore snapshots the transcript, `TripRecord` and seen caveats
+  into the store under `TRIPS_NAMESPACE`, in `chat.py`'s `finally` so an
+  interrupted turn is kept. A field added to either has to be added there too.
+  CLI trips have checkpoints and no snapshot, so they are not listed.
+- **A "Live" label says where a fare came from, not that it still stands.**
+  Reopened offers are what the search returned then, so `reopened_on` drives a
+  notice on the Trip page. It is not a `warning`, which means one thing: not real
+  inventory. A new way into a trip has to set it, and "Start a new trip" clears it.
+- `AppTest` on `streamlit_app.py` runs its real `load_dotenv()`, which writes to
+  `os.environ` where no fixture undoes it, so credentials would reach every later
+  test. The `whole_app` fixture in `test_pages.py` disables it first. Any new
+  fixture running the entry script has to do the same.
 - Repeat searches are kept separate on purpose. `availability-scout` is
   prompted to vary its query, so `record.payloads["search_flights"]` holds
   *different questions*, not retries. Merging them into one table would sort a

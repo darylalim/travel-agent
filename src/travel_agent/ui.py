@@ -38,7 +38,7 @@ import json
 import re
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import UTC, date, datetime
 from typing import Any, cast
 
 import streamlit as st
@@ -78,6 +78,15 @@ TRIP_WIDTH = 1280
 # Tools whose structured output the trip view renders directly.
 CAPTURED_TOOLS = ("search_flights", "search_stays", "summarize_budget")
 
+# Saved trips share the store with `/memories/` but not its namespace, so the
+# agent's filesystem never sees them.
+TRIPS_NAMESPACE = ("ui_trips",)
+
+# `store.search` defaults to 10, which would hide older trips without a word.
+MAX_LISTED_TRIPS = 50
+
+_TITLE_LENGTH = 80
+
 # Friendlier names for the activity panel than the raw tool names.
 _TOOL_LABELS = {
     "search_flights": "Searching flights",
@@ -92,17 +101,28 @@ _TOOL_LABELS = {
 }
 
 
+@st.cache_resource(show_spinner=False)
+def _storage() -> tuple[Any, Any]:
+    """Open the checkpointer and store once per server process.
+
+    Separate from `get_agent` because saving a trip needs the store without
+    building an agent, and one store has to serve both.
+    """
+    from travel_agent.persistence import open_storage
+
+    return open_storage()
+
+
 @st.cache_resource(show_spinner="Starting the travel agent…")
 def get_agent(model: str = DEFAULT_MODEL) -> Any:
     """Build the agent once per server process.
 
     `cache_resource` rather than `cache_data` because the agent is a live
     object graph — an Anthropic client, an HTTP pool, a checkpointer — not
-    something to serialise. The default global scope is deliberate: one SQLite
-    connection serves every browser session, so they all share `/memories/`.
-    That is right for local single-traveler use and would need a per-user
-    namespace before deploying. Checkpoints stay in memory because nothing here
-    can reopen a past trip; see `persistence.open_storage`.
+    something to serialise. The default global scope is deliberate: one pair of
+    SQLite connections serves every browser session, so they all share
+    `/memories/` and the saved trips. That is right for local single-traveler
+    use and would need a per-user namespace before deploying.
 
     `travel_agent.agent` is imported *inside* this function on purpose. That
     module builds its graph as an import side effect and reads
@@ -110,12 +130,10 @@ def get_agent(model: str = DEFAULT_MODEL) -> Any:
     construct the agent before `load_dotenv()` ran and silently drop web
     search. `main.py` defers the same import for the same reason.
     """
-    from langgraph.checkpoint.memory import MemorySaver
-
     from travel_agent.agent import build_agent
-    from travel_agent.persistence import open_store
 
-    return build_agent(model, checkpointer=MemorySaver(), store=open_store())
+    checkpointer, store = _storage()
+    return build_agent(model, checkpointer=checkpointer, store=store)
 
 
 def thread_config(thread_id: str) -> dict[str, Any]:
@@ -210,6 +228,89 @@ class TripRecord:
                 if isinstance(warning, str) and warning not in seen:
                     seen.append(warning)
         return seen
+
+
+def _trip_title(messages: list[dict[str, Any]]) -> str:
+    """The traveler's opening request on one line, cut to fit a list row."""
+    opening = next((entry["content"] for entry in messages if entry["role"] == "user"), "")
+    text = " ".join(opening.split())
+    if len(text) <= _TITLE_LENGTH:
+        return text
+    return f"{text[: _TITLE_LENGTH - 1].rstrip()}…"
+
+
+@dataclass(frozen=True)
+class SavedTrip:
+    """Everything needed to put a past trip back on screen."""
+
+    thread_id: str
+    messages: list[dict[str, Any]]
+    record: TripRecord
+    seen_caveats: list[str]
+    saved_at: datetime
+
+    @property
+    def title(self) -> str:
+        return _trip_title(self.messages)
+
+    @property
+    def saved_on(self) -> str:
+        """The local date of the last save, e.g. `Nov 5, 2026`."""
+        return f"{self.saved_at:%b} {self.saved_at.day}, {self.saved_at.year}"
+
+    @property
+    def summary(self) -> str:
+        requests = sum(entry["role"] == "user" for entry in self.messages)
+        return f"{self.saved_on} · {_count(requests, 'request')}"
+
+
+def save_trip(
+    thread_id: str,
+    messages: list[dict[str, Any]],
+    record: TripRecord,
+    seen_caveats: list[str],
+) -> None:
+    """Snapshot what the UI holds for one trip, so it can be reopened.
+
+    The checkpoint alone cannot do this. It gives the agent its context back,
+    but subagent tool results never reach the parent's messages, so rebuilding
+    the Trip page from it would lose every offer's `warning` and `synthetic`:
+    the page would render without the sample-data labels, and nothing would
+    raise. The transcript's status lines and caveats exist only here too.
+    """
+    _, store = _storage()
+    store.put(
+        TRIPS_NAMESPACE,
+        thread_id,
+        {
+            "messages": messages,
+            "payloads": record.payloads,
+            "files": record.files,
+            "seen_caveats": seen_caveats,
+        },
+        index=False,
+    )
+
+
+def saved_trips() -> list[SavedTrip]:
+    """Saved trips, most recently updated first.
+
+    Trips from the CLI are not here: they have checkpoints but no snapshot,
+    because the CLI never captures search payloads, so the Trip page would have
+    no provenance to show for them.
+    """
+    _, store = _storage()
+    return [
+        SavedTrip(
+            thread_id=item.key,
+            messages=item.value["messages"],
+            record=TripRecord(payloads=item.value["payloads"], files=item.value["files"]),
+            seen_caveats=item.value["seen_caveats"],
+            # SQLite's `CURRENT_TIMESTAMP` is UTC, and arrives without saying so.
+            saved_at=item.updated_at.replace(tzinfo=UTC).astimezone(),
+        )
+        for item in store.search(TRIPS_NAMESPACE, limit=MAX_LISTED_TRIPS)
+    ]
 
 
 def offers(payload: dict[str, Any] | None) -> list[dict[str, Any]]:

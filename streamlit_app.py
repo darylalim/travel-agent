@@ -1,9 +1,8 @@
 """Streamlit entry point: `uv run streamlit run streamlit_app.py`.
 
 A third way to drive the agent, alongside `langgraph dev` and the CLI. It shares
-the CLI's SQLite file, so the traveler profile survives a server restart. Trips
-do not: the transcript lives in session state and the checkpoints in memory, so
-a past trip cannot be reopened here.
+the CLI's SQLite file, so the traveler profile and past trips survive a server
+restart. Each turn saves the trip, and the Past trips page reopens it.
 
 `load_dotenv()` runs before anything that reaches `travel_agent.agent`,
 because that module builds its graph at import time and reads `TAVILY_API_KEY`
@@ -40,6 +39,8 @@ st.session_state.setdefault("thread_id", str(uuid.uuid4()))
 st.session_state.setdefault("messages", [])
 st.session_state.setdefault("record", TripRecord())
 st.session_state.setdefault("seen_caveats", [])
+# The date a reopened trip was last saved; None for a trip started here.
+st.session_state.setdefault("reopened_on", None)
 
 if not os.getenv("ANTHROPIC_API_KEY"):
     st.title(":material/travel_explore: Travel agent")
@@ -53,12 +54,13 @@ if not os.getenv("ANTHROPIC_API_KEY"):
 pages = [
     st.Page("app_pages/chat.py", title="Plan", icon=":material/forum:", default=True),
     st.Page("app_pages/trip.py", title="Trip", icon=":material/map:"),
+    st.Page("app_pages/trips.py", title="Past trips", icon=":material/history:"),
 ]
 page = st.navigation(pages, position="top")
 
 with (
     st.container(horizontal_alignment="center"),
-    st.container(width=PLAN_WIDTH if page.title == "Plan" else TRIP_WIDTH),
+    st.container(width=TRIP_WIDTH if page.title == "Trip" else PLAN_WIDTH),
 ):
     with st.container(horizontal=True, vertical_alignment="center", gap="small"):
         # Grey on purpose, and never green. A colour reading as "live" would be
@@ -85,12 +87,14 @@ with (
             "Start a new trip",
             icon=":material/restart_alt:",
             width="content",
-            help="Clears this trip's workspace. The traveler profile is kept.",
+            help="Starts a blank trip. This one stays under Past trips, "
+            "and the traveler profile is kept.",
         ):
             st.session_state.thread_id = str(uuid.uuid4())
             st.session_state.messages = []
             st.session_state.record = TripRecord()
             st.session_state.seen_caveats = []
+            st.session_state.reopened_on = None
             st.rerun()
 
     # Pages do not set their own title; the entry script owns it.

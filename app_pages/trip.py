@@ -362,6 +362,16 @@ def _pick_search(searches: list[dict[str, Any]], key: str) -> dict[str, Any] | N
 
 # Standing caveats: repeated here rather than left in chat scrollback, so the
 # figures below are never read without them.
+# A "Live" label says where a fare came from, not that it still stands. Offers
+# restored from a save are what the search returned then, so the page says so.
+reopened_on = st.session_state.get("reopened_on")
+if reopened_on and (flight_searches or stay_searches):
+    st.info(
+        f"Reopened from {reopened_on}. Searches from before then show prices and "
+        "availability as they stood, which may have changed.",
+        icon=":material/history:",
+    )
+
 for caveat in record.caveats():
     st.warning(caveat, icon=":material/warning:")
 
