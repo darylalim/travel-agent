@@ -1086,9 +1086,9 @@ def test_opening_a_trip_queues_the_note_for_the_agent(whole_app):
     whole_app.run()
     whole_app.button(key="open-kyoto").click().run()
 
-    saved_on = whole_app.session_state["reopened_on"]
-    assert saved_on
-    assert whole_app.session_state["resume_note_on"] == saved_on
+    # `_save` searches on the pinned clock, so the save itself is a later date.
+    assert whole_app.session_state["resume_note_on"] == "Jan 1, 2026"
+    assert whole_app.session_state["reopened_on"] != "Jan 1, 2026"
 
 
 def test_a_new_trip_after_a_reopened_one_starts_clean(whole_app):

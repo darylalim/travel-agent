@@ -41,7 +41,8 @@ st.session_state.setdefault("record", TripRecord())
 st.session_state.setdefault("seen_caveats", [])
 # The date a reopened trip was last saved; None for a trip started here.
 st.session_state.setdefault("reopened_on", None)
-# The same date until the agent has been told, which `reopened_on` outlives.
+# How old the agent is told the trip's prices are, until a turn has told it.
+# `reopened_on` outlives it and is a different date: the last search, not the save.
 st.session_state.setdefault("resume_note_on", None)
 
 if not os.getenv("ANTHROPIC_API_KEY"):

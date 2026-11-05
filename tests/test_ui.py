@@ -16,14 +16,14 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 import pytest
 from langchain_core.messages import AIMessageChunk, ToolMessage
 from langchain_core.tools import BaseTool
 
-from travel_agent import ui
+from travel_agent import clock, ui
 from travel_agent.subagents import build_subagents
 from travel_agent.tools.availability import date_offset
 from travel_agent.tools.budget import summarize_budget
@@ -404,7 +404,7 @@ def test_record_keeps_search_results_and_drops_failures():
     # search rather than blanking because the newest attempt was rejected.
     assert len(record.payloads["search_flights"]) == 1
     assert "write_file" not in record.payloads
-    assert record.latest("search_flights") == {"offers": [{"total_fare": 500}]}
+    assert ui.offers(record.latest("search_flights")) == [{"total_fare": 500}]
 
 
 def test_caveat_survives_an_empty_result_set():
@@ -476,7 +476,7 @@ def test_every_search_is_kept_in_order():
         record.record_tool(_tool_message("search_flights", {"offers": [{"total_fare": fare}]}))
 
     assert len(record.payloads["search_flights"]) == 3
-    assert record.latest("search_flights") == {"offers": [{"total_fare": 700}]}
+    assert ui.offers(record.latest("search_flights")) == [{"total_fare": 700}]
 
 
 def test_search_label_describes_a_flight_query():
@@ -806,6 +806,81 @@ def test_a_saved_trip_keeps_its_provenance_across_a_restart():
     assert trip.record.caveats() == ["Sample data."]
     assert ui.offers(trip.record.latest("search_flights")) == [offer]
     assert trip.seen_caveats == ["Sample data."]
+
+
+def _on(day: str, monkeypatch, record: TripRecord, tool: str, payload: dict) -> None:
+    """Record one tool result as if it arrived on `day`."""
+    monkeypatch.setattr(clock, "today", lambda: date.fromisoformat(day))
+    record.record_tool(_tool_message(tool, payload))
+
+
+def test_each_search_is_stamped_with_the_day_it_ran(monkeypatch):
+    record = TripRecord()
+    _on("2026-09-14", monkeypatch, record, "search_flights", {"offers": []})
+    _on("2026-09-15", monkeypatch, record, "search_stays", {"offers": []})
+
+    assert record.payloads["search_flights"][-1]["searched_on"] == "2026-09-14"
+    assert record.payloads["search_stays"][-1]["searched_on"] == "2026-09-15"
+
+
+def test_only_a_search_that_returned_something_dates_the_prices(monkeypatch):
+    """A rejected search and a costing both leave the fares as old as they were."""
+    record = TripRecord()
+    _on("2026-09-14", monkeypatch, record, "search_flights", {"offers": []})
+    _on("2026-10-01", monkeypatch, record, "search_flights", {"error": "bad date"})
+    _on("2026-10-02", monkeypatch, record, "summarize_budget", {"total_estimated": 900})
+
+    assert record.last_searched_on() == date(2026, 9, 14)
+    assert "searched_on" not in record.payloads["summarize_budget"][-1]
+
+
+def test_the_newest_search_dates_the_prices_across_both_tools(monkeypatch):
+    record = TripRecord()
+    _on("2026-09-20", monkeypatch, record, "search_stays", {"offers": []})
+    _on("2026-09-14", monkeypatch, record, "search_flights", {"offers": []})
+
+    assert record.last_searched_on() == date(2026, 9, 20)
+
+
+def test_a_later_save_does_not_make_old_prices_look_newer(monkeypatch):
+    """Every turn saves, so the save date moves on a turn that searched nothing."""
+    record = TripRecord()
+    _on("2026-09-14", monkeypatch, record, "search_flights", {"offers": []})
+    ui.save_trip("trip", [{"role": "user", "content": "Kyoto"}], record, [])
+    _, store = ui._storage()
+    store.conn.execute("UPDATE store SET updated_at = '2026-11-05 12:00:00'")
+
+    ui._storage.clear()
+    (trip,) = ui.saved_trips()
+
+    assert trip.prices_dated_on == "Sep 14, 2026"
+    assert trip.saved_at.year == 2026 and trip.saved_at.month == 11
+
+
+def _trip_saved_on(day: datetime, payloads: dict) -> ui.SavedTrip:
+    return ui.SavedTrip(
+        thread_id="trip",
+        messages=[],
+        record=TripRecord(payloads=payloads),
+        seen_caveats=[],
+        saved_at=day,
+    )
+
+
+@pytest.mark.parametrize(
+    "payloads",
+    [{}, {"search_flights": [{"offers": []}]}],
+    ids=["no search", "saved before searches were stamped"],
+)
+def test_a_trip_with_no_stamped_search_falls_back_to_its_save(payloads):
+    trip = _trip_saved_on(datetime(2026, 11, 5, 9, 0, tzinfo=UTC), payloads)
+    assert trip.prices_dated_on == trip.saved_on == "Nov 5, 2026"
+
+
+def test_a_stamped_search_outranks_an_older_unstamped_one():
+    payloads = {"search_flights": [{"offers": []}, {"offers": [], "searched_on": "2026-10-02"}]}
+    trip = _trip_saved_on(datetime(2026, 11, 5, 9, 0, tzinfo=UTC), payloads)
+    assert trip.prices_dated_on == "Oct 2, 2026"
 
 
 def test_saving_a_trip_again_replaces_it():

@@ -44,6 +44,7 @@ from typing import Any, cast
 import streamlit as st
 from langchain_core.messages import AIMessageChunk, ToolMessage
 
+from travel_agent import clock
 from travel_agent.config import DEFAULT_MODEL, TRACE_NAME
 
 # Safe at module scope, unlike `travel_agent.agent`: these modules define
@@ -75,8 +76,11 @@ ITINERARY_PATH = f"{WORKSPACE}/itinerary.md"
 PLAN_WIDTH = 820
 TRIP_WIDTH = 1280
 
+# Tools that return inventory, whose results are only true on the day they ran.
+SEARCH_TOOLS = ("search_flights", "search_stays")
+
 # Tools whose structured output the trip view renders directly.
-CAPTURED_TOOLS = ("search_flights", "search_stays", "summarize_budget")
+CAPTURED_TOOLS = (*SEARCH_TOOLS, "summarize_budget")
 
 # Saved trips share the store with `/memories/` but not its namespace, so the
 # agent's filesystem never sees them.
@@ -190,6 +194,8 @@ class TripRecord:
         payload = _decode(message)
         if payload is None or "error" in payload:
             return
+        if message.name in SEARCH_TOOLS:
+            payload["searched_on"] = clock.today().isoformat()
         self.payloads.setdefault(message.name, []).append(payload)
 
     def absorb_files(self, values: dict[str, Any]) -> None:
@@ -208,6 +214,20 @@ class TripRecord:
         found = self.payloads.get(tool_name)
         return found[-1] if found else None
 
+    def last_searched_on(self) -> date | None:
+        """The day of the newest search, or None if no stamped search ran.
+
+        Trips saved before searches were stamped hold payloads without the key.
+        A later stamped search is still the newest, so those are simply skipped.
+        """
+        stamps = [
+            payload["searched_on"]
+            for tool_name in SEARCH_TOOLS
+            for payload in self.payloads.get(tool_name, [])
+            if "searched_on" in payload
+        ]
+        return date.fromisoformat(max(stamps)) if stamps else None
+
     def caveats(self) -> list[str]:
         """Distinct synthetic-data warnings raised by any search so far.
 
@@ -222,7 +242,7 @@ class TripRecord:
         would read as "we checked real inventory and found none".
         """
         seen: list[str] = []
-        for tool_name in ("search_flights", "search_stays"):
+        for tool_name in SEARCH_TOOLS:
             for payload in self.payloads.get(tool_name, []):
                 warning = payload.get("warning")
                 if isinstance(warning, str) and warning not in seen:
@@ -237,6 +257,11 @@ def _trip_title(messages: list[dict[str, Any]]) -> str:
     if len(text) <= _TITLE_LENGTH:
         return text
     return f"{text[: _TITLE_LENGTH - 1].rstrip()}…"
+
+
+def _long_date(day: date) -> str:
+    """`Nov 5, 2026`, with no leading zero on the day."""
+    return f"{day:%b} {day.day}, {day.year}"
 
 
 @dataclass(frozen=True)
@@ -256,7 +281,17 @@ class SavedTrip:
     @property
     def saved_on(self) -> str:
         """The local date of the last save, e.g. `Nov 5, 2026`."""
-        return f"{self.saved_at:%b} {self.saved_at.day}, {self.saved_at.year}"
+        return _long_date(self.saved_at)
+
+    @property
+    def prices_dated_on(self) -> str:
+        """The newest date any saved price can be from, for the agent's note.
+
+        Not `saved_on`: every turn saves, so a turn with no search would make
+        old fares look newer than they are. A trip with no stamped search falls
+        back to the save, which is still a true upper bound on its prices.
+        """
+        return _long_date(self.record.last_searched_on() or self.saved_at)
 
     @property
     def summary(self) -> str:
