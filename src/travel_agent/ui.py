@@ -292,6 +292,18 @@ def save_trip(
     )
 
 
+def delete_trip(thread_id: str) -> None:
+    """Remove a trip for good, leaving the traveler profile alone.
+
+    Checkpoints go first. If the second step never runs, the trip is still
+    listed and can be deleted again, whereas the other order would strand its
+    checkpoints with nothing in the UI left to reach them.
+    """
+    checkpointer, store = _storage()
+    checkpointer.delete_thread(thread_id)
+    store.delete(TRIPS_NAMESPACE, thread_id)
+
+
 def saved_trips() -> list[SavedTrip]:
     """Saved trips, most recently updated first.
 

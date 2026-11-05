@@ -64,7 +64,7 @@ Three pages:
   would rank a cheaper flight on other dates above the dates you asked for.
 - **Past trips:** reopen an earlier trip and carry on planning. Its chat and
   figures come back as they were saved, and the Trip page says that those prices
-  date from then.
+  date from then. You can also delete a trip here, apart from the one that is open.
 
 Every synthetic result is labelled in its table and repeated as a standing notice
 at the top of the Trip page.
