@@ -67,9 +67,15 @@ notice at the top of the Trip page.
 The screenshots below come from a real run on sample data, so the fares are
 synthetic and the notice says so.
 
-![Plan page with the agent's reply to a Kyoto trip request, under the sample-data notice](docs/images/plan.jpg)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/plan-dark.png">
+  <img alt="Plan page with the agent's reply to a Kyoto trip request, under the sample-data notice" src="docs/images/plan-light.png">
+</picture>
 
-![Trip page with the sample-data notice, budget cards, and a chart of costs by category](docs/images/trip.jpg)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/trip-dark.png">
+  <img alt="Trip page with the sample-data notice, budget cards, and a chart of costs by category" src="docs/images/trip-light.png">
+</picture>
 
 ### Tracing
 
